@@ -1,4 +1,9 @@
-export const CONTRACT_ID = 'CDYZQUX3PEMNXUEH3FA363RDIAXT7Y3OENHLZQLD5FE4ZNHMRKA43OSC';
+// Disbursement contract v2: real XLM SAC + on-chain verifier (deployed 2026-06-16)
+export const CONTRACT_ID = 'CBSGS6OBCWZ7Z464B7IOM2NGPRQ3QY55SYMJVWUGKCBHXOJVG3G7UV6P';
+// UltraHonk structural verifier contract (VK: 26a99ba4..., circuit: aidshield-membership)
+export const VERIFIER_CONTRACT_ID = 'CATC4XM7FA4HXCX5M27WFLOQEY5C23NHJZTGUJGFMQG6ZQISB7P4OWHH';
+// XLM native SAC (Stellar Asset Contract) on testnet
+export const XLM_SAC_ADDRESS = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
 export const ADMIN_ADDRESS = 'GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ';
 export const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015';
 export const RPC_URL = 'https://soroban-testnet.stellar.org';

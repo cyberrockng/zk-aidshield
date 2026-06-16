@@ -126,7 +126,7 @@ export default function ClaimPage() {
       // Step: sign
       setStep('sign');
       setStatusMsg('Building Soroban transaction…');
-      const txXDR = await buildClaimTransaction(walletAddress, parsedClaim.nullifier);
+      const txXDR = await buildClaimTransaction(walletAddress, parsedClaim.nullifier, proofHexFull);
       setStatusMsg('Please approve in Freighter…');
       const signedXDR = await signTx(txXDR);
 

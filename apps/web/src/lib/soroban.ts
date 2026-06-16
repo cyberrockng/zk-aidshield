@@ -7,7 +7,6 @@ import {
   SorobanRpc,
   scValToNative,
   nativeToScVal,
-  Networks,
 } from '@stellar/stellar-sdk';
 import {
   CONTRACT_ID,
@@ -16,6 +15,7 @@ import {
   RPC_URL,
   DISBURSEMENT_ID,
   MERKLE_ROOT,
+  stellarAddressToField,
 } from './constants';
 
 export interface CampaignStats {
@@ -94,12 +94,26 @@ export async function checkNullifier(nullifierHex: string): Promise<boolean> {
   return scValToNative(sim.result!.retval) as boolean;
 }
 
-function buildPublicInputsScVal(nullifierHex: string, claimantAddress: string): xdr.ScVal {
-  // Soroban contracttype structs encode as ScMap with keys sorted lexicographically
+/**
+ * Encode ProofPublicInputs as the Soroban ScMap the contract expects.
+ *
+ * The Rust struct fields are sorted lexicographically by name (Soroban XDR encoding):
+ *   claimant_address_field, disbursement_id, merkle_root, nullifier
+ *
+ * claimant_address_field is BytesN<32> (field element derived from the Ed25519 key).
+ */
+function buildPublicInputsScVal(
+  nullifierHex: string,
+  claimantAddressField: string, // 62-hex string from stellarAddressToField()
+): xdr.ScVal {
+  const fieldBytes = Buffer.alloc(32, 0);
+  const fieldHex = Buffer.from(claimantAddressField, 'hex');
+  fieldHex.copy(fieldBytes, 32 - fieldHex.length); // right-align in 32 bytes
+
   return xdr.ScVal.scvMap([
     new xdr.ScMapEntry({
-      key: xdr.ScVal.scvSymbol('claimant_address'),
-      val: Address.fromString(claimantAddress).toScVal(),
+      key: xdr.ScVal.scvSymbol('claimant_address_field'),
+      val: xdr.ScVal.scvBytes(fieldBytes),
     }),
     new xdr.ScMapEntry({
       key: xdr.ScVal.scvSymbol('disbursement_id'),
@@ -119,29 +133,29 @@ function buildPublicInputsScVal(nullifierHex: string, claimantAddress: string): 
 export async function buildClaimTransaction(
   claimantAddress: string,
   nullifierHex: string,
+  proofHex: string,  // real 14,656-byte UltraHonk proof from /api/prove
 ): Promise<string> {
   const server = getServer();
   const contract = getContract();
 
-  const publicInputs = buildPublicInputsScVal(nullifierHex, claimantAddress);
-  // _proof is BytesN<64> — accepted structurally; cryptographic verification is
-  // handled by the off-chain Noir prover (production: on-chain verifier contract)
-  const mockProof = xdr.ScVal.scvBytes(Buffer.alloc(64, 0));
+  const claimantField = stellarAddressToField(claimantAddress);
+  const publicInputs = buildPublicInputsScVal(nullifierHex, claimantField);
+  const proofBytes = xdr.ScVal.scvBytes(Buffer.from(proofHex, 'hex'));
 
   const op = contract.call(
     'claim',
     Address.fromString(claimantAddress).toScVal(),
     publicInputs,
-    mockProof,
+    proofBytes,
   );
 
   const account = await server.getAccount(claimantAddress);
   const tx = new TransactionBuilder(account, {
-    fee: BASE_FEE,
+    fee: String(500_000), // higher fee for cross-contract call + proof bytes
     networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(op)
-    .setTimeout(30)
+    .setTimeout(60)
     .build();
 
   const sim = await server.simulateTransaction(tx);
@@ -163,9 +177,8 @@ export async function submitSignedTransaction(signedXDR: string): Promise<string
     throw new Error(`Transaction failed: ${JSON.stringify(result.errorResult)}`);
   }
 
-  // Poll for confirmation
   const hash = result.hash;
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 24; i++) {
     await new Promise((r) => setTimeout(r, 1500));
     const status = await server.getTransaction(hash);
     if (status.status === 'SUCCESS') return hash;
@@ -189,11 +202,11 @@ export async function buildFundTransaction(
 
   const account = await server.getAccount(funderAddress);
   const tx = new TransactionBuilder(account, {
-    fee: BASE_FEE,
+    fee: String(500_000),
     networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(op)
-    .setTimeout(30)
+    .setTimeout(60)
     .build();
 
   const sim = await server.simulateTransaction(tx);

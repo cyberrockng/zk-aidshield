@@ -2,11 +2,18 @@
 #![allow(deprecated)]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short,
-    Address, BytesN, Env,
+    contract, contractclient, contractimpl, contracttype, symbol_short,
+    token, Address, Bytes, BytesN, Env,
 };
 
 mod test;
+
+// ── Verifier cross-contract interface ────────────────────────────────────────
+
+#[contractclient(name = "VerifierClient")]
+pub trait VerifierInterface {
+    fn verify(env: Env, proof: Bytes, public_inputs: Bytes) -> bool;
+}
 
 // ── Storage keys ─────────────────────────────────────────────────────────────
 
@@ -16,8 +23,9 @@ pub enum DataKey {
     DisbursementId,
     MerkleRoot,
     PayoutAmount,
-    EscrowBalance,
     ClaimedCount,
+    TokenAddress,
+    VerifierAddress,
     UsedNullifier(BytesN<32>),
     Initialized,
 }
@@ -43,14 +51,20 @@ pub struct ClaimEvent {
     pub amount: i128,
 }
 
-/// Public inputs from the ZK proof — submitted alongside the serialised proof bytes.
+/// Public inputs matching the Noir circuit declaration order:
+///   disbursement_id, merkle_root, nullifier, claimant_address (all BN254 field elements)
+///
+/// `claimant_address_field` is the 31-byte encoding of the beneficiary's Ed25519 key
+/// (bytes[1..32] of the raw public key, zero-padded to 32 bytes) so that the
+/// value lies within the BN254 scalar field. This matches `stellarAddressToField()`
+/// in the TypeScript frontend.
 #[contracttype]
 #[derive(Clone, Debug)]
 pub struct ProofPublicInputs {
+    pub claimant_address_field: BytesN<32>,
     pub disbursement_id: BytesN<32>,
     pub merkle_root: BytesN<32>,
     pub nullifier: BytesN<32>,
-    pub claimant_address: Address,
 }
 
 // ── Contract ──────────────────────────────────────────────────────────────────
@@ -61,16 +75,18 @@ pub struct AidShieldContract;
 #[contractimpl]
 impl AidShieldContract {
 
-    /// Admin initialises a disbursement campaign.
-    /// disbursement_id — unique campaign identifier
-    /// merkle_root     — Pedersen Merkle root of the approved beneficiary list
-    /// payout_amount   — fixed stipend per valid claim (in stroops: 1 XLM = 10_000_000)
+    /// Initialise a disbursement campaign.
+    ///
+    /// token_address    — Stellar Asset Contract for the payout token (XLM SAC)
+    /// verifier_address — deployed AidShieldVerifier contract
     pub fn initialize(
         env: Env,
         admin: Address,
         disbursement_id: BytesN<32>,
         merkle_root: BytesN<32>,
         payout_amount: i128,
+        token_address: Address,
+        verifier_address: Address,
     ) {
         if env.storage().instance().has(&DataKey::Initialized) {
             panic!("Already initialized");
@@ -80,35 +96,43 @@ impl AidShieldContract {
         env.storage().instance().set(&DataKey::DisbursementId, &disbursement_id);
         env.storage().instance().set(&DataKey::MerkleRoot, &merkle_root);
         env.storage().instance().set(&DataKey::PayoutAmount, &payout_amount);
-        env.storage().instance().set(&DataKey::EscrowBalance, &0i128);
+        env.storage().instance().set(&DataKey::TokenAddress, &token_address);
+        env.storage().instance().set(&DataKey::VerifierAddress, &verifier_address);
         env.storage().instance().set(&DataKey::ClaimedCount, &0u32);
         env.storage().instance().set(&DataKey::Initialized, &true);
     }
 
-    /// Admin deposits funds into the escrow so payouts can be released.
+    /// Deposit XLM into the escrow via the Stellar Asset Contract.
+    /// The funder authorises this invocation; the Soroban auth tree propagates
+    /// that authorisation into the sub-invocation of token.transfer.
     pub fn fund(env: Env, funder: Address, amount: i128) {
         funder.require_auth();
-        let current: i128 = env.storage().instance()
-            .get(&DataKey::EscrowBalance).unwrap_or(0);
-        env.storage().instance().set(&DataKey::EscrowBalance, &(current + amount));
+        if !env.storage().instance().has(&DataKey::Initialized) {
+            panic!("Not initialized");
+        }
+        let token_address: Address = env.storage().instance()
+            .get(&DataKey::TokenAddress).unwrap();
+        token::Client::new(&env, &token_address)
+            .transfer(&funder, &env.current_contract_address(), &amount);
     }
 
     /// Beneficiary submits a ZK proof to claim their payout.
     ///
     /// Enforces:
-    ///   1. disbursement_id matches this campaign
-    ///   2. merkle_root matches stored root
-    ///   3. claimant_address matches tx submitter (address binding)
+    ///   1. UltraHonk proof passes on-chain structural verification
+    ///   2. disbursement_id matches this campaign
+    ///   3. merkle_root matches stored root
     ///   4. nullifier has never been used (replay protection)
-    ///   5. sufficient escrow balance
+    ///   5. Payout released via real XLM SAC transfer
     ///
-    /// `_proof` — serialised UltraHonk proof bytes (verified by on-chain
-    ///            Noir verifier contract in production; accepted structurally here)
+    /// `proof`          — 14 656-byte UltraHonk proof generated by Noir/Barretenberg
+    /// `public_inputs`  — public witness (disbursement_id, merkle_root, nullifier,
+    ///                    claimant_address_field) matching the circuit's pub inputs
     pub fn claim(
         env: Env,
         claimant: Address,
         public_inputs: ProofPublicInputs,
-        _proof: BytesN<64>,
+        proof: Bytes,
     ) {
         claimant.require_auth();
 
@@ -116,50 +140,59 @@ impl AidShieldContract {
             panic!("Contract not initialized");
         }
 
-        // Check 1: disbursement_id matches
+        // ── ZK Proof verification ──────────────────────────────────────────
+        // Encode public inputs as 4 × 32-byte concatenation in circuit declaration order:
+        //   disbursement_id | merkle_root | nullifier | claimant_address_field
+        let verifier_address: Address = env.storage().instance()
+            .get(&DataKey::VerifierAddress).unwrap();
+
+        let mut pi_bytes = Bytes::new(&env);
+        pi_bytes.append(&public_inputs.disbursement_id.clone().into());
+        pi_bytes.append(&public_inputs.merkle_root.clone().into());
+        pi_bytes.append(&public_inputs.nullifier.clone().into());
+        pi_bytes.append(&public_inputs.claimant_address_field.clone().into());
+
+        let verifier = VerifierClient::new(&env, &verifier_address);
+        if !verifier.verify(&proof, &pi_bytes) {
+            panic!("ZK proof verification failed");
+        }
+
+        // ── Application-level checks ──────────────────────────────────────
+
+        // Check 1: disbursement_id
         let stored_id: BytesN<32> = env.storage().instance()
             .get(&DataKey::DisbursementId).unwrap();
         if public_inputs.disbursement_id != stored_id {
             panic!("Wrong disbursement_id");
         }
 
-        // Check 2: merkle_root matches
+        // Check 2: merkle_root
         let stored_root: BytesN<32> = env.storage().instance()
             .get(&DataKey::MerkleRoot).unwrap();
         if public_inputs.merkle_root != stored_root {
             panic!("Merkle root mismatch");
         }
 
-        // Check 3: claimant_address matches tx submitter (address binding)
-        if public_inputs.claimant_address != claimant {
-            panic!("Address mismatch: proof bound to different wallet");
-        }
-
-        // Check 4: replay protection — nullifier must be fresh
+        // Check 3: replay protection — nullifier must be fresh
         let nullifier_key = DataKey::UsedNullifier(public_inputs.nullifier.clone());
         if env.storage().persistent().has(&nullifier_key) {
             panic!("Nullifier already used: replay attack blocked");
         }
 
-        // Check 5: sufficient escrow
+        // ── Payout via XLM SAC ────────────────────────────────────────────
         let payout: i128 = env.storage().instance()
             .get(&DataKey::PayoutAmount).unwrap();
-        let balance: i128 = env.storage().instance()
-            .get(&DataKey::EscrowBalance).unwrap();
-        if balance < payout {
-            panic!("Insufficient escrow balance");
-        }
+        let token_address: Address = env.storage().instance()
+            .get(&DataKey::TokenAddress).unwrap();
+        token::Client::new(&env, &token_address)
+            .transfer(&env.current_contract_address(), &claimant, &payout);
 
-        // Mark nullifier used (persistent storage survives ledger closings)
+        // ── State updates ─────────────────────────────────────────────────
         env.storage().persistent().set(&nullifier_key, &true);
-
-        // Update escrow balance and claim count
-        env.storage().instance().set(&DataKey::EscrowBalance, &(balance - payout));
         let count: u32 = env.storage().instance()
             .get(&DataKey::ClaimedCount).unwrap_or(0);
         env.storage().instance().set(&DataKey::ClaimedCount, &(count + 1));
 
-        // Emit public event — nullifier + campaign only, zero PII
         env.events().publish(
             (symbol_short!("claim"), symbol_short!("paid")),
             ClaimEvent {
@@ -171,18 +204,23 @@ impl AidShieldContract {
         );
     }
 
-    /// Returns campaign statistics — no beneficiary data exposed.
+    /// Returns live campaign stats. Escrow balance is read directly from the token SAC.
     pub fn stats(env: Env) -> CampaignStats {
+        let token_address: Address = env.storage().instance()
+            .get(&DataKey::TokenAddress).unwrap();
+        let escrow_balance = token::Client::new(&env, &token_address)
+            .balance(&env.current_contract_address());
+
         CampaignStats {
             disbursement_id: env.storage().instance().get(&DataKey::DisbursementId).unwrap(),
             merkle_root: env.storage().instance().get(&DataKey::MerkleRoot).unwrap(),
             payout_amount: env.storage().instance().get(&DataKey::PayoutAmount).unwrap(),
-            escrow_balance: env.storage().instance().get(&DataKey::EscrowBalance).unwrap(),
+            escrow_balance,
             claimed_count: env.storage().instance().get(&DataKey::ClaimedCount).unwrap_or(0),
         }
     }
 
-    /// Returns true if a nullifier has already been used.
+    /// Returns true if the given nullifier has already been used.
     pub fn is_nullifier_used(env: Env, nullifier: BytesN<32>) -> bool {
         env.storage().persistent().has(&DataKey::UsedNullifier(nullifier))
     }
