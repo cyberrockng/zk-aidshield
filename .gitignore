@@ -1,0 +1,12 @@
+node_modules/
+.next/
+target/
+dist/
+.env
+.env.local
+*.local
+proof.json
+witness/
+proofs/
+__pycache__/
+.DS_Store
