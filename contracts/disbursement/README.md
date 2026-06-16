@@ -23,6 +23,10 @@ Manages a ZK-gated aid campaign on Stellar:
 
 **Cross-contract verification.** `claim()` calls `AidShieldVerifier.verify(proof, pi)` before any state changes. A failing verifier panics the entire transaction — no partial state updates.
 
+**TTL extension.** `initialize()` calls `env.storage().instance().extend_ttl(518_400, 518_400)` (~30 days at 5 s/ledger). Each successful `claim()` refreshes both the instance storage TTL and the individual nullifier entry's persistent TTL, preventing archival of live campaigns.
+
+**Event emission.** `claim()` emits a `claim.paid` event (disbursement_id, nullifier, claimant, amount). `update_root()` emits a `root.updated` event (old_root, new_root) so auditors can track beneficiary list rotations.
+
 **Address field encoding.** The Noir circuit's `claimant_address` public input is a BN254 field element (31 bytes of the Ed25519 public key, zero-padded to 32 bytes). `ProofPublicInputs.claimant_address_field` carries this value; `claimant.require_auth()` enforces the wallet signature.
 
 ## Building and Testing

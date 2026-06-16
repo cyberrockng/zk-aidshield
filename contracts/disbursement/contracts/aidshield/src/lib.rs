@@ -100,6 +100,9 @@ impl AidShieldContract {
         env.storage().instance().set(&DataKey::VerifierAddress, &verifier_address);
         env.storage().instance().set(&DataKey::ClaimedCount, &0u32);
         env.storage().instance().set(&DataKey::Initialized, &true);
+
+        // Keep instance storage alive for ~30 days (30d × 24h × 720 ledgers/h = 518 400)
+        env.storage().instance().extend_ttl(518_400, 518_400);
     }
 
     /// Deposit XLM into the escrow via the Stellar Asset Contract.
@@ -189,9 +192,14 @@ impl AidShieldContract {
 
         // ── State updates ─────────────────────────────────────────────────
         env.storage().persistent().set(&nullifier_key, &true);
+        // Extend nullifier TTL so replay protection survives archival (~30 days)
+        env.storage().persistent().extend_ttl(&nullifier_key, 518_400, 518_400);
+
         let count: u32 = env.storage().instance()
             .get(&DataKey::ClaimedCount).unwrap_or(0);
         env.storage().instance().set(&DataKey::ClaimedCount, &(count + 1));
+        // Refresh instance storage TTL on every claim
+        env.storage().instance().extend_ttl(518_400, 518_400);
 
         env.events().publish(
             (symbol_short!("claim"), symbol_short!("paid")),
@@ -226,9 +234,16 @@ impl AidShieldContract {
     }
 
     /// Admin can rotate the Merkle root for a new beneficiary list.
+    /// Emits a `root.updated` event containing the new root for auditor visibility.
     pub fn update_root(env: Env, new_root: BytesN<32>) {
         let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
+        let old_root: BytesN<32> = env.storage().instance()
+            .get(&DataKey::MerkleRoot).unwrap();
         env.storage().instance().set(&DataKey::MerkleRoot, &new_root);
+        env.events().publish(
+            (symbol_short!("root"), symbol_short!("updated")),
+            (old_root, new_root),
+        );
     }
 }

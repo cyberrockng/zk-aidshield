@@ -378,9 +378,10 @@ export default function ClaimPage() {
         className="mt-6 p-4 rounded-lg text-sm"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--muted)' }}
       >
-        🔒 <strong style={{ color: 'var(--text)' }}>Zero PII on-chain.</strong> Your secret
-        never leaves this browser. The ZK proof reveals only that you are in the approved
-        beneficiary set — nothing else. Each nullifier can be used exactly once.
+        🔒 <strong style={{ color: 'var(--text)' }}>Zero PII on-chain.</strong> Your claim
+        secret is sent to this server only to generate the ZK proof — it is never stored,
+        logged, or shared. The proof itself reveals only that you are in the approved
+        beneficiary set. Each nullifier can be used exactly once.
       </div>
     </div>
   );

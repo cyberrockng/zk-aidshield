@@ -4,7 +4,7 @@ use soroban_sdk::{testutils::Address as _, Address, Bytes, Env};
 
 use super::*;
 
-fn create_verifier(env: &Env) -> (Address, AidShieldVerifierClient) {
+fn create_verifier(env: &Env) -> (Address, AidShieldVerifierClient<'_>) {
     let contract_id = env.register_contract(None, AidShieldVerifier);
     let client = AidShieldVerifierClient::new(env, &contract_id);
     let admin = Address::generate(env);

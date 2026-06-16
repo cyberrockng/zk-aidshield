@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(deprecated)]
 
 use soroban_sdk::{
     contract, contractimpl, contracttype, symbol_short,
@@ -89,7 +90,6 @@ impl AidShieldVerifier {
         }
 
         // 4. SHA-256(vk_hash ‖ proof) — binds this proof to our exact circuit VK
-        let vk_hash: BytesN<32> = env.storage().instance().get(&DataKey::VkHash).unwrap();
         let mut preimage = Bytes::new(&env);
         preimage.append(&Bytes::from_slice(&env, &VK_HASH));
         preimage.append(&proof);

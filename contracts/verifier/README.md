@@ -39,11 +39,25 @@ The VK binary (1,888 bytes) and hash are committed at `circuits/aidshield-member
 bb write_solidity_verifier -k vk.bin -t evm
 ```
 
-This implements the full UltraHonk verification algorithm including the final BN254 pairing check. It serves as the reference implementation for porting to Soroban once BN254 host precompiles are available.
+This implements the full UltraHonk verification algorithm including the batched KZG opening check (two BN254 pairings). It serves as the specification for the Soroban port.
 
-## What's Pending
+## BN254 Host Precompiles in Soroban SDK v26
 
-Full cryptographic verification requires BN254 elliptic-curve pairings (the final step of the UltraHonk relation check). These require host precompiles not yet available in the Soroban VM. The `HonkVerifier.sol` in this directory shows the complete algorithm.
+`soroban-sdk = "26"` ships BN254 elliptic-curve host functions:
+
+```rust
+env.crypto().bn254().pairing_check(vp1: Vec<Bn254G1Affine>, vp2: Vec<Bn254G2Affine>) -> bool
+env.crypto().bn254().g1_add(p1: Bn254G1Affine, p2: Bn254G1Affine) -> Bn254G1Affine
+env.crypto().bn254().g1_mul(point: Bn254G1Affine, scalar: Bn254Fr) -> Bn254G1Affine
+```
+
+These are the primitives needed to port the Shplemini batched-opening check from `HonkVerifier.sol` to Rust. The final UltraHonk pairing step can be expressed as:
+
+```
+e(F - E, [1]₂) = e(W, [τ]₂)
+```
+
+where `F`, `E`, `W` are G1 points computed from the proof, and `[τ]₂` is the trusted-setup G2 point embedded in the VK.
 
 ## Building and Testing
 
