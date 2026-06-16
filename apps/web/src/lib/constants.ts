@@ -22,3 +22,11 @@ export function shortHex(hex: string): string {
   if (hex.length <= 12) return hex;
   return `${hex.slice(0, 6)}…${hex.slice(-6)}`;
 }
+
+// Encodes a Stellar G... public key as a 31-byte hex field element (safe for BN254).
+// We use bytes 1-31 (248 bits) so the value always fits inside the BN254 field modulus.
+export function stellarAddressToField(address: string): string {
+  const { StrKey } = require('@stellar/stellar-sdk') as typeof import('@stellar/stellar-sdk');
+  const bytes = StrKey.decodeEd25519PublicKey(address) as Buffer;
+  return bytes.slice(1).toString('hex');
+}

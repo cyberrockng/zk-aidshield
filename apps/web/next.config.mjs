@@ -7,10 +7,23 @@ const nextConfig = {
       net: false,
       tls: false,
     };
-    // sodium-native is a Node native addon — exclude from browser bundles
+
     if (!isServer) {
       config.externals = [...(config.externals || []), 'sodium-native'];
     }
+
+    if (isServer) {
+      // Keep ZK packages out of the server bundle so WASM loads from node_modules
+      const zkExternals = [
+        /^@aztec\/bb\.js/,
+        /^@noir-lang\//,
+      ];
+      const prev = config.externals || [];
+      config.externals = Array.isArray(prev)
+        ? [...prev, ...zkExternals]
+        : [prev, ...zkExternals];
+    }
+
     return config;
   },
 };

@@ -8,7 +8,7 @@ import {
   type ClaimEntry,
 } from '@/lib/soroban';
 import { getWalletAddress, signTx } from '@/lib/freighter';
-import { EXPLORER_BASE, DISBURSEMENT_ID, MERKLE_ROOT, shortHex, stroopsToXlm } from '@/lib/constants';
+import { EXPLORER_BASE, DISBURSEMENT_ID, MERKLE_ROOT, shortHex, stellarAddressToField } from '@/lib/constants';
 
 type Step =
   | 'wallet'
@@ -98,15 +98,30 @@ export default function ClaimPage() {
       setStatusMsg('Disbursement ID matches ✓  Merkle root matches ✓');
       await delay(600);
 
-      // Step: prove
+      // Step: prove — call server-side API route which runs Noir + Barretenberg
       setStep('prove');
       setStatusMsg('Executing Noir circuit and generating UltraHonk proof…');
-      // Deterministic mock proof: SHA-256 of [nullifier + address] gives 32 bytes,
-      // padded to 64 bytes — shows something meaningful in the UI
-      const proofBytes = await mockProof(parsedClaim.nullifier, walletAddress);
-      setProofHex(proofBytes);
-      setStatusMsg(`Proof generated: 0x${proofBytes.slice(0, 16)}…`);
-      await delay(800);
+      const claimantField = stellarAddressToField(walletAddress);
+      const proveRes = await fetch('/api/prove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret: parsedClaim.secret,
+          merkle_path: parsedClaim.merkle_path,
+          path_indices: parsedClaim.path_indices,
+          disbursement_id: DISBURSEMENT_ID,
+          merkle_root: MERKLE_ROOT,
+          nullifier: parsedClaim.nullifier,
+          claimant_address: claimantField,
+        }),
+      });
+      if (!proveRes.ok) {
+        const err = await proveRes.json();
+        throw new Error(`Proof generation failed: ${err.error}`);
+      }
+      const { proof: proofHexFull, proofSize } = await proveRes.json();
+      setProofHex(proofHexFull);
+      setStatusMsg(`UltraHonk proof generated ✓ (${proofSize} bytes, ${(proofSize/1024).toFixed(1)} KB)`);
 
       // Step: sign
       setStep('sign');
@@ -375,18 +390,3 @@ function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function mockProof(nullifierHex: string, address: string): Promise<string> {
-  // Deterministic 64-byte mock: SHA-256(nullifier ++ address) repeated to fill 64 bytes.
-  // In production this would be the real UltraHonk proof bytes.
-  const enc = new TextEncoder();
-  const data = enc.encode(nullifierHex + address);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  const arr = new Uint8Array(digest);
-  // 32 bytes → repeat to get 64
-  const full = new Uint8Array(64);
-  full.set(arr);
-  full.set(arr, 32);
-  return Array.from(full)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}

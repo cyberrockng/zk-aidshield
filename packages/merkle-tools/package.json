@@ -10,11 +10,14 @@
     "seed": "node --import tsx/esm src/generate-campaign.ts --seed"
   },
   "dependencies": {
-    "@aztec/bb.js": "0.67.0"
+    "@aztec/bb.js": "^5.0.0-nightly.20260522",
+    "@noir-lang/acvm_js": "^1.0.0-beta.22",
+    "@noir-lang/noir_js": "^1.0.0-beta.22",
+    "@noir-lang/noirc_abi": "^1.0.0-beta.22"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.4.0",
-    "@types/node": "^20.0.0"
+    "typescript": "^5.4.0"
   }
 }
