@@ -1,0 +1,6 @@
+[package]
+name = "aidshield_membership"
+type = "bin"
+authors = [""]
+
+[dependencies]
