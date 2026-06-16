@@ -38,22 +38,13 @@ fn main(
     let computed_root = compute_merkle_root(leaf, merkle_path, path_indices);
     assert(computed_root == merkle_root, "Merkle proof invalid: claimant not in beneficiary list");
 
-    // Step 3: Verify nullifier correctness
-    // nullifier = pedersen_hash(secret, disbursement_id, 1)
-    // The trailing 1 is a domain separator distinguishing nullifiers from leaves
-    // Soroban contract blocks any claim that reuses a stored nullifier
-    let expected_nullifier: Field = std::hash::pedersen_hash([secret, disbursement_id, 1]);
-    assert(nullifier == expected_nullifier, "Nullifier does not match secret");
-
-    // Step 4: Address binding — ties this proof to a specific Stellar wallet
-    // Computes a commitment that cryptographically links `secret` to `claimant_address`.
-    // The same `secret` that satisfies the Merkle proof must be paired with this address,
-    // preventing proof portability: an intercepted proof cannot be reused for a different wallet.
-    // The Soroban contract reinforces this with claimant.require_auth() (tx-signer check).
-    let address_commitment: Field = std::hash::pedersen_hash([secret, claimant_address]);
-    // Assert non-zero to anchor the commitment into the active constraint system.
-    // pedersen_hash over BN254 never produces 0 for any valid (secret, address) pair.
-    assert(address_commitment != 0, "Address binding: secret must be linked to claimant_address");
+    // Step 3: Verify nullifier correctness — address-bound to prevent proof portability
+    // nullifier = pedersen_hash(secret, disbursement_id, claimant_address, 1)
+    // Including claimant_address binds the nullifier to a specific Stellar wallet.
+    // An intercepted proof cannot be reused from a different wallet because the nullifier
+    // would differ and fail this check. The trailing 1 is a domain separator.
+    let expected_nullifier: Field = std::hash::pedersen_hash([secret, disbursement_id, claimant_address, 1]);
+    assert(nullifier == expected_nullifier, "Nullifier does not match secret/address");
 }
 
 // Recomputes the Merkle root from a leaf and its sibling path
@@ -81,7 +72,7 @@ fn test_valid_claim() {
     let claimant_address: Field = 0xdeadbeef;
 
     let leaf: Field = std::hash::pedersen_hash([secret, disbursement_id]);
-    let nullifier: Field = std::hash::pedersen_hash([secret, disbursement_id, 1]);
+    let nullifier: Field = std::hash::pedersen_hash([secret, disbursement_id, claimant_address, 1]);
 
     let zero_sibling: Field = 0;
     let mut merkle_path: [Field; 8] = [0; 8];

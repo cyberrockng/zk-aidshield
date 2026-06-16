@@ -38,14 +38,17 @@ export async function computeLeaf(
 }
 
 /**
- * Computes the nullifier for a beneficiary claim.
- * Matches: let nullifier = std::hash::pedersen_hash([secret, disbursement_id, 1])
+ * Computes the address-bound nullifier for a beneficiary claim.
+ * Matches: let nullifier = std::hash::pedersen_hash([secret, disbursement_id, claimant_address, 1])
+ * The claimant_address prevents proof portability: an intercepted proof cannot be
+ * replayed from a different wallet address.
  */
 export async function computeNullifier(
   secret: bigint,
-  disbursementId: bigint
+  disbursementId: bigint,
+  claimantAddress: bigint
 ): Promise<bigint> {
-  return pedersenHash([secret, disbursementId, 1n]);
+  return pedersenHash([secret, disbursementId, claimantAddress, 1n]);
 }
 
 /**

@@ -1,0 +1,13 @@
+{
+  "name": "zk-aidshield",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev": "pnpm --dir apps/web dev",
+    "build:web": "pnpm --dir apps/web build",
+    "seed": "pnpm --dir packages/merkle-tools seed",
+    "test:merkle": "pnpm --dir packages/merkle-tools test",
+    "contracts:test": "cd contracts/disbursement && cargo test && cd ../verifier && cargo test",
+    "deploy:testnet": "./scripts/deploy-testnet.sh"
+  }
+}

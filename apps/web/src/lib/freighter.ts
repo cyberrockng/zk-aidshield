@@ -2,44 +2,60 @@
 
 import { NETWORK_PASSPHRASE } from './constants';
 
-export async function getWalletAddress(): Promise<string> {
+export async function isFreighterInstalled(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  try {
+    const { isConnected } = await import('@stellar/freighter-api');
+    const result = await isConnected();
+    if (typeof result === 'boolean') return result;
+    return (result as { isConnected: boolean }).isConnected;
+  } catch {
+    return false;
+  }
+}
+
+export async function connectWallet(): Promise<string> {
   if (typeof window === 'undefined') throw new Error('Browser-only');
 
-  const {
-    isConnected,
-    getAddress,
-    requestAccess,
-  } = await import('@stellar/freighter-api');
-
-  const connected = await isConnected();
-  // v3 may return { isConnected: boolean } or a plain boolean
-  const ok =
-    typeof connected === 'boolean'
-      ? connected
-      : (connected as { isConnected: boolean }).isConnected;
-
-  if (!ok) {
+  const installed = await isFreighterInstalled();
+  if (!installed) {
     throw new Error(
-      'Freighter wallet not found. Install the Freighter browser extension from freighter.app',
+      'Freighter not found — install the browser extension from freighter.app then reload'
     );
   }
 
-  // Request permission if not yet granted
-  await requestAccess();
+  const { requestAccess, getAddress } = await import('@stellar/freighter-api');
 
-  // v3: getAddress() returns { address: string } or plain string
+  const accessResult = await requestAccess();
+  if (accessResult && typeof accessResult === 'object' && 'error' in accessResult) {
+    throw new Error(`Wallet access denied: ${(accessResult as { error: string }).error}`);
+  }
+
   const raw = await getAddress();
   if (typeof raw === 'string') return raw;
-  return (raw as { address: string }).address;
+  const obj = raw as { address?: string; error?: string };
+  if (obj.error) throw new Error(`Could not get address: ${obj.error}`);
+  if (obj.address) return obj.address;
+  throw new Error('Freighter returned an unexpected response from getAddress()');
 }
 
-export async function signTx(txXDR: string): Promise<string> {
+export const getWalletAddress = connectWallet;
+
+export async function signTx(txXdr: string, address?: string): Promise<string> {
   const { signTransaction } = await import('@stellar/freighter-api');
-  const result = await signTransaction(txXDR, {
+
+  const opts: Record<string, unknown> = {
+    network: 'TESTNET',
     networkPassphrase: NETWORK_PASSPHRASE,
-  });
-  // v3 may return string or { signedTxXdr: string }
+  };
+  if (address) opts.address = address;
+
+  const result = await signTransaction(txXdr, opts);
+
   if (typeof result === 'string') return result;
+  const obj = result as { signedTxXdr?: string; error?: string };
+  if (obj.error) throw new Error(`Signing rejected: ${obj.error}`);
+  if (obj.signedTxXdr) return obj.signedTxXdr;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (result as any).signedTxXdr ?? result;
+  return (result as any).signedTxXdr ?? (result as any);
 }

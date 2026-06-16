@@ -10,7 +10,7 @@
  */
 
 import { writeFileSync, readFileSync, existsSync } from "fs";
-import { computeLeaf, computeNullifier, randomSecret, cleanup } from "./hash.js";
+import { computeLeaf, randomSecret, cleanup } from "./hash.js";
 import { buildMerkleTree, getMerkleWitness, toHex32, toHexDisplay, TREE_DEPTH } from "./merkle.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -23,10 +23,10 @@ interface Beneficiary {
 interface BeneficiaryClaim {
   index: number;
   secret: string;        // hex — shared privately with beneficiary
-  nullifier: string;     // hex — stored on Soroban after claim
   leaf: string;          // hex — used to build Merkle tree
   merkle_path: string[]; // hex array — used in Noir proof
   path_indices: boolean[];
+  // nullifier is address-bound (derived at claim time from secret+address); not pre-computed
   // Name/ID deliberately excluded — zero PII in output files
 }
 
@@ -90,12 +90,10 @@ async function main() {
   for (let i = 0; i < beneficiaries.length; i++) {
     const secret = randomSecret();
     const leaf = await computeLeaf(secret, disbursementId);
-    const nullifier = await computeNullifier(secret, disbursementId);
     leaves.push(leaf);
     claims.push({
       index: i,
       secret: toHex32(secret),
-      nullifier: toHex32(nullifier),
       leaf: toHex32(leaf),
       merkle_path: [], // filled after tree build
       path_indices: [],

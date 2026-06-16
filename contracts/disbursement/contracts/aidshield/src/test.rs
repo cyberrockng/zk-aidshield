@@ -123,6 +123,7 @@ fn test_claim_releases_tokens() {
     let payout = 10_000_000i128;
 
     client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.set_paused(&false); // unpause for integration test
     client.fund(&admin, &100_000_000i128);
 
     let inputs = ProofPublicInputs {
@@ -140,6 +141,39 @@ fn test_claim_releases_tokens() {
     assert_eq!(after - before, payout);
     assert_eq!(client.stats().claimed_count, 1);
     assert!(client.is_nullifier_used(&nullifier));
+}
+
+#[test]
+#[should_panic(expected = "Claims are paused")]
+fn test_paused_blocks_claim() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let claimant = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    sac.mint(&admin, &1_000_000_000i128);
+
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    let campaign_id = make_id(&env, 1);
+    let merkle_root = make_id(&env, 2);
+    let payout = 10_000_000i128;
+
+    client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    // DO NOT set_paused — contract starts paused; claim must panic
+    client.fund(&admin, &100_000_000i128);
+
+    let inputs = ProofPublicInputs {
+        claimant_address_field: make_id(&env, 10),
+        disbursement_id: campaign_id,
+        merkle_root,
+        nullifier: make_id(&env, 3),
+    };
+    client.claim(&claimant, &inputs, &make_real_proof(&env));
 }
 
 #[test]
@@ -164,6 +198,7 @@ fn test_replay_attack_blocked() {
     let payout = 10_000_000i128;
 
     client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
 
     let inputs = ProofPublicInputs {
@@ -199,6 +234,7 @@ fn test_invalid_proof_rejected() {
     let payout = 10_000_000i128;
 
     client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
 
     let inputs = ProofPublicInputs {
@@ -234,6 +270,7 @@ fn test_wrong_merkle_root_rejected() {
     let payout = 10_000_000i128;
 
     client.initialize(&admin, &campaign_id, &real_root, &payout, &token_id, &verifier_id);
+    client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
 
     let inputs = ProofPublicInputs {

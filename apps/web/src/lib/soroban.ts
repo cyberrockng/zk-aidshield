@@ -29,14 +29,13 @@ export interface CampaignStats {
 export interface ClaimEntry {
   index: number;
   secret: string;
-  nullifier: string;
   leaf: string;
   merkle_path: string[];
   path_indices: boolean[];
 }
 
 function getServer(): SorobanRpc.Server {
-  return new SorobanRpc.Server(RPC_URL, { allowHttp: false });
+  return new SorobanRpc.Server(RPC_URL, { allowHttp: RPC_URL.startsWith('http:') });
 }
 
 function getContract(): Contract {
@@ -174,17 +173,23 @@ export async function submitSignedTransaction(signedXDR: string): Promise<string
   const result = await server.sendTransaction(signedTx);
 
   if (result.status === 'ERROR') {
-    throw new Error(`Transaction failed: ${JSON.stringify(result.errorResult)}`);
+    throw new Error(`Transaction rejected: ${JSON.stringify(result.errorResult)}`);
+  }
+  if (result.status !== 'PENDING' && result.status !== 'DUPLICATE') {
+    throw new Error(`Unexpected send status: ${result.status}`);
   }
 
   const hash = result.hash;
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < 40; i++) {
     await new Promise((r) => setTimeout(r, 1500));
     const status = await server.getTransaction(hash);
     if (status.status === 'SUCCESS') return hash;
-    if (status.status === 'FAILED') throw new Error('Transaction failed on-chain');
+    if (status.status === 'FAILED') {
+      throw new Error('Transaction failed on-chain: ' + JSON.stringify(status));
+    }
+    // status === 'NOT_FOUND' means still pending — keep polling
   }
-  throw new Error('Transaction confirmation timed out');
+  throw new Error('Transaction confirmation timed out after 60 s — check Stellar Explorer');
 }
 
 export async function buildFundTransaction(

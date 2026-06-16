@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   checkNullifier,
   buildClaimTransaction,
   submitSignedTransaction,
   type ClaimEntry,
 } from '@/lib/soroban';
-import { getWalletAddress, signTx } from '@/lib/freighter';
+import { isFreighterInstalled, connectWallet, signTx } from '@/lib/freighter';
 import { EXPLORER_BASE, DISBURSEMENT_ID, MERKLE_ROOT, shortHex, stellarAddressToField } from '@/lib/constants';
 
 type Step =
@@ -39,6 +39,7 @@ const STEP_INFO: Record<Step, StepInfo> = {
 const FLOW: Step[] = ['wallet', 'paste', 'validate', 'prove', 'sign', 'submit', 'done'];
 
 export default function ClaimPage() {
+  const [walletInstalled, setWalletInstalled] = useState<boolean | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [claimJson, setClaimJson] = useState('');
   const [parsedClaim, setParsedClaim] = useState<ClaimEntry | null>(null);
@@ -50,10 +51,14 @@ export default function ClaimPage() {
   const [txHash, setTxHash] = useState('');
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    isFreighterInstalled().then(setWalletInstalled);
+  }, []);
+
   const handleConnect = useCallback(async () => {
     setError('');
     try {
-      const addr = await getWalletAddress();
+      const addr = await connectWallet();
       setWalletAddress(addr);
       setStep('paste');
     } catch (e) {
@@ -68,11 +73,10 @@ export default function ClaimPage() {
       const obj = JSON.parse(claimJson) as ClaimEntry;
       if (
         typeof obj.secret !== 'string' ||
-        typeof obj.nullifier !== 'string' ||
         !Array.isArray(obj.merkle_path) ||
         !Array.isArray(obj.path_indices)
       ) {
-        throw new Error('Missing required fields: secret, nullifier, merkle_path, path_indices');
+        throw new Error('Missing required fields: secret, merkle_path, path_indices');
       }
       if (obj.merkle_path.length !== 8 || obj.path_indices.length !== 8) {
         throw new Error('merkle_path and path_indices must each have 8 elements');
@@ -90,15 +94,12 @@ export default function ClaimPage() {
     setTxHash('');
 
     try {
-      // Step: validate
+      // Step: validate — no nullifier pre-check (it's address-derived; we get it after proving)
       setStep('validate');
-      setStatusMsg('Checking nullifier on-chain…');
-      const used = await checkNullifier(parsedClaim.nullifier);
-      if (used) throw new Error('This claim has already been used (nullifier found on-chain).');
       setStatusMsg('Disbursement ID matches ✓  Merkle root matches ✓');
-      await delay(600);
+      await delay(400);
 
-      // Step: prove — call server-side API route which runs Noir + Barretenberg
+      // Step: prove — server derives nullifier from (secret, campaign_id, address)
       setStep('prove');
       setStatusMsg('Executing Noir circuit and generating UltraHonk proof…');
       const claimantField = stellarAddressToField(walletAddress);
@@ -111,7 +112,6 @@ export default function ClaimPage() {
           path_indices: parsedClaim.path_indices,
           disbursement_id: DISBURSEMENT_ID,
           merkle_root: MERKLE_ROOT,
-          nullifier: parsedClaim.nullifier,
           claimant_address: claimantField,
         }),
       });
@@ -119,16 +119,20 @@ export default function ClaimPage() {
         const err = await proveRes.json();
         throw new Error(`Proof generation failed: ${err.error}`);
       }
-      const { proof: proofHexFull, proofSize } = await proveRes.json();
+      const { proof: proofHexFull, nullifier: derivedNullifier, proofSize } = await proveRes.json();
       setProofHex(proofHexFull);
-      setStatusMsg(`UltraHonk proof generated ✓ (${proofSize} bytes, ${(proofSize/1024).toFixed(1)} KB)`);
+      setStatusMsg(`UltraHonk proof generated ✓ (${proofSize} bytes, ${(proofSize / 1024).toFixed(1)} KB)`);
+
+      // Check nullifier freshness now that we have it
+      const used = await checkNullifier(derivedNullifier);
+      if (used) throw new Error('This claim has already been used (nullifier found on-chain).');
 
       // Step: sign
       setStep('sign');
       setStatusMsg('Building Soroban transaction…');
-      const txXDR = await buildClaimTransaction(walletAddress, parsedClaim.nullifier, proofHexFull);
+      const txXDR = await buildClaimTransaction(walletAddress, derivedNullifier, proofHexFull);
       setStatusMsg('Please approve in Freighter…');
-      const signedXDR = await signTx(txXDR);
+      const signedXDR = await signTx(txXDR, walletAddress);
 
       // Step: submit
       setStep('submit');
@@ -216,9 +220,25 @@ export default function ClaimPage() {
             )}
           </div>
           {!walletAddress ? (
-            <button className="btn-primary w-full" onClick={handleConnect}>
-              Connect Freighter
-            </button>
+            <>
+              <button className="btn-primary w-full" onClick={handleConnect}>
+                Connect Freighter
+              </button>
+              {walletInstalled === false && (
+                <p className="text-xs mt-2" style={{ color: '#f87171' }}>
+                  Freighter not detected —{' '}
+                  <a
+                    href="https://freighter.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    install the extension
+                  </a>{' '}
+                  then reload this page.
+                </p>
+              )}
+            </>
           ) : (
             <div
               className="mono text-xs p-3 rounded-lg"
@@ -272,8 +292,8 @@ export default function ClaimPage() {
                 </div>
                 <div style={{ color: 'var(--muted)' }}>
                   nullifier:{' '}
-                  <span style={{ color: 'var(--text)' }}>
-                    {shortHex(parsedClaim.nullifier)}
+                  <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>
+                    derived on-chain at claim time
                   </span>
                 </div>
                 <div style={{ color: 'var(--muted)' }}>

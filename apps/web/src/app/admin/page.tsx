@@ -2,20 +2,29 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { fetchStats, buildFundTransaction, submitSignedTransaction, type CampaignStats } from '@/lib/soroban';
-import { getWalletAddress, signTx } from '@/lib/freighter';
+import { isFreighterInstalled, connectWallet, signTx } from '@/lib/freighter';
 import { CONTRACT_ID, EXPLORER_BASE, stroopsToXlm, shortHex, DISBURSEMENT_ID, MERKLE_ROOT } from '@/lib/constants';
 
-type FundStep = 'idle' | 'connecting' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
+type FundStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 
 export default function AdminPage() {
   const [stats, setStats] = useState<CampaignStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
+  const [walletInstalled, setWalletInstalled] = useState<boolean | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState('');
+
   const [fundAmount, setFundAmount] = useState('50');
   const [fundStep, setFundStep] = useState<FundStep>('idle');
   const [fundTxHash, setFundTxHash] = useState('');
   const [fundError, setFundError] = useState('');
+  const [activityLog, setActivityLog] = useState<string[]>([]);
+
+  function log(line: string) {
+    setActivityLog((prev) => [`[${new Date().toLocaleTimeString()}] ${line}`, ...prev]);
+  }
 
   const loadStats = useCallback(async () => {
     setLoadingStats(true);
@@ -35,7 +44,26 @@ export default function AdminPage() {
     return () => clearInterval(id);
   }, [loadStats]);
 
+  useEffect(() => {
+    isFreighterInstalled().then(setWalletInstalled);
+  }, []);
+
+  async function handleConnectWallet() {
+    setWalletError('');
+    try {
+      const addr = await connectWallet();
+      setWalletAddress(addr);
+      log(`Wallet connected: ${addr.slice(0, 8)}…${addr.slice(-6)}`);
+    } catch (e) {
+      setWalletError(String(e));
+    }
+  }
+
   async function handleFund() {
+    if (!walletAddress) {
+      setFundError('Connect your Freighter wallet first');
+      return;
+    }
     setFundError('');
     setFundTxHash('');
     const xlm = parseFloat(fundAmount);
@@ -46,26 +74,31 @@ export default function AdminPage() {
     const stroops = Math.round(xlm * 10_000_000);
 
     try {
-      setFundStep('connecting');
-      const address = await getWalletAddress();
-
       setFundStep('building');
-      const txXDR = await buildFundTransaction(address, stroops);
+      log(`Building fund transaction — ${xlm} XLM from ${walletAddress.slice(0, 8)}…`);
+      const txXDR = await buildFundTransaction(walletAddress, stroops);
 
       setFundStep('signing');
-      const signedXDR = await signTx(txXDR);
+      log('Waiting for Freighter signature…');
+      const signedXDR = await signTx(txXDR, walletAddress);
 
       setFundStep('submitting');
+      log('Broadcasting to Stellar testnet…');
       const hash = await submitSignedTransaction(signedXDR);
 
       setFundTxHash(hash);
       setFundStep('done');
+      log(`Funded ✓ tx: ${hash.slice(0, 12)}…`);
       await loadStats();
     } catch (e) {
-      setFundError(String(e));
+      const msg = String(e);
+      setFundError(msg);
       setFundStep('error');
+      log(`Error: ${msg.slice(0, 80)}`);
     }
   }
+
+  const busy = fundStep !== 'idle' && fundStep !== 'done' && fundStep !== 'error';
 
   const utilization =
     stats
@@ -85,14 +118,63 @@ export default function AdminPage() {
             Live stats from Soroban testnet · refreshes every 15s
           </p>
         </div>
-        <a
-          href={`${EXPLORER_BASE}/contract/${CONTRACT_ID}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-outline text-sm"
-        >
-          View on Explorer ↗
-        </a>
+        <div className="flex items-center gap-3">
+          <span className="badge" style={{ background: '#1e293b', color: '#94a3b8', fontSize: '0.7rem' }}>
+            Stellar Testnet
+          </span>
+          <a
+            href={`${EXPLORER_BASE}/contract/${CONTRACT_ID}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-outline text-sm"
+          >
+            View on Explorer ↗
+          </a>
+        </div>
+      </div>
+
+      {/* Wallet status panel */}
+      <div className="card mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <span className="font-semibold text-sm">Freighter Wallet</span>
+          {walletInstalled === false && (
+            <span className="badge" style={{ background: '#450a0a', color: '#fca5a5' }}>
+              Not detected
+            </span>
+          )}
+          {walletInstalled === true && !walletAddress && (
+            <span className="badge" style={{ background: '#1c1917', color: '#a8a29e' }}>
+              Installed
+            </span>
+          )}
+          {walletAddress && (
+            <span className="badge badge-green">Connected</span>
+          )}
+        </div>
+
+        {!walletAddress ? (
+          <div>
+            <button className="btn-primary w-full" onClick={handleConnectWallet}>
+              Connect Freighter
+            </button>
+            {walletInstalled === false && (
+              <p className="text-xs mt-2" style={{ color: '#f87171' }}>
+                Freighter not found —{' '}
+                <a href="https://freighter.app" target="_blank" rel="noopener noreferrer" className="underline">
+                  install the extension
+                </a>{' '}
+                then reload.
+              </p>
+            )}
+            {walletError && (
+              <p className="text-xs mt-2" style={{ color: '#f87171' }}>{walletError}</p>
+            )}
+          </div>
+        ) : (
+          <div className="mono text-xs p-3 rounded-lg" style={{ background: '#0a1628', wordBreak: 'break-all' }}>
+            {walletAddress}
+          </div>
+        )}
       </div>
 
       {/* Stats cards */}
@@ -176,7 +258,7 @@ export default function AdminPage() {
       ) : null}
 
       {/* Fund escrow */}
-      <div className="card">
+      <div className="card mb-6">
         <div className="font-semibold mb-1">Fund Escrow</div>
         <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
           Deposit XLM from your Freighter wallet into the contract escrow.
@@ -192,68 +274,66 @@ export default function AdminPage() {
               min="1"
               value={fundAmount}
               onChange={(e) => setFundAmount(e.target.value)}
-              disabled={fundStep !== 'idle' && fundStep !== 'done' && fundStep !== 'error'}
+              disabled={busy}
             />
           </div>
           <button
             className="btn-primary"
             onClick={handleFund}
-            disabled={fundStep !== 'idle' && fundStep !== 'done' && fundStep !== 'error'}
+            disabled={busy || !walletAddress}
           >
-            {fundStep === 'idle' || fundStep === 'done' || fundStep === 'error'
-              ? 'Fund Escrow'
-              : '...'}
+            {!walletAddress
+              ? 'Connect wallet'
+              : fundStep === 'building'
+              ? 'Build transaction…'
+              : fundStep === 'signing'
+              ? 'Waiting for signature…'
+              : fundStep === 'submitting'
+              ? 'Submitting to testnet…'
+              : fundStep === 'done'
+              ? 'Fund again'
+              : 'Fund Escrow'}
           </button>
         </div>
 
-        {fundStep !== 'idle' && (
-          <div className="text-sm space-y-1 mono">
-            {(['connecting', 'building', 'signing', 'submitting', 'done'] as FundStep[]).map(
-              (s, i, arr) => {
-                const currentIdx = arr.indexOf(fundStep);
-                const cls =
-                  i < currentIdx || fundStep === 'done'
-                    ? 'step-done'
-                    : i === currentIdx
-                    ? 'step-active'
-                    : 'step-wait';
-                const icons = ['🔑', '🔨', '✍️', '🚀', '✅'];
-                const labels = [
-                  'Connect wallet',
-                  'Build transaction',
-                  'Sign with Freighter',
-                  'Submit to Stellar',
-                  'Confirmed',
-                ];
-                return (
-                  <div key={s} className={cls}>
-                    {icons[i]} {labels[i]}
-                    {fundStep === 'done' && s === 'done' && fundTxHash && (
-                      <a
-                        href={`${EXPLORER_BASE}/tx/${fundTxHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline ml-2"
-                      >
-                        {shortHex(fundTxHash)}
-                      </a>
-                    )}
-                  </div>
-                );
-              },
-            )}
+        {fundStep === 'done' && fundTxHash && (
+          <div
+            className="text-sm p-3 rounded-lg mb-3"
+            style={{ background: '#0a1f14', border: '1px solid var(--green-dim)', color: 'var(--green)' }}
+          >
+            Funding confirmed ✓{' '}
+            <a
+              href={`${EXPLORER_BASE}/tx/${fundTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline ml-1"
+            >
+              {shortHex(fundTxHash)} ↗
+            </a>
           </div>
         )}
 
         {fundError && (
           <div
-            className="text-sm mt-3 p-3 rounded-lg"
+            className="text-sm p-3 rounded-lg"
             style={{ background: '#1a0505', color: '#f87171', border: '1px solid #7f1d1d' }}
           >
             {fundError}
           </div>
         )}
       </div>
+
+      {/* Activity log */}
+      {activityLog.length > 0 && (
+        <div className="card">
+          <div className="font-semibold mb-3 text-sm">Activity Log</div>
+          <div className="space-y-1 mono text-xs" style={{ color: 'var(--muted)' }}>
+            {activityLog.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
