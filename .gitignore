@@ -8,5 +8,6 @@ dist/
 proof.json
 witness/
 proofs/
+campaign.json
 __pycache__/
 .DS_Store

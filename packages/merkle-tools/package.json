@@ -1,0 +1,20 @@
+{
+  "name": "merkle-tools",
+  "version": "1.0.0",
+  "description": "Off-chain Merkle tree builder for ZK AidShield",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --import tsx/esm src/merkle.test.ts",
+    "generate": "node --import tsx/esm src/generate-campaign.ts",
+    "seed": "node --import tsx/esm src/generate-campaign.ts --seed"
+  },
+  "dependencies": {
+    "@aztec/bb.js": "0.67.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  }
+}
