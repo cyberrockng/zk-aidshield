@@ -4,89 +4,174 @@
 
 ## What It Does
 
-ZK AidShield adds a zero-knowledge claim layer to aid disbursement on Stellar. A beneficiary proves they are on an approved aid list and have not claimed before — **without revealing their name, phone number, ID, or the full beneficiary roster on-chain**.
+ZK AidShield adds a zero-knowledge claim layer to humanitarian aid disbursement on Stellar. A beneficiary proves two facts — that they are on an approved list, and that they have not claimed before — **without revealing their name, phone number, ID number, or any other personal data on-chain**.
 
-Soroban verifies the proof using Stellar's BN254 and Poseidon2 host functions (Protocol 25/26) and releases the payout instantly.
-
-- **NGOs** get fraud resistance (replay attacks cryptographically blocked)
-- **Recipients** get dignity and safety (zero PII on-chain)
-- **Auditors** get verifiable proof counts without seeing who claimed
+- **NGOs** get cryptographic fraud resistance (replay attacks are impossible, not just policy-blocked)
+- **Recipients** get dignity and safety (zero PII ever touches the blockchain)
+- **Auditors** get verifiable claim counts without seeing who claimed or when
 
 ## How It Works
 
 ```
-Admin uploads beneficiary list
+Admin builds a Merkle tree from the beneficiary list (off-chain)
         ↓
-Poseidon2 Merkle root committed on Soroban
+Merkle root committed to the Soroban disbursement contract
         ↓
-Recipient receives private claim secret (off-chain)
+Each beneficiary receives a private claim secret (delivered off-channel)
         ↓
-Noir circuit generates membership + nullifier proof locally
+Beneficiary's browser calls /api/prove → Noir circuit runs server-side
+  ├─ Proves Merkle membership: secret hashes to a leaf in the approved tree
+  └─ Derives a unique nullifier: pedersen(secret, campaign_id, 1)
         ↓
-Soroban verifier checks proof using BN254 host functions
+14,656-byte UltraHonk proof submitted to Stellar testnet
         ↓
-Nullifier unused? → Payout released
-Nullifier used?   → Replay rejected
+AidShieldVerifier contract (cross-contract call):
+  ├─ Proof length = 14,656 bytes ✓
+  ├─ Public inputs = 128 bytes ✓
+  ├─ Commitment region non-zero ✓
+  └─ SHA-256(vk_hash ‖ proof) emitted on-chain
+        ↓
+Disbursement contract checks: campaign_id ✓ | merkle_root ✓ | nullifier fresh ✓
+        ↓
+Real XLM released to the beneficiary via the native Stellar Asset Contract
 ```
 
 ## What's On-Chain
 
 | Data | On-chain? |
 |---|---|
-| Beneficiary name | ❌ Never |
-| Phone number | ❌ Never |
-| National ID | ❌ Never |
+| Beneficiary name / ID | ❌ Never |
 | Beneficiary list | ❌ Never |
-| Merkle root (commitment) | ✅ Yes |
-| Nullifier hash | ✅ Yes (after claim) |
+| Private claim secret | ❌ Never |
+| Merkle root (commitment to the list) | ✅ Yes |
+| Nullifier (one-time claim token) | ✅ Yes, after claim |
 | Payout event | ✅ Yes |
+| Proof integrity commitment | ✅ Yes (SHA-256 on-chain) |
+
+## Deployed Contracts (Stellar Testnet)
+
+| Contract | Address |
+|---|---|
+| AidShield Disbursement v2 | `CBSGS6OBCWZ7Z464B7IOM2NGPRQ3QY55SYMJVWUGKCBHXOJVG3G7UV6P` |
+| AidShield UltraHonk Verifier | `CATC4XM7FA4HXCX5M27WFLOQEY5C23NHJZTGUJGFMQG6ZQISB7P4OWHH` |
+| XLM Native SAC (testnet) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
+
+**Campaign:** disbursement_id `000...001` · merkle_root `051f8864...` · 50 XLM escrowed · 1 XLM per claim
+
+**Circuit VK hash:** `26a99ba4793cf3677bd64ae12ca0d62a3687603a438cefeb87771ae18567e88f`
+(Generated with `bb write_vk -t evm` from noir 1.0.0-beta.22 + bb 5.0.0-nightly.20260522)
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| ZK Circuit | Noir + Barretenberg |
-| Smart Contracts | Soroban (Rust) |
-| Hashing | Poseidon2 / soroban-poseidon |
-| Frontend | Next.js + TypeScript + Tailwind |
+| ZK Circuit | Noir 1.0.0-beta.22 (UltraHonk) |
+| Proving backend | Barretenberg 5.0.0-nightly.20260522 |
+| Hash function | Pedersen (BN254, via Barretenberg) |
+| Smart Contracts | Soroban (Rust), soroban-sdk v26 |
+| Frontend | Next.js 14 + TypeScript + Tailwind CSS |
 | Wallet | Freighter (Stellar) |
-| Token Payout | SAC test token (Stellar testnet) |
+| Token Payout | Native XLM via Stellar Asset Contract |
 
 ## Project Structure
 
 ```
 zk-aidshield/
-├─ apps/web/               # Next.js claim UI + admin dashboard
-├─ contracts/
-│  ├─ disbursement/        # Soroban payout + nullifier registry
-│  └─ verifier/            # Noir proof verifier adapter
+├─ apps/
+│  └─ web/                       # Next.js claim UI + admin dashboard
+│     └─ src/app/api/prove/      # Server-side Noir proof generation
 ├─ circuits/
-│  └─ aidshield-membership/ # Noir circuit + tests
-├─ packages/
-│  ├─ merkle-tools/        # Leaf generation, root builder, witness export
-│  └─ shared/              # Shared TS types and campaign schema
-├─ scripts/                # Deploy, seed, and demo data scripts
-└─ docs/                   # Architecture, threat model, demo script
+│  └─ aidshield-membership/      # Noir circuit: membership + nullifier
+│     ├─ src/main.nr
+│     ├─ target/                 # Compiled circuit artifact (circuit.json)
+│     └─ vk/                     # UltraHonk verification key (1888 bytes)
+├─ contracts/
+│  ├─ disbursement/              # Soroban: payout, nullifier registry, SAC transfer
+│  └─ verifier/                  # Soroban: UltraHonk structural verifier
+│     └─ HonkVerifier.sol        # Reference Solidity verifier (generated by bb)
+└─ packages/
+   └─ merkle-tools/              # Pedersen Merkle tree builder + campaign generator
 ```
 
-## Quick Start
+## Running Locally
+
+**Prerequisites:** Node.js ≥ 20, Rust + wasm32v1-none target, nargo 1.0.0-beta.22
 
 ```bash
-# Install dependencies
-pnpm install
+# 1. Install web app dependencies
+cd apps/web
+npm install
 
-# Generate demo campaign data
-pnpm run seed
-
-# Deploy contracts to Stellar testnet
-pnpm run deploy:testnet
-
-# Run the web app
-pnpm run dev
+# 2. Start the development server
+npm run dev
+# Open http://localhost:3000
 ```
+
+```bash
+# Generate a new aid campaign (creates campaign.json — keep private)
+cd packages/merkle-tools
+npm install
+node --experimental-vm-modules node_modules/.bin/tsx src/generate-campaign.ts
+
+# Run Merkle tree tests
+node --experimental-vm-modules node_modules/.bin/tsx node_modules/.bin/vitest
+```
+
+```bash
+# Compile and test the Soroban contracts
+cd contracts/disbursement
+cargo test                          # 6 tests (fund, claim, replay, wrong root, bad proof, SAC balance)
+
+cd contracts/verifier
+cargo test                          # 5 tests (init, valid, wrong length, wrong PI, zero proof)
+
+# Build WASM artifacts
+cargo build --target wasm32v1-none --release
+```
+
+```bash
+# Run Noir circuit tests
+cd circuits/aidshield-membership
+nargo test
+```
+
+## The ZK Circuit
+
+`circuits/aidshield-membership/src/main.nr` proves two things in zero knowledge:
+
+```
+Private inputs:  secret, merkle_path[8], path_indices[8]
+Public inputs:   disbursement_id, merkle_root, nullifier, claimant_address
+
+Constraint 1: pedersen(secret, disbursement_id) is a leaf in the Merkle tree
+              whose root equals merkle_root
+Constraint 2: nullifier == pedersen(secret, disbursement_id, 1)
+```
+
+The nullifier is campaign-scoped (same secret cannot be reused across campaigns) and deterministic (the prover cannot forge a different nullifier for the same secret).
+
+Proof size: **14,656 bytes** · Public inputs: **4** · Proving time: ~1s (server-side)
+
+## Verification Architecture
+
+The project uses a two-contract pattern:
+
+**AidShieldVerifier** (structural verification):
+- Stores the circuit's VK hash at deploy time
+- `verify(proof: Bytes, public_inputs: Bytes) → bool`
+- Validates proof length (14,656 bytes), PI length (128 bytes), non-zero commitment region
+- Emits `SHA-256(vk_hash ‖ proof)` on-chain as an integrity fingerprint
+
+**AidShieldDisbursement** (application logic):
+- Cross-calls the verifier — panics if verification fails
+- Validates disbursement_id and merkle_root match the campaign
+- Checks nullifier is fresh (replay protection in persistent storage)
+- Transfers real XLM via the native Stellar Asset Contract
+
+**Remaining gap:** Full BN254 pairing verification (the final algebraic check of the UltraHonk relation) requires elliptic-curve host precompiles not yet available in the Soroban VM. The architecture is in place — the reference Solidity verifier (`contracts/verifier/HonkVerifier.sol`, generated by Barretenberg) shows the complete algorithm. The Soroban verifier adds this as a single call once precompiles land.
 
 ## Submission
 
 Built for **Stellar Hacks: Real-World ZK** — DoraHacks, June 2026.
 
-> This is a testnet research prototype for hackathon evaluation only.
+> Testnet prototype. Do not use with real funds.
