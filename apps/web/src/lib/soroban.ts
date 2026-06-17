@@ -145,7 +145,7 @@ function buildPublicInputsScVal(
 export async function buildClaimTransaction(
   claimantAddress: string,
   nullifierHex: string,
-  proofHex: string,  // real 14,656-byte UltraHonk proof from /api/prove
+  proofHex: string,  // 384-byte Groth16 proof (pi_a || pi_b || pi_c, BLS12-381 uncompressed affine)
 ): Promise<string> {
   const server = getServer();
   const contract = getContract();

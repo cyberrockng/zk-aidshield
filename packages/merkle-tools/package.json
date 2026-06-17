@@ -1,7 +1,7 @@
 {
   "name": "merkle-tools",
   "version": "1.0.0",
-  "description": "Off-chain Merkle tree builder for ZK AidShield",
+  "description": "Off-chain Merkle tree builder for ZK AidShield (Poseidon BLS12-381)",
   "type": "module",
   "scripts": {
     "build": "tsc",
@@ -10,10 +10,7 @@
     "seed": "node --import tsx/esm src/generate-campaign.ts --seed"
   },
   "dependencies": {
-    "@aztec/bb.js": "^5.0.0-nightly.20260522",
-    "@noir-lang/acvm_js": "^1.0.0-beta.22",
-    "@noir-lang/noir_js": "^1.0.0-beta.22",
-    "@noir-lang/noirc_abi": "^1.0.0-beta.22"
+    "circomlibjs": "^0.1.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

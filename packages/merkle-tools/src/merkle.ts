@@ -1,10 +1,9 @@
 /**
  * Merkle tree builder — depth 8, 256 leaf slots.
- * Uses the same Pedersen hash as the Noir circuit so the root
- * computed here matches what the circuit verifies.
+ * Uses Poseidon BLS12-381 to match the circom circuit compiled with --curve BLS12381.
  */
 
-import { pedersenHash } from "./hash.js";
+import { poseidonHash } from "./hash.js";
 
 export const TREE_DEPTH = 8;
 export const TREE_SIZE = 2 ** TREE_DEPTH; // 256 slots
@@ -44,7 +43,7 @@ export async function buildMerkleTree(leaves: bigint[]): Promise<MerkleTree> {
   for (let level = 0; level < TREE_DEPTH; level++) {
     const next: bigint[] = [];
     for (let i = 0; i < current.length; i += 2) {
-      const parent = await pedersenHash([current[i], current[i + 1]]);
+      const parent = await poseidonHash([current[i], current[i + 1]]);
       next.push(parent);
     }
     levels.push(next);

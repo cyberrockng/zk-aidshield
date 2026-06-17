@@ -119,7 +119,7 @@ export default function ClaimPage() {
 
       // Step: prove — all computation runs in this browser; secret never leaves device
       setStep('prove');
-      setStatusMsg('Initialising Barretenberg WASM…');
+      setStatusMsg('Computing nullifier…');
       const claimantField = stellarAddressToField(walletAddress);
       const { proof: proofHexFull, nullifier: derivedNullifier, proofSize } =
         await generateProof(
@@ -134,7 +134,7 @@ export default function ClaimPage() {
           setStatusMsg,
         );
       setProofHex(proofHexFull);
-      setStatusMsg(`UltraHonk proof generated ✓ (${proofSize} bytes, ${(proofSize / 1024).toFixed(1)} KB)`);
+      setStatusMsg(`Groth16 proof generated ✓ (${proofSize} bytes)`);
 
       // Check nullifier freshness now that we have it
       const used = await checkNullifier(derivedNullifier);

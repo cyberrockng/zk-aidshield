@@ -1,6 +1,6 @@
 // Disbursement contract v5: addr-binding with prod/test XDR offset fix (deployed 2026-06-16)
 export const CONTRACT_ID = 'CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2';
-// UltraHonk structural verifier v2: commitment check bytes 256-320 for bb.js 5.x (deployed 2026-06-16)
+// Groth16 BLS12-381 verifier — update this after deploying contracts/verifier-groth16
 export const VERIFIER_CONTRACT_ID = 'CBVQKXMW6LFY3AKGWZIKIBV6SCSVWUNAF7EMLZ46KW4HX4RS3ZJCUUGV';
 // XLM native SAC (Stellar Asset Contract) on testnet
 export const XLM_SAC_ADDRESS = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
@@ -28,8 +28,8 @@ export function shortHex(hex: string): string {
   return `${hex.slice(0, 6)}…${hex.slice(-6)}`;
 }
 
-// Encodes a Stellar G... public key as a 31-byte hex field element (safe for BN254).
-// We use bytes 1-31 (248 bits) so the value always fits inside the BN254 field modulus.
+// Encodes a Stellar G... public key as a 31-byte hex field element (248 bits).
+// 31 bytes always fits below both BN254 and BLS12-381 field moduli.
 export function stellarAddressToField(address: string): string {
   const { StrKey } = require('@stellar/stellar-sdk') as typeof import('@stellar/stellar-sdk');
   const bytes = StrKey.decodeEd25519PublicKey(address) as Buffer;

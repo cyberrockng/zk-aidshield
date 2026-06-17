@@ -83,7 +83,7 @@ async function main() {
   console.log(`   Payout per claim: ${payoutStroops / 1_000_000} XLM\n`);
 
   // Step 1: Generate secrets and compute leaves
-  console.log("🔑 Generating secrets and computing Pedersen leaves...");
+  console.log("🔑 Generating secrets and computing Poseidon (BLS12-381) leaves...");
   const claims: BeneficiaryClaim[] = [];
   const leaves: bigint[] = [];
 
