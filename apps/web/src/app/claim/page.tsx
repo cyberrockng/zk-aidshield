@@ -10,23 +10,7 @@ import {
 import { isFreighterInstalled, connectWallet, signTx } from '@/lib/freighter';
 import { EXPLORER_BASE, DISBURSEMENT_ID, MERKLE_ROOT, shortHex, stellarAddressToField } from '@/lib/constants';
 import { generateProof } from '@/lib/prover';
-
-const DEMO_CLAIM = JSON.stringify({
-  index: 0,
-  secret: '00132a8a297936680482cfc611605283081a0af5104b25ca73ddcbdb540150d3',
-  leaf: '56b649add441aabff80f2c1d96be229fb03dbed0304f9d70c48842ad4e61d4e7',
-  merkle_path: [
-    '0000000000000000000000000000000000000000000000000000000000000000',
-    '6c2bac92f1ffd53ea9c3166480d221f6d8b716ce67ba22b751781cbd305bfc7b',
-    '6c5c43bd280a41f3cf052601f5f04681f4a46f494248244fb9f02ba0fc13e992',
-    '23b5902987a2e16f5f65cfd3aca7ab9fd30a96f0201108eee6a840a7a0c6b1dc',
-    '0fe5437fa39d3f737bd90712346070b2b2f6efd41048089c757ca5bce82cdd0e',
-    '68d1bdb26377ba3e11cb6bbb313eb167366ce22f9c4a8a16a92849c51da4d0b3',
-    '4b793aba5e3621207b614ff7185da64d7558ce4d5406eae21d6aa8ae5035c10a',
-    '0e5da84a34c506465ddd6842d1a4de891224981c142bac69cdb6c8f3fddaae8f',
-  ],
-  path_indices: [false, false, false, false, false, false, false, false],
-}, null, 2);
+import { verifyCredential, type BeneficiaryCredential } from '@/lib/credential';
 
 type Step = 'wallet' | 'paste' | 'validate' | 'prove' | 'sign' | 'submit' | 'done' | 'error';
 
@@ -34,9 +18,9 @@ const FLOW_STEPS: Step[] = ['wallet', 'paste', 'validate', 'prove', 'sign', 'sub
 
 const STEP_LABELS: Record<Step, string> = {
   wallet:   'Connect',
-  paste:    'Load claim',
+  paste:    'Load cred.',
   validate: 'Validate',
-  prove:    'Generate proof',
+  prove:    'Prove',
   sign:     'Sign',
   submit:   'Submit',
   done:     'Done',
@@ -45,7 +29,7 @@ const STEP_LABELS: Record<Step, string> = {
 
 // ── Proof progress bar ───────────────────────────────────────────────────────
 // snarkjs gives no intermediate callbacks during fullProve.
-// We fake progress with an asymptotic curve: 50% at 10 s, 80% at 20 s, caps 95%.
+// Asymptotic curve: 50% at 10 s, 80% at 20 s, caps at 95%.
 
 function ProofProgressBar({ statusMsg, startedAt }: { statusMsg: string; startedAt: number }) {
   const [ms, setMs] = useState(0);
@@ -86,7 +70,7 @@ function ProofProgressBar({ statusMsg, startedAt }: { statusMsg: string; started
   );
 }
 
-// ── Proof visual (spinning rings while computing) ────────────────────────────
+// ── Proof visual ─────────────────────────────────────────────────────────────
 
 function ProofComputing() {
   return (
@@ -95,47 +79,15 @@ function ProofComputing() {
       style={{ background: '#0d1117', border: '1px solid var(--border-dim)' }}
     >
       <div style={{ position: 'relative', width: 72, height: 72, marginBottom: 16 }}>
-        {/* Outer ring */}
-        <svg
-          style={{ position: 'absolute', inset: 0, animation: 'spin-ring 2.5s linear infinite' }}
-          viewBox="0 0 72 72"
-        >
+        <svg style={{ position: 'absolute', inset: 0, animation: 'spin-ring 2.5s linear infinite' }} viewBox="0 0 72 72">
           <circle cx="36" cy="36" r="32" fill="none" stroke="var(--border-dim)" strokeWidth="3" />
-          <circle
-            cx="36" cy="36" r="32"
-            fill="none"
-            stroke="var(--amber)"
-            strokeWidth="3"
-            strokeDasharray="30 170"
-            strokeLinecap="round"
-          />
+          <circle cx="36" cy="36" r="32" fill="none" stroke="var(--amber)" strokeWidth="3" strokeDasharray="30 170" strokeLinecap="round" />
         </svg>
-        {/* Inner ring */}
-        <svg
-          style={{ position: 'absolute', inset: 8, animation: 'counter-ring 1.8s linear infinite' }}
-          viewBox="0 0 56 56"
-        >
+        <svg style={{ position: 'absolute', inset: 8, animation: 'counter-ring 1.8s linear infinite' }} viewBox="0 0 56 56">
           <circle cx="28" cy="28" r="22" fill="none" stroke="var(--border-dim)" strokeWidth="2" />
-          <circle
-            cx="28" cy="28" r="22"
-            fill="none"
-            stroke="rgba(63,185,80,0.6)"
-            strokeWidth="2"
-            strokeDasharray="20 118"
-            strokeLinecap="round"
-          />
+          <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(63,185,80,0.6)" strokeWidth="2" strokeDasharray="20 118" strokeLinecap="round" />
         </svg>
-        {/* Center icon */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.25rem',
-          }}
-        >
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
           ⚡
         </div>
       </div>
@@ -154,8 +106,9 @@ function ProofComputing() {
 export default function ClaimPage() {
   const [walletInstalled, setWalletInstalled] = useState<boolean | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [claimJson, setClaimJson] = useState('');
-  const [parsedClaim, setParsedClaim] = useState<ClaimEntry | null>(null);
+
+  const [credJson, setCredJson] = useState('');
+  const [parsedCred, setParsedCred] = useState<BeneficiaryCredential | null>(null);
   const [parseError, setParseError] = useState('');
 
   const [step, setStep] = useState<Step>('wallet');
@@ -180,36 +133,58 @@ export default function ClaimPage() {
     }
   }, []);
 
-  function handleParse() {
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setCredJson((ev.target?.result as string) ?? '');
+      setParsedCred(null);
+      setParseError('');
+    };
+    reader.readAsText(file);
+  }
+
+  async function handleParse() {
     setParseError('');
-    setParsedClaim(null);
+    setParsedCred(null);
+    if (!walletAddress) return;
+
+    let obj: BeneficiaryCredential;
     try {
-      const obj = JSON.parse(claimJson) as ClaimEntry;
-      if (
-        typeof obj.secret !== 'string' ||
-        !Array.isArray(obj.merkle_path) ||
-        !Array.isArray(obj.path_indices)
-      ) {
-        throw new Error('Missing required fields: secret, merkle_path, path_indices');
-      }
-      if (obj.merkle_path.length !== 8 || obj.path_indices.length !== 8) {
-        throw new Error('merkle_path and path_indices must each have 8 elements');
-      }
-      setParsedClaim(obj);
+      obj = JSON.parse(credJson) as BeneficiaryCredential;
     } catch (e) {
-      setParseError(String(e));
+      setParseError(`JSON parse error: ${String(e)}`);
+      return;
     }
+
+    // Validate credential signature and binding
+    const err = await verifyCredential(obj, walletAddress);
+    if (err) {
+      setParseError(err);
+      return;
+    }
+
+    setParsedCred(obj);
   }
 
   async function handleClaim() {
-    if (!parsedClaim || !walletAddress) return;
+    if (!parsedCred || !walletAddress) return;
     setError('');
     setProofHex('');
     setTxHash('');
 
+    const claimEntry: ClaimEntry = {
+      index: parsedCred.leaf_index,
+      secret: parsedCred.secret,
+      leaf: '', // not needed by prover
+      merkle_path: parsedCred.merkle_path,
+      path_indices: parsedCred.path_indices,
+    };
+
     try {
       setStep('validate');
-      setStatusMsg('Checking disbursement ID and Merkle root…');
+      setStatusMsg('Verifying disbursement ID and Merkle root…');
       await delay(400);
 
       setStep('prove');
@@ -219,9 +194,9 @@ export default function ClaimPage() {
       const { proof: proofHexFull, nullifier: derivedNullifier, proofSize } =
         await generateProof(
           {
-            secret: parsedClaim.secret,
-            merkle_path: parsedClaim.merkle_path,
-            path_indices: parsedClaim.path_indices,
+            secret: claimEntry.secret,
+            merkle_path: claimEntry.merkle_path,
+            path_indices: claimEntry.path_indices,
             disbursement_id: DISBURSEMENT_ID,
             merkle_root: MERKLE_ROOT,
             claimant_address: claimantField,
@@ -258,56 +233,41 @@ export default function ClaimPage() {
   return (
     <div className="max-w-2xl mx-auto">
 
-      {/* ── Page header ── */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1.5" style={{ letterSpacing: '-0.02em' }}>
           Claim Your Aid Payment
         </h1>
         <p className="text-sm" style={{ color: 'var(--muted)' }}>
-          Prove Merkle membership with a Groth16 BLS12-381 proof — no identity revealed, no replay possible.
+          Present your operator-issued credential. A Groth16 BLS12-381 proof is generated in your
+          browser — no identity revealed, no replay possible.
         </p>
       </div>
 
-      {/* ── Step progress tracker ── */}
-      <div
-        className="mb-6 px-5 py-4 rounded-xl"
-        style={{ background: 'var(--surface)', border: '1px solid var(--border-dim)' }}
-      >
+      {/* ── Step tracker ── */}
+      <div className="mb-6 px-5 py-4 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border-dim)' }}>
         <div className="flex items-center">
           {FLOW_STEPS.map((s, i) => {
             const done = i < currentStepIdx || step === 'done';
             const active = i === currentStepIdx && step !== 'done' && step !== 'error';
             return (
               <div key={s} className="flex items-center flex-1 last:flex-none">
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    border: `2px solid ${done ? 'var(--green)' : active ? 'var(--amber)' : 'var(--border)'}`,
-                    background: done ? 'var(--green)' : active ? 'rgba(227,179,65,0.12)' : 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    color: done ? '#04080e' : active ? 'var(--amber)' : 'var(--muted)',
-                    flexShrink: 0,
-                    transition: 'all 0.2s',
-                  }}
-                >
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%',
+                  border: `2px solid ${done ? 'var(--green)' : active ? 'var(--amber)' : 'var(--border)'}`,
+                  background: done ? 'var(--green)' : active ? 'rgba(227,179,65,0.12)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.72rem', fontWeight: 700,
+                  color: done ? '#04080e' : active ? 'var(--amber)' : 'var(--muted)',
+                  flexShrink: 0, transition: 'all 0.2s',
+                }}>
                   {done ? '✓' : i + 1}
                 </div>
                 {i < FLOW_STEPS.length - 1 && (
-                  <div
-                    style={{
-                      flex: 1,
-                      height: 2,
-                      background: done ? 'var(--green-dim)' : 'var(--border-dim)',
-                      margin: '0 3px',
-                      transition: 'background 0.3s',
-                    }}
-                  />
+                  <div style={{
+                    flex: 1, height: 2,
+                    background: done ? 'var(--green-dim)' : 'var(--border-dim)',
+                    margin: '0 3px', transition: 'background 0.3s',
+                  }} />
                 )}
               </div>
             );
@@ -318,16 +278,11 @@ export default function ClaimPage() {
             const done = i < currentStepIdx || step === 'done';
             const active = i === currentStepIdx && step !== 'done' && step !== 'error';
             return (
-              <span
-                key={s}
-                className="flex-1 text-center truncate"
-                style={{
-                  fontSize: '0.65rem',
-                  fontWeight: active ? 700 : 400,
-                  color: done ? 'var(--green)' : active ? 'var(--amber)' : 'var(--muted)',
-                  transition: 'color 0.2s',
-                }}
-              >
+              <span key={s} className="flex-1 text-center truncate" style={{
+                fontSize: '0.62rem', fontWeight: active ? 700 : 400,
+                color: done ? 'var(--green)' : active ? 'var(--amber)' : 'var(--muted)',
+                transition: 'color 0.2s',
+              }}>
                 {STEP_LABELS[s]}
               </span>
             );
@@ -336,18 +291,13 @@ export default function ClaimPage() {
       </div>
 
       {/* ── Main panel ── */}
-      <div
-        className="rounded-xl p-6 space-y-6"
-        style={{ background: 'var(--surface)', border: '1px solid var(--border-dim)' }}
-      >
+      <div className="rounded-xl p-6 space-y-6" style={{ background: 'var(--surface)', border: '1px solid var(--border-dim)' }}>
 
         {/* Wallet */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <span className="font-semibold text-sm">Freighter Wallet</span>
-            {walletAddress && (
-              <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>Connected</span>
-            )}
+            {walletAddress && <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>Connected</span>}
           </div>
           {!walletAddress ? (
             <div className="space-y-3">
@@ -360,67 +310,65 @@ export default function ClaimPage() {
                   <a href="https://freighter.app" target="_blank" rel="noopener noreferrer" className="underline">
                     install the extension
                   </a>{' '}
-                  and reload this page.
+                  and reload.
                 </p>
               )}
             </div>
           ) : (
-            <div
-              className="mono text-xs px-3 py-2.5 rounded-lg"
-              style={{ background: '#0d1117', border: '1px solid var(--border-dim)', wordBreak: 'break-all', color: 'var(--muted-2)' }}
-            >
+            <div className="mono text-xs px-3 py-2.5 rounded-lg" style={{ background: '#0d1117', border: '1px solid var(--border-dim)', wordBreak: 'break-all', color: 'var(--muted-2)' }}>
               {walletAddress}
             </div>
           )}
         </div>
 
-        {/* Claim data */}
+        {/* Credential */}
         {walletAddress && (
           <div style={{ borderTop: '1px solid var(--border-dim)', paddingTop: '1.5rem' }}>
             <div className="flex items-center justify-between mb-3">
-              <span className="font-semibold text-sm">Claim Data</span>
-              <button
-                className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
-                style={{
-                  background: 'var(--surface-2)',
-                  color: 'var(--blue)',
-                  border: '1px solid var(--border)',
-                }}
-                onClick={() => {
-                  setClaimJson(DEMO_CLAIM);
-                  setParsedClaim(null);
-                  setParseError('');
-                }}
-                disabled={step !== 'paste' && step !== 'error'}
-              >
-                Load demo claim
-              </button>
+              <span className="font-semibold text-sm">Beneficiary Credential</span>
             </div>
-            <p className="text-xs mb-3" style={{ color: 'var(--muted)' }}>
-              Paste the claim entry received from the aid coordinator, or use the demo claim to test.
-            </p>
+
+            <div
+              className="text-xs px-4 py-3 rounded-lg mb-3 leading-relaxed"
+              style={{ background: 'rgba(63,185,80,0.04)', border: '1px solid var(--border-dim)', color: 'var(--muted)' }}
+            >
+              Your credential was issued by the aid operator. It is signed and bound to this wallet
+              address — it cannot be used by anyone else, and the secret inside never leaves your device.
+            </div>
+
+            {/* File upload */}
+            <label
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-lg cursor-pointer mb-3 text-sm font-medium transition-colors"
+              style={{ background: 'var(--surface-2)', border: '1px dashed var(--border)', color: 'var(--muted-2)' }}
+            >
+              <input type="file" accept=".json" className="sr-only" onChange={handleFileUpload} disabled={step !== 'paste' && step !== 'error'} />
+              Upload credential file (.json)
+            </label>
+
+            <div className="text-xs text-center mb-3" style={{ color: 'var(--muted)' }}>or paste JSON directly</div>
+
             <textarea
-              rows={6}
+              rows={5}
               className="mono text-xs"
-              placeholder='{ "index": 0, "secret": "...", "merkle_path": [...], "path_indices": [...] }'
-              value={claimJson}
-              onChange={(e) => {
-                setClaimJson(e.target.value);
-                setParsedClaim(null);
-                setParseError('');
-              }}
+              placeholder='{ "version": "1", "claimant_address": "G…", "secret": "…", … }'
+              value={credJson}
+              onChange={(e) => { setCredJson(e.target.value); setParsedCred(null); setParseError(''); }}
               disabled={step !== 'paste' && step !== 'error'}
             />
+
             {parseError && (
-              <div className="text-xs mt-2" style={{ color: 'var(--red)' }}>{parseError}</div>
+              <div className="text-xs mt-2 p-3 rounded-lg" style={{ background: '#1a0505', color: '#f87171', border: '1px solid rgba(248,81,73,0.25)' }}>
+                {parseError}
+              </div>
             )}
-            {!parsedClaim ? (
+
+            {!parsedCred ? (
               <button
                 className="btn-outline text-sm mt-3 w-full"
                 onClick={handleParse}
-                disabled={!claimJson.trim()}
+                disabled={!credJson.trim()}
               >
-                Parse Claim Data
+                Verify &amp; Load Credential
               </button>
             ) : (
               <div
@@ -428,24 +376,27 @@ export default function ClaimPage() {
                 style={{ background: 'var(--green-subtle)', border: '1px solid rgba(63,185,80,0.2)' }}
               >
                 <div className="font-bold mb-2" style={{ color: 'var(--green-bright)' }}>
-                  ✓ Claim parsed — index #{parsedClaim.index}
+                  ✓ Credential verified — slot #{parsedCred.slot_index}
+                </div>
+                <div style={{ color: 'var(--muted)' }}>
+                  issuer: <span style={{ color: 'var(--muted-2)' }}>{shortHex(parsedCred.issuer_public_key)}</span>
+                </div>
+                <div style={{ color: 'var(--muted)' }}>
+                  bound to: <span style={{ color: 'var(--muted-2)' }}>{parsedCred.claimant_address.slice(0, 10)}…</span>
+                </div>
+                <div style={{ color: 'var(--muted)' }}>
+                  expires: <span style={{ color: 'var(--muted-2)' }}>{new Date(parsedCred.expires_at * 1000).toLocaleDateString()}</span>
                 </div>
                 <div style={{ color: 'var(--muted)' }}>
                   nullifier: <span style={{ fontStyle: 'italic' }}>computed from wallet at claim time</span>
-                </div>
-                <div style={{ color: 'var(--muted)' }}>
-                  disbursement_id: <span style={{ color: 'var(--muted-2)' }}>{shortHex(DISBURSEMENT_ID)}</span>
-                </div>
-                <div style={{ color: 'var(--muted)' }}>
-                  merkle_root: <span style={{ color: 'var(--muted-2)' }}>{shortHex(MERKLE_ROOT)}</span>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* CTA button */}
-        {parsedClaim && step === 'paste' && (
+        {/* CTA */}
+        {parsedCred && step === 'paste' && (
           <button
             className="btn-primary w-full text-base"
             onClick={handleClaim}
@@ -458,30 +409,18 @@ export default function ClaimPage() {
         {/* In-progress */}
         {(['validate', 'prove', 'sign', 'submit'] as Step[]).some((s) => s === step) && (
           <div style={{ borderTop: '1px solid var(--border-dim)', paddingTop: '1.5rem' }}>
-
-            {/* Proof computing visual */}
             {step === 'prove' && <ProofComputing />}
-
-            {/* Progress bar for proof */}
             {step === 'prove' && (
               <ProofProgressBar statusMsg={statusMsg} startedAt={proveStartedAt.current} />
             )}
-
-            {/* Other active steps */}
             {(['validate', 'sign', 'submit'] as Step[]).map((s) => {
               const sIdx = FLOW_STEPS.indexOf(s);
               const done = currentStepIdx > sIdx;
               const active = step === s;
               if (!done && !active) return null;
               return (
-                <div
-                  key={s}
-                  className="flex items-start gap-3 text-sm mt-3"
-                  style={{ color: done ? 'var(--green-bright)' : active ? 'var(--amber)' : 'var(--muted)' }}
-                >
-                  <span className="mt-0.5">
-                    {done ? '✓' : active ? '›' : '○'}
-                  </span>
+                <div key={s} className="flex items-start gap-3 text-sm mt-3" style={{ color: done ? 'var(--green-bright)' : active ? 'var(--amber)' : 'var(--muted)' }}>
+                  <span className="mt-0.5">{done ? '✓' : active ? '›' : '○'}</span>
                   <div>
                     <div className="font-medium">{STEP_LABELS[s]}</div>
                     {active && statusMsg && (
@@ -491,13 +430,8 @@ export default function ClaimPage() {
                 </div>
               );
             })}
-
-            {/* Proof done summary */}
             {(['sign', 'submit'] as Step[]).includes(step) && proofHex && (
-              <div
-                className="mt-3 p-3 rounded-lg mono text-xs"
-                style={{ background: 'var(--green-subtle)', border: '1px solid rgba(63,185,80,0.15)', color: 'var(--green-bright)' }}
-              >
+              <div className="mt-3 p-3 rounded-lg mono text-xs" style={{ background: 'var(--green-subtle)', border: '1px solid rgba(63,185,80,0.15)', color: 'var(--green-bright)' }}>
                 ✓ Groth16 proof (384 bytes): 0x{proofHex.slice(0, 24)}…
               </div>
             )}
@@ -508,15 +442,10 @@ export default function ClaimPage() {
         {step === 'done' && (
           <div
             className="rounded-xl text-center py-10 px-6"
-            style={{
-              background: 'linear-gradient(135deg, var(--green-subtle) 0%, #0c1726 100%)',
-              border: '1px solid rgba(63,185,80,0.25)',
-            }}
+            style={{ background: 'linear-gradient(135deg, var(--green-subtle) 0%, #0c1726 100%)', border: '1px solid rgba(63,185,80,0.25)' }}
           >
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>🎉</div>
-            <div className="font-bold text-xl mb-2" style={{ color: 'var(--green-bright)' }}>
-              Aid claimed!
-            </div>
+            <div className="font-bold text-xl mb-2" style={{ color: 'var(--green-bright)' }}>Aid claimed!</div>
             <div className="text-sm mb-1" style={{ color: 'var(--muted)' }}>
               Your XLM payment has been released from escrow.
             </div>
@@ -525,8 +454,7 @@ export default function ClaimPage() {
             </div>
             <a
               href={`${EXPLORER_BASE}/tx/${txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
+              target="_blank" rel="noopener noreferrer"
               className="badge badge-green"
               style={{ fontSize: '0.75rem', padding: '6px 14px' }}
             >
@@ -538,18 +466,12 @@ export default function ClaimPage() {
         {/* Error */}
         {step === 'error' && error && (
           <div style={{ borderTop: '1px solid var(--border-dim)', paddingTop: '1.5rem' }}>
-            <div
-              className="text-sm p-4 rounded-lg"
-              style={{ background: '#110d0d', color: 'var(--red)', border: '1px solid rgba(248,81,73,0.3)' }}
-            >
+            <div className="text-sm p-4 rounded-lg" style={{ background: '#110d0d', color: 'var(--red)', border: '1px solid rgba(248,81,73,0.3)' }}>
               {error}
             </div>
             <button
               className="btn-outline text-sm mt-3 w-full"
-              onClick={() => {
-                setStep(parsedClaim ? 'paste' : 'wallet');
-                setError('');
-              }}
+              onClick={() => { setStep(parsedCred ? 'paste' : 'wallet'); setError(''); }}
             >
               Try again
             </button>
@@ -557,15 +479,15 @@ export default function ClaimPage() {
         )}
       </div>
 
-      {/* ── Privacy note ── */}
-      <div
-        className="mt-5 px-5 py-4 rounded-xl text-sm leading-relaxed"
-        style={{ background: 'var(--surface)', border: '1px solid var(--border-dim)', color: 'var(--muted)' }}
-      >
-        <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>🔒 Your secret never leaves this device.</span>{' '}
+      {/* Privacy note */}
+      <div className="mt-5 px-5 py-4 rounded-xl text-sm leading-relaxed" style={{ background: 'var(--surface)', border: '1px solid var(--border-dim)', color: 'var(--muted)' }}>
+        <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>Your secret never leaves this device.</span>{' '}
         Groth16 proof generation runs entirely in your browser via WebAssembly. No server sees your
         claim secret or can link you to a beneficiary. The proof reveals only that you belong to the
-        approved Merkle set. Each nullifier is single-use, enforced on-chain forever.
+        approved Merkle set. Each nullifier is wallet-bound and single-use, enforced on-chain forever.{' '}
+        <a href="/audit" className="underline" style={{ color: 'var(--green)' }}>
+          Full trust model →
+        </a>
       </div>
     </div>
   );

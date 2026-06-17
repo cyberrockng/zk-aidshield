@@ -60,6 +60,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 Stats
               </Link>
               <Link
+                href="/audit"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Audit
+              </Link>
+              <Link
                 href="/admin"
                 className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
                 style={{ color: 'var(--muted)' }}

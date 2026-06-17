@@ -1,6 +1,6 @@
-# ZK AidShield — Claim Cash, Not Your Identity
+# ZK AidShield — Claim Aid, Not Your Identity
 
-> Privacy-preserving aid disbursement on Stellar. Prove eligibility. Reveal nothing.
+> Privacy-preserving humanitarian disbursement on Stellar. Prove eligibility with zero knowledge. Reveal nothing.
 
 **Stellar Hacks: Real-World ZK · DoraHacks · June 2026**
 
@@ -8,71 +8,79 @@
 
 ## The Problem
 
-Humanitarian aid systems leak data. Beneficiary names, ID numbers, and locations end up in databases that get hacked, sold, or handed to hostile actors. Recipients in conflict zones face real risk from the paper trail their aid claim creates.
+Humanitarian aid systems leak data. Names, ID numbers, and claim records end up in databases that get hacked, sold, or handed to hostile actors. In conflict zones, a paper trail can be lethal.
 
-ZK AidShield removes that paper trail entirely.
+ZK AidShield removes that paper trail entirely — using real zero-knowledge cryptography, not just encryption.
 
 ## What It Does
 
-A beneficiary proves two facts — that they are on an approved list, and that they haven't claimed before — **without revealing who they are**. No name, phone number, or ID ever touches the blockchain.
+A beneficiary proves two things — they are on an approved list, and they haven't claimed before — **without revealing who they are**. No name, address, or ID ever touches the blockchain.
 
-- **NGOs** get cryptographic fraud resistance — replay attacks are impossible by construction, not policy
-- **Recipients** get dignity and safety — zero PII on-chain, ever
+- **Aid operators** get cryptographic fraud resistance: replay attacks are impossible by construction
+- **Beneficiaries** get dignity and safety: zero PII on-chain, ever
 - **Auditors** get verifiable claim counts without seeing who claimed or when
 
-## Live Demo
+## Live Demo Flow (for Judges)
 
-**Web app:** `http://localhost:3000` (run locally) or deployed testnet URL
+1. Go to `/admin` → connect Freighter wallet → enter a beneficiary's Stellar address → click **Issue Credential**
+2. The server signs a credential binding the Merkle witness to that specific wallet
+3. Download or copy the credential JSON — share it privately with the beneficiary
+4. Beneficiary visits `/claim` → connects Freighter → uploads/pastes the credential
+5. Signature is verified client-side — only the correct wallet can use this credential
+6. Click **Generate ZK Proof & Claim →** — Groth16 proof generates in browser (~15–30 s)
+7. Freighter signs the transaction — lands on Stellar testnet with a real XLM payout
+8. Try to claim again with the same credential → blocked on-chain: **nullifier already used**
 
-**Demo flow for judges:**
-1. Connect a Freighter wallet (set to Testnet)
-2. Click **Load demo claim** on the Claim page
-3. Click **Generate ZK Proof & Claim →** — watch proof generate in-browser (~30s)
-4. Freighter signs; transaction lands on Stellar testnet
-5. Click **Try again** with the same claim — blocked on-chain: *"Nullifier already used"*
+> The secret inside the credential never leaves the beneficiary's browser. All computation is WebAssembly.
 
 ## Deployed Contracts (Stellar Testnet)
 
 | Contract | Address |
 |---|---|
 | AidShield Disbursement v5 | `CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2` |
-| AidShield UltraHonk Verifier v2 | `CBVQKXMW6LFY3AKGWZIKIBV6SCSVWUNAF7EMLZ46KW4HX4RS3ZJCUUGV` |
+| Groth16 BLS12-381 Verifier | `CDANBD2PG5XAQYH57ERPSTLRCKODHKKGEPI7OSDEZR5EQ237KHYSELEE` |
 | XLM Native SAC (testnet) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-**Campaign:** disbursement_id `000…001` · merkle_root `102ffa54…` · 1 XLM per claim · 48 XLM remaining in escrow
+**Campaign:** disbursement\_id `000…001` · merkle\_root `222cfdd7…` · 1 XLM per claim
 
-Verify live: [Stellar Expert](https://stellar.expert/explorer/testnet/contract/CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2)
+Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2) · [Verifier](https://stellar.expert/explorer/testnet/contract/CDANBD2PG5XAQYH57ERPSTLRCKODHKKGEPI7OSDEZR5EQ237KHYSELEE)
 
 ---
 
 ## How It Works
 
 ```
-Aid coordinator generates secrets for each beneficiary (off-chain)
+Aid operator builds a Poseidon Merkle tree of beneficiary secrets (off-chain)
         ↓
-Pedersen Merkle tree built — root committed to Soroban contract
+Merkle root committed to Soroban disbursement contract
         ↓
-Each beneficiary receives their private claim entry (delivered off-channel)
+Operator issues signed credentials — each binds a secret + Merkle witness
+to a specific beneficiary wallet via Ed25519 signature (POST /api/issue-credential)
         ↓
-Beneficiary opens the web app — Noir circuit runs in-browser via WASM:
-  ├─ Proves Merkle membership: leaf = H(secret, campaign_id) is in the tree
-  ├─ Derives nullifier: H(secret, campaign_id, wallet_address, 1)
-  └─ Secret never leaves the device
+Beneficiary loads credential in browser → signature verified locally
         ↓
-14,656-byte UltraHonk proof submitted to Stellar testnet
+circom circuit runs in-browser via snarkjs WASM (Groth16 · BLS12-381):
+  ├─ Private inputs:  secret, merkle_path[8], path_indices[8]
+  └─ Public inputs:   disbursement_id, merkle_root, nullifier, claimant_address
+
+Constraint 1 — Merkle membership:
+  leaf = Poseidon(secret)  →  merkle_verify(leaf, path, indices) == merkle_root
+
+Constraint 2 — Nullifier correctness:
+  nullifier = Poseidon(secret, disbursement_id, claimant_address, 1)
         ↓
-AidShieldVerifier contract (cross-contract call):
-  ├─ Proof length = 14,656 bytes ✓
-  ├─ Public inputs = 128 bytes ✓
-  └─ Commitment region (bytes 256–320) non-zero ✓
+384-byte Groth16 proof submitted to Stellar testnet
         ↓
-AidShieldDisbursement checks:
-  ├─ claimant_address_field matches the transaction signer ✓  (address binding)
-  ├─ disbursement_id matches this campaign ✓
-  ├─ merkle_root matches stored root ✓
-  └─ nullifier is fresh — written to persistent storage ✓
+AidShield Verifier contract:
+  └─ bls.pairing_check(g1s, g2s)  — native BLS12-381 host function on Soroban ✓
         ↓
-Real XLM released to the beneficiary via Stellar Asset Contract
+AidShield Disbursement contract:
+  ├─ disbursement_id matches campaign ✓
+  ├─ merkle_root matches on-chain value ✓
+  ├─ nullifier is fresh (written to persistent storage after claim) ✓
+  └─ claimant_address matches transaction signer ✓
+        ↓
+XLM released to beneficiary via Stellar Asset Contract
 ```
 
 ## What's On-Chain
@@ -81,140 +89,123 @@ Real XLM released to the beneficiary via Stellar Asset Contract
 |---|---|
 | Beneficiary name / ID | ❌ Never |
 | Beneficiary list | ❌ Never |
-| Private claim secret | ❌ Never |
-| Merkle root (commitment to the approved list) | ✅ Yes |
-| Nullifier (one-time claim token, after claim) | ✅ Yes |
+| Claim secret | ❌ Never |
+| Merkle root (commitment to approved list) | ✅ Yes |
+| Nullifier (one-time claim token, post-claim) | ✅ Yes |
 | Claim event (nullifier + amount, no identity) | ✅ Yes |
 
-## The ZK Circuit
+## ZK Proof Details
 
-`circuits/aidshield-membership/src/main.nr` proves three things in zero knowledge:
-
-```
-Private inputs:  secret, merkle_path[8], path_indices[8]
-Public inputs:   disbursement_id, merkle_root, nullifier, claimant_address_field
-
-Constraint 1 — Merkle membership:
-  leaf = pedersen_hash(secret, disbursement_id)
-  merkle_verify(leaf, merkle_path, path_indices) == merkle_root
-
-Constraint 2 — Nullifier correctness:
-  nullifier == pedersen_hash(secret, disbursement_id, claimant_address_field, 1)
-
-(address binding enforced in the Soroban contract by comparing
- claimant_address_field against the Ed25519 key of the transaction signer)
-```
-
-**Proof size:** 14,656 bytes · **Public inputs:** 4 × 32 bytes = 128 bytes · **Proving time:** ~30s in browser (Barretenberg WASM, 4 threads)
-
-### Address Binding
-
-The nullifier includes the claimant's wallet address. An intercepted proof cannot be replayed from a different wallet — the Soroban contract extracts the signer's raw Ed25519 key from XDR and rejects any mismatch.
-
-```rust
-// In disbursement contract claim():
-let key_offset: u32 = if claimant_xdr.len() == 44 { 12 } else { 8 };
-let expected_field = BytesN::<32>::from_array(&env, &expected);
-if public_inputs.claimant_address_field != expected_field {
-    panic!("Claimant address does not match proof");
-}
-```
+| Property | Value |
+|---|---|
+| Proof system | Groth16 (snarkjs) |
+| Elliptic curve | BLS12-381 |
+| Circuit language | circom 2.1 |
+| Hash function | Poseidon (BLS12-381 scalar field) |
+| Merkle tree | 8 levels · 256 slots |
+| Proof size | **384 bytes** (G1 96 + G2 192 + G1 96, uncompressed) |
+| Public inputs | 4 × 32 bytes = 128 bytes |
+| On-chain verification | Native `bls.pairing_check` host function on Soroban |
+| Proving location | Browser WASM (secret never leaves device) |
+| Proving time | ~15–30 s (single-thread WASM) |
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| ZK Circuit | Noir 1.0.0-beta.22 (UltraHonk / Barretenberg) |
-| Proving backend | `@aztec/bb.js` 5.0.0-nightly.20260522 — runs in browser via WASM |
-| Hash function | Pedersen (BN254) — matches Noir's `std::hash::pedersen_hash` |
-| Smart contracts | Soroban (Rust), soroban-sdk v26, Protocol 26 |
+| ZK Circuit | circom 2.1 + snarkjs (Groth16 / BLS12-381) |
+| Proving backend | `snarkjs` — runs in browser via WebAssembly |
+| Hash function | Poseidon (BLS12-381 scalar field) — matches circomlibjs |
+| Smart contracts | Soroban (Rust), soroban-sdk v22, Protocol 22 |
 | Frontend | Next.js 15 + TypeScript + Tailwind CSS |
+| Credential signing | Ed25519 via Stellar SDK Keypair (server-side only) |
 | Wallet | Freighter (Stellar) |
 | Token payout | Native XLM via Stellar Asset Contract (SAC) |
-| Merkle tools | Custom Pedersen Merkle builder (TypeScript) |
+| Merkle tools | Custom Poseidon Merkle builder (TypeScript) |
 
 ## Project Structure
 
 ```
 zk-aidshield/
 ├─ apps/
-│  └─ web/                        # Next.js frontend
-│     ├─ src/app/claim/           # Beneficiary claim flow (client-side proving)
-│     ├─ src/app/admin/           # Campaign dashboard
-│     ├─ src/lib/prover.ts        # generateProof() — runs Noir+BB.js in browser
-│     ├─ src/lib/soroban.ts       # Soroban RPC calls
-│     └─ public/circuit.json      # Compiled Noir circuit (served statically)
+│  └─ web/                             # Next.js frontend
+│     ├─ src/app/claim/                # Beneficiary claim flow (client-side proving)
+│     ├─ src/app/admin/                # Operator dashboard + credential issuance
+│     ├─ src/app/audit/                # Trust model & limitations
+│     ├─ src/app/api/issue-credential/ # POST API — signs credentials (server-side)
+│     ├─ src/lib/prover.ts             # generateProof() — Groth16 in WASM
+│     ├─ src/lib/credential.ts         # Credential types + signature verification
+│     ├─ src/lib/soroban.ts            # Soroban RPC calls
+│     └─ public/
+│        ├─ circuit.wasm               # Compiled circom circuit (2.3 MB)
+│        └─ circuit_final.zkey         # Groth16 proving key (3.5 MB)
 ├─ circuits/
-│  └─ aidshield-membership/       # Noir circuit
-│     └─ src/main.nr              # Membership + nullifier constraints
+│  └─ aidshield-groth16/              # circom circuit
+│     └─ aidshield.circom             # Merkle membership + Poseidon nullifier
 ├─ contracts/
-│  ├─ disbursement/               # Soroban: nullifier registry, address binding, SAC payout
-│  └─ verifier/                   # Soroban: UltraHonk structural verifier
-└─ packages/
-   └─ merkle-tools/               # Pedersen Merkle tree + campaign generator
-      └─ src/generate-campaign.ts # Generates secrets + witness paths → campaign.json
+│  ├─ disbursement/                   # Soroban: nullifier registry, payout logic
+│  └─ verifier-groth16/               # Soroban: Groth16 BLS12-381 verifier
+├─ packages/
+│  └─ merkle-tools/                   # Poseidon Merkle tree + campaign generator
+│     ├─ src/generate-campaign.ts     # Generates secrets + paths → campaign.json
+│     └─ campaign.json                # ⚠ GITIGNORED — contains private secrets
+└─ scripts/
+   ├─ deploy-groth16.sh               # Deploy + initialize verifier + disbursement
+   └─ init-verifier.sh                # Initialize verifier with VK + link contracts
 ```
 
-> **Security note:** `campaign.json` contains private claim secrets. It is `.gitignore`d and must never be published or committed.
+> **Security note:** `campaign.json` contains private claim secrets. It is `.gitignore`d and must **never** be committed or shared publicly.
 
 ## Running Locally
 
-**Prerequisites:** Node.js ≥ 20, Rust + `wasm32v1-none` target, `nargo` 1.0.0-beta.22, Freighter browser extension
+**Prerequisites:** Node.js ≥ 20, pnpm, Freighter browser extension (set to Testnet)
 
 ```bash
 # 1. Start the web app
 cd apps/web
-npm install
-npm run dev
+pnpm install
+pnpm dev
 # Open http://localhost:3000
 ```
 
 ```bash
 # 2. Generate a new campaign (creates campaign.json — keep private)
 cd packages/merkle-tools
-node --import tsx/esm src/generate-campaign.ts
+pnpm generate
 ```
 
 ```bash
 # 3. Test Soroban contracts
-cd contracts/disbursement && cargo test   # 8 tests
-cd contracts/verifier && cargo test       # 5 tests
+cd contracts/disbursement && cargo test
+cd contracts/verifier-groth16 && cargo test
 ```
 
 ```bash
-# 4. Compile the Noir circuit
-cd circuits/aidshield-membership
-nargo compile
-nargo test
+# 4. Deploy contracts to testnet
+./scripts/deploy-groth16.sh
 ```
 
-## Verification Architecture
+## Credential System
 
-**Two-contract pattern:**
+The operator's API route (`POST /api/issue-credential`) signs a credential JSON with an Ed25519 key. The signing key lives only on the server — it is never bundled into the frontend.
 
-**`AidShieldVerifier`** — structural proof integrity check:
-- Validates proof length (14,656 bytes) and public inputs length (128 bytes)
-- Confirms the commitment region (bytes 256–320, where W_L starts in bb.js 5.x UltraHonk proofs) is non-zero
-- Hot-swappable via `set_verifier` on the disbursement contract — no redeploy needed to upgrade
+Each credential contains:
+- `version`, `campaign_id`, `claimant_address` — binding fields
+- `secret`, `merkle_path`, `path_indices` — proof witness (private to beneficiary)
+- `issued_at`, `expires_at` — validity window
+- `issuer_public_key`, `issuer_signature` — Ed25519 authentication
 
-**`AidShieldDisbursement`** — application logic:
-- Cross-calls the verifier; panics if verification returns false
-- Enforces address binding by comparing proof's `claimant_address_field` against the transaction signer's Ed25519 key
-- Validates `disbursement_id` and `merkle_root` match the campaign
-- Nullifier stored in persistent storage with 30-day TTL extension — replay attacks are impossible
-- Releases XLM atomically via native Stellar Asset Contract
-- Emits `claim.paid` (nullifier + amount) and `root.updated` events for auditor visibility
+The claim frontend verifies the signature before generating any proof. An invalid, expired, or wrong-wallet credential is rejected immediately — the secret is never handed to the prover.
 
-## Honest Limitations
+## Trust Model
 
-The current verifier performs **structural** verification — it confirms the proof is well-formed and non-trivially constructed, but does not yet perform full BN254 pairing verification.
-
-**Roadmap to full ZK:** `soroban-sdk v26` exposes `env.crypto().bn254()` host functions (`pairing_check`, `g1_add`, `g1_mul`). The final Shplemini batched-opening check from the Barretenberg-generated Solidity verifier can be ported to Rust as a single `pairing_check()` call. This is the natural next step.
-
-For this hackathon submission, the privacy and replay-protection properties are real and enforced — a forged proof with the correct structure would pass the verifier but the address binding and nullifier checks in the disbursement contract still protect against the most likely attacks.
+See [`/audit`](http://localhost:3000/audit) for the full trust model breakdown, including:
+- What is enforced on-chain vs. off-chain
+- Attack resistance analysis (replay, forgery, wallet-switching)
+- Known limitations at hackathon scope
 
 ---
 
 Built for **Stellar Hacks: Real-World ZK** · DoraHacks · June 2026
 
-> Testnet prototype. Do not use with real funds.
+> Testnet prototype — do not use with real funds.
