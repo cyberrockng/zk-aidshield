@@ -1,3 +1,8 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // COOP + COEP enable SharedArrayBuffer for WASM (needed by snarkjs circuit execution).
@@ -30,6 +35,14 @@ const nextConfig = {
       config.externals = [...(config.externals || []), 'sodium-native'];
       // Required by snarkjs and circomlibjs for async WASM (circuit.wasm)
       config.experiments = { ...config.experiments, asyncWebAssembly: true };
+
+      // circomlibjs's exports field doesn't expose its src/ directory.
+      // An absolute-path alias bypasses webpack 5's exports-field check entirely.
+      config.resolve.alias = {
+        ...(config.resolve.alias || {}),
+        'circomlibjs/src/poseidon_constants_opt.js':
+          path.join(__dirname, 'node_modules', 'circomlibjs', 'src', 'poseidon_constants_opt.js'),
+      };
     }
 
     if (isServer) {

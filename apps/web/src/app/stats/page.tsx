@@ -51,14 +51,16 @@ async function fetchRecentClaims(): Promise<ClaimEvent[]> {
 }
 
 const ZK_FACTS = [
-  { label: 'Proof system', value: 'UltraHonk (Barretenberg)' },
-  { label: 'Circuit language', value: 'Noir 1.0.0-beta.22' },
-  { label: 'Hash function', value: 'Pedersen (BN254)' },
+  { label: 'Proof system', value: 'Groth16 (snarkjs)' },
+  { label: 'Elliptic curve', value: 'BLS12-381' },
+  { label: 'Circuit language', value: 'circom 2.1' },
+  { label: 'Hash function', value: 'Poseidon (BLS12-381 scalar field)' },
   { label: 'Merkle tree depth', value: '8 levels · 256 slots' },
-  { label: 'Proof size', value: '14,656 bytes' },
-  { label: 'Public inputs', value: '4 × 32 bytes' },
+  { label: 'Proof size', value: '384 bytes (G1 + G2 + G1 uncompressed)' },
+  { label: 'Public inputs', value: '4 × 32 bytes (128 bytes total)' },
+  { label: 'On-chain verification', value: 'Native BLS12-381 pairing_check on Soroban' },
   { label: 'Proving location', value: 'Browser WASM (secret never leaves device)' },
-  { label: 'Proving time', value: '~30 s (4-thread WASM)' },
+  { label: 'Proving time', value: '~15–30 s (single-thread WASM)' },
 ];
 
 const CONTRACTS = [
@@ -193,7 +195,7 @@ export default function StatsPage() {
               {[
                 { label: 'Disbursement ID', value: DISBURSEMENT_ID },
                 { label: 'Merkle root', value: MERKLE_ROOT },
-                { label: 'Network', value: 'Stellar Testnet · Protocol 26' },
+                { label: 'Network', value: 'Stellar Testnet · Protocol 22' },
               ].map((r) => (
                 <div key={r.label} className="flex items-start justify-between gap-4">
                   <span style={{ color: 'var(--muted)', flexShrink: 0 }}>{r.label}</span>

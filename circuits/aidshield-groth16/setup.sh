@@ -7,17 +7,20 @@ export PATH="$HOME/.nvm/versions/node/v20.20.2/bin:$HOME/.local/bin:$PATH"
 SNARKJS="node node_modules/.bin/snarkjs"
 
 echo "=== Step 1: Compile circuit ==="
-circom circuit.circom --r1cs --wasm --sym --curve BLS12381 -o build/
+circom circuit.circom --r1cs --wasm --sym -p bls12381 -o build/
 echo "Constraints: $(grep 'non-linear constraints' build/circuit.r1cs.stats 2>/dev/null || echo 'see build/')"
 
 echo ""
-echo "=== Step 2: Download Powers of Tau (BLS12-381, 2^16) ==="
+echo "=== Step 2: Powers of Tau (BLS12-381, 2^16) ==="
 if [ ! -f pot16_bls12381_final.ptau ]; then
-  # BLS12-381 ptau file — enough for ~65k constraints
-  curl -L https://hermez.s3-eu-west-1.amazonaws.com/powersOfTau28_hez_final_16.ptau \
-    -o pot16_bls12381_final.ptau 2>/dev/null || \
-  $SNARKJS powersoftau new bls12-381 16 pot16_new.ptau -v 2>&1 | tail -3 && \
-  $SNARKJS powersoftau prepare phase2 pot16_new.ptau pot16_bls12381_final.ptau -v 2>&1 | tail -3
+  # CRITICAL: Must contribute BEFORE prepare phase2, otherwise IC points will be identity.
+  # A fresh ptau from `new` without a contribution produces degenerate Lagrange-basis
+  # tau powers, causing all IC[i] = identity in the final VK.
+  $SNARKJS powersoftau new bls12-381 16 pot16_new.ptau -v 2>&1 | tail -3
+  echo "random_contribution_$(date +%s%N)" | \
+    $SNARKJS powersoftau contribute pot16_new.ptau pot16_contributed.ptau \
+    --name="AidShield Demo" -v 2>&1 | tail -3
+  $SNARKJS powersoftau prepare phase2 pot16_contributed.ptau pot16_bls12381_final.ptau -v 2>&1 | tail -3
 fi
 
 echo ""

@@ -10,7 +10,7 @@
  */
 
 import { writeFileSync, readFileSync, existsSync } from "fs";
-import { computeLeaf, randomSecret, cleanup } from "./hash.js";
+import { computeLeaf, randomSecret } from "./hash.js";
 import { buildMerkleTree, getMerkleWitness, toHex32, toHexDisplay, TREE_DEPTH } from "./merkle.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -137,7 +137,6 @@ async function main() {
   console.log(`   Share each claim entry ONLY with the corresponding beneficiary.`);
   console.log(`   Never publish the full file on-chain or in a public repo.\n`);
 
-  await cleanup();
 }
 
 main().catch((e) => {

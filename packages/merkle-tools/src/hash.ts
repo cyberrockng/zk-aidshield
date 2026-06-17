@@ -1,81 +1,136 @@
 /**
  * Poseidon hash for BLS12-381 scalar field.
  *
- * Must exactly match what the circom circuit computes when compiled with
- * --curve BLS12381 and using circomlib's poseidon.circom template.
+ * The circom circuit uses the OPTIMISED Poseidon from circomlib/poseidon.circom,
+ * which reads from poseidon_constants_opt.circom.  This file implements the same
+ * optimised sponge with BigInt arithmetic mod the BLS12-381 prime.
  *
- * Approach: circomlib's Poseidon uses round constants originally generated
- * for BN254, but since BN254_prime < BLS12381_prime, all those constants
- * are also valid BLS12-381 field elements.  The circuit, compiled with
- * --curve BLS12381, runs ALL arithmetic mod the BLS12-381 prime — so we
- * borrow the same constant tables from circomlibjs but compute the sponge
- * mod BLS12-381 prime.
- *
- * BLS12-381 scalar field prime r:
- *   0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+ * Round constants (C, S, M, P) come from circomlibjs poseidon_constants_opt.js.
+ * Every constant is a BN254 field element; since BN254_prime < BLS12381_prime,
+ * all values are valid BLS12-381 field elements — only the modulus changes.
  */
 
-import { buildPoseidon } from "circomlibjs";
+import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 
 const BLS12_381_R =
   52435875175126190479447740508185965837690552500527637822603658699938581184513n;
 
-let _poseidonConstants: {
-  C: bigint[][];
-  M: bigint[][][];
-} | null = null;
+const N_ROUNDS_F = 8;
+const N_ROUNDS_P = [56, 57, 56, 60, 60, 63, 64, 63, 60, 66, 60, 65, 70, 60, 64, 68];
 
-async function getPoseidonConstants() {
-  if (_poseidonConstants) return _poseidonConstants;
-  const poseidon = await buildPoseidon();
-  const F = poseidon.F;
-  const toBI = (x: unknown): bigint => BigInt(F.toObject(x));
-  const C = (poseidon.C as unknown[][]).map((arr) => (arr as unknown[]).map(toBI));
-  const M = (poseidon.M as unknown[][][]).map((mat) =>
-    (mat as unknown[][]).map((row) => (row as unknown[]).map(toBI)),
-  );
-  _poseidonConstants = { C, M };
-  return _poseidonConstants;
+const pr = BLS12_381_R;
+const fmod = (x: bigint): bigint => ((x % pr) + pr) % pr;
+const fadd = (a: bigint, b: bigint): bigint => fmod(a + b);
+const fmul = (a: bigint, b: bigint): bigint => fmod(a * b);
+const fpow5 = (x: bigint): bigint => fmul(fmul(fmul(x, x), fmul(x, x)), x);
+
+// ── Constants loader ──────────────────────────────────────────────────────────
+
+interface RawConsts {
+  C: string[][];
+  S: string[][];
+  M: string[][][];
+  P: string[][][];
 }
 
+interface PoseidonConsts {
+  C: bigint[];
+  S: bigint[];
+  M: bigint[][];
+  P: bigint[][];
+}
+
+let _raw: RawConsts | null = null;
+const _cache = new Map<number, PoseidonConsts>();
+
+async function loadRaw(): Promise<RawConsts> {
+  if (_raw) return _raw;
+  // Use pathToFileURL to bypass circomlibjs package exports restriction
+  const abs = resolve("node_modules/circomlibjs/src/poseidon_constants_opt.js");
+  const url = pathToFileURL(abs).href;
+  const mod = await import(url);
+  _raw = (mod.default ?? mod) as RawConsts;
+  return _raw;
+}
+
+async function getConstants(t: number): Promise<PoseidonConsts> {
+  if (_cache.has(t)) return _cache.get(t)!;
+  const raw = await loadRaw();
+  const idx = t - 2;
+  const toBI = (x: string) => BigInt(x);
+  const consts: PoseidonConsts = {
+    C: raw.C[idx].map(toBI),
+    S: raw.S[idx].map(toBI),
+    M: raw.M[idx].map((row) => row.map(toBI)),
+    P: raw.P[idx].map((row) => row.map(toBI)),
+  };
+  _cache.set(t, consts);
+  return consts;
+}
+
+// ── Optimised Poseidon sponge ─────────────────────────────────────────────────
+// Mirrors poseidon_opt.js from circomlibjs but with BLS12-381 field arithmetic.
+
 export async function poseidonHash(inputs: bigint[]): Promise<bigint> {
-  const p = BLS12_381_R;
-  const mod = (x: bigint) => ((x % p) + p) % p;
-  const add = (a: bigint, b: bigint) => mod(a + b);
-  const mul = (a: bigint, b: bigint) => mod(a * b);
-  const pow5 = (x: bigint) => mul(mul(mul(x, x), mul(x, x)), x);
-
-  const { C, M } = await getPoseidonConstants();
   const t = inputs.length + 1;
-  const nRoundsF = 8;
-  const nRoundsP = [56, 57, 56, 60, 60, 63, 64, 63, 60, 66, 60, 65, 70, 60, 64, 68][t - 2];
-  const cArr = C[t - 2];
-  const mArr = M[t - 2];
+  const nRoundsP = N_ROUNDS_P[t - 2];
+  const { C, S, M, P } = await getConstants(t);
 
-  let state: bigint[] = [0n, ...inputs.map((x) => mod(x))];
-  for (let i = 0; i < t; i++) state[i] = add(state[i], cArr[i]);
+  let state: bigint[] = [0n, ...inputs.map(fmod)];
+  for (let i = 0; i < t; i++) state[i] = fadd(state[i], C[i]);
 
-  let cntr = t;
-  for (let r = 0; r < nRoundsF + nRoundsP; r++) {
-    if (r < nRoundsF / 2 || r >= nRoundsF / 2 + nRoundsP) {
-      for (let i = 0; i < t; i++) state[i] = pow5(state[i]);
-    } else {
-      state[0] = pow5(state[0]);
-    }
-    const ns: bigint[] = new Array<bigint>(t).fill(0n);
-    for (let i = 0; i < t; i++)
-      for (let j = 0; j < t; j++)
-        ns[i] = add(ns[i], mul(mArr[i][j], state[j]));
-    state = ns;
-    if (r < nRoundsF + nRoundsP - 1) {
-      for (let i = 0; i < t; i++) state[i] = add(state[i], cArr[cntr + i]);
-      cntr += t;
-    }
+  // Full rounds (first half minus one)
+  for (let r = 0; r < N_ROUNDS_F / 2 - 1; r++) {
+    state = state.map(fpow5);
+    state = state.map((a, i) => fadd(a, C[(r + 1) * t + i]));
+    state = state.map((_, i) =>
+      state.reduce((acc, a, j) => fadd(acc, fmul(M[j][i], a)), 0n),
+    );
   }
+
+  // Transition full round — use P matrix (optimisation)
+  state = state.map(fpow5);
+  state = state.map((a, i) => fadd(a, C[(N_ROUNDS_F / 2) * t + i]));
+  state = state.map((_, i) =>
+    state.reduce((acc, a, j) => fadd(acc, fmul(P[j][i], a)), 0n),
+  );
+
+  // Partial rounds (sparse S matrix)
+  for (let r = 0; r < nRoundsP; r++) {
+    state[0] = fpow5(state[0]);
+    state[0] = fadd(state[0], C[(N_ROUNDS_F / 2 + 1) * t + r]);
+    const s0 = state.reduce(
+      (acc, a, j) => fadd(acc, fmul(S[(t * 2 - 1) * r + j], a)),
+      0n,
+    );
+    for (let k = 1; k < t; k++) {
+      state[k] = fadd(state[k], fmul(state[0], S[(t * 2 - 1) * r + t + k - 1]));
+    }
+    state[0] = s0;
+  }
+
+  // Full rounds (second half minus one)
+  for (let r = 0; r < N_ROUNDS_F / 2 - 1; r++) {
+    state = state.map(fpow5);
+    state = state.map((a, i) =>
+      fadd(a, C[(N_ROUNDS_F / 2 + 1) * t + nRoundsP + r * t + i]),
+    );
+    state = state.map((_, i) =>
+      state.reduce((acc, a, j) => fadd(acc, fmul(M[j][i], a)), 0n),
+    );
+  }
+
+  // Final full round (no ARK)
+  state = state.map(fpow5);
+  state = state.map((_, i) =>
+    state.reduce((acc, a, j) => fadd(acc, fmul(M[j][i], a)), 0n),
+  );
+
   return state[0];
 }
 
-/** leaf = Poseidon(secret, disbursement_id) — matches circuit's leafHasher */
+/** leaf = Poseidon(secret, disbursement_id) — matches circuit leafHasher */
 export async function computeLeaf(
   secret: bigint,
   disbursementId: bigint,

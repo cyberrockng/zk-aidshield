@@ -1,7 +1,7 @@
 // Disbursement contract v5: addr-binding with prod/test XDR offset fix (deployed 2026-06-16)
 export const CONTRACT_ID = 'CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2';
-// Groth16 BLS12-381 verifier — update this after deploying contracts/verifier-groth16
-export const VERIFIER_CONTRACT_ID = 'CBVQKXMW6LFY3AKGWZIKIBV6SCSVWUNAF7EMLZ46KW4HX4RS3ZJCUUGV';
+// Groth16 BLS12-381 verifier deployed 2026-06-17, initialized after setup
+export const VERIFIER_CONTRACT_ID = 'CDANBD2PG5XAQYH57ERPSTLRCKODHKKGEPI7OSDEZR5EQ237KHYSELEE';
 // XLM native SAC (Stellar Asset Contract) on testnet
 export const XLM_SAC_ADDRESS = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
 export const ADMIN_ADDRESS = 'GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ';
@@ -11,7 +11,7 @@ export const HORIZON_URL = 'https://horizon-testnet.stellar.org';
 export const EXPLORER_BASE = 'https://stellar.expert/explorer/testnet';
 
 export const DISBURSEMENT_ID = '0000000000000000000000000000000000000000000000000000000000000001';
-export const MERKLE_ROOT = '102ffa549f08a26a52cab61b574eb36b0a3257c1e22f1b9af607e83582a8052a';
+export const MERKLE_ROOT = '222cfdd7cbb6d8c91a9e484793b805ed47707fedaf10eff66af45c2d2567adda';
 
 export const STROOPS_PER_XLM = 10_000_000n;
 

@@ -37,61 +37,74 @@ const BLS12_381_R =
   52435875175126190479447740508185965837690552500527637822603658699938581184513n;
 
 // ── Poseidon BLS12-381 ──────────────────────────────────────────────────────
-// Same constant approach as poseidon_bls12381.mjs:
-// Borrow the BN254 round constants from circomlibjs — they are pure numeric values
-// that are also valid BLS12-381 field elements (BN254 prime < BLS12-381 prime).
-// Re-run the sponge with modular arithmetic over BLS12-381 prime.
+// Optimised Poseidon sponge matching circomlib poseidon.circom compiled for
+// BLS12-381. Constants (C, S, M, P) come from poseidon_constants_opt.js; all
+// arithmetic is performed mod BLS12-381 prime instead of BN254.
 
-let _poseidonConstants: { C: bigint[][]; M: bigint[][][] } | null = null;
+const fmod = (x: bigint) => ((x % BLS12_381_R) + BLS12_381_R) % BLS12_381_R;
+const fadd = (a: bigint, b: bigint) => fmod(a + b);
+const fmul = (a: bigint, b: bigint) => fmod(a * b);
+const fpow5 = (x: bigint) => fmul(fmul(fmul(x, x), fmul(x, x)), x);
 
-async function getPoseidonConstants() {
-  if (_poseidonConstants) return _poseidonConstants;
-  const { buildPoseidon } = await import('circomlibjs');
-  const poseidon = await buildPoseidon();
-  const F = poseidon.F;
-  const toBI = (x: unknown): bigint => BigInt(F.toObject(x));
-  const C: bigint[][] = poseidon.C.map((arr: unknown[]) => arr.map(toBI));
-  const M: bigint[][][] = poseidon.M.map((mat: unknown[][]) =>
-    mat.map((row: unknown[]) => row.map(toBI)),
-  );
-  _poseidonConstants = { C, M };
-  return _poseidonConstants;
+const N_ROUNDS_F_POSEIDON = 8;
+const N_ROUNDS_P_POSEIDON = [56, 57, 56, 60, 60, 63, 64, 63, 60, 66, 60, 65, 70, 60, 64, 68];
+
+type PoseidonConsts = { C: bigint[]; S: bigint[]; M: bigint[][]; P: bigint[][] };
+const _constCache = new Map<number, PoseidonConsts>();
+
+async function getPoseidonConsts(t: number): Promise<PoseidonConsts> {
+  if (_constCache.has(t)) return _constCache.get(t)!;
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore — internal path, not in package exports; resolved at runtime by webpack
+  const mod = await import('circomlibjs/src/poseidon_constants_opt.js');
+  const raw = (mod.default ?? mod) as Record<string, unknown[][]>;
+  const idx = t - 2;
+  const toBI = (x: unknown) => BigInt(x as string);
+  const consts: PoseidonConsts = {
+    C: (raw.C[idx] as unknown[]).map(toBI),
+    S: (raw.S[idx] as unknown[]).map(toBI),
+    M: (raw.M[idx] as unknown[][]).map((r) => r.map(toBI)),
+    P: (raw.P[idx] as unknown[][]).map((r) => r.map(toBI)),
+  };
+  _constCache.set(t, consts);
+  return consts;
 }
 
 async function poseidonBLS12381(inputs: bigint[]): Promise<bigint> {
-  const p = BLS12_381_R;
-  const mod = (x: bigint) => ((x % p) + p) % p;
-  const add = (a: bigint, b: bigint) => mod(a + b);
-  const mul = (a: bigint, b: bigint) => mod(a * b);
-  const pow5 = (x: bigint) => mul(mul(mul(x, x), mul(x, x)), x);
-
-  const { C, M } = await getPoseidonConstants();
   const t = inputs.length + 1;
-  const nRoundsF = 8;
-  const nRoundsP = [56, 57, 56, 60, 60, 63, 64, 63, 60, 66, 60, 65, 70, 60, 64, 68][t - 2];
-  const cArr = C[t - 2];
-  const mArr = M[t - 2];
+  const nRoundsP = N_ROUNDS_P_POSEIDON[t - 2];
+  const { C, S, M, P } = await getPoseidonConsts(t);
 
-  let state: bigint[] = [0n, ...inputs.map((x) => mod(x))];
-  for (let i = 0; i < t; i++) state[i] = add(state[i], cArr[i]);
+  let state: bigint[] = [0n, ...inputs.map(fmod)];
+  for (let i = 0; i < t; i++) state[i] = fadd(state[i], C[i]);
 
-  let cntr = t;
-  for (let r = 0; r < nRoundsF + nRoundsP; r++) {
-    if (r < nRoundsF / 2 || r >= nRoundsF / 2 + nRoundsP) {
-      for (let i = 0; i < t; i++) state[i] = pow5(state[i]);
-    } else {
-      state[0] = pow5(state[0]);
-    }
-    const ns = new Array<bigint>(t).fill(0n);
-    for (let i = 0; i < t; i++)
-      for (let j = 0; j < t; j++)
-        ns[i] = add(ns[i], mul(mArr[i][j], state[j]));
-    state = ns;
-    if (r < nRoundsF + nRoundsP - 1) {
-      for (let i = 0; i < t; i++) state[i] = add(state[i], cArr[cntr + i]);
-      cntr += t;
-    }
+  for (let r = 0; r < N_ROUNDS_F_POSEIDON / 2 - 1; r++) {
+    state = state.map(fpow5);
+    state = state.map((a, i) => fadd(a, C[(r + 1) * t + i]));
+    state = state.map((_, i) => state.reduce((acc, a, j) => fadd(acc, fmul(M[j][i], a)), 0n));
   }
+  state = state.map(fpow5);
+  state = state.map((a, i) => fadd(a, C[(N_ROUNDS_F_POSEIDON / 2) * t + i]));
+  state = state.map((_, i) => state.reduce((acc, a, j) => fadd(acc, fmul(P[j][i], a)), 0n));
+
+  for (let r = 0; r < nRoundsP; r++) {
+    state[0] = fpow5(state[0]);
+    state[0] = fadd(state[0], C[(N_ROUNDS_F_POSEIDON / 2 + 1) * t + r]);
+    const s0 = state.reduce((acc, a, j) => fadd(acc, fmul(S[(t * 2 - 1) * r + j], a)), 0n);
+    for (let k = 1; k < t; k++) {
+      state[k] = fadd(state[k], fmul(state[0], S[(t * 2 - 1) * r + t + k - 1]));
+    }
+    state[0] = s0;
+  }
+
+  for (let r = 0; r < N_ROUNDS_F_POSEIDON / 2 - 1; r++) {
+    state = state.map(fpow5);
+    state = state.map((a, i) => fadd(a, C[(N_ROUNDS_F_POSEIDON / 2 + 1) * t + nRoundsP + r * t + i]));
+    state = state.map((_, i) => state.reduce((acc, a, j) => fadd(acc, fmul(M[j][i], a)), 0n));
+  }
+  state = state.map(fpow5);
+  state = state.map((_, i) => state.reduce((acc, a, j) => fadd(acc, fmul(M[j][i], a)), 0n));
+
   return state[0];
 }
 
@@ -179,7 +192,9 @@ export async function generateProof(
   };
 
   log('Generating Groth16 proof (BLS12-381 pairing, ~15 s)…');
-  const snarkjs = await import('snarkjs');
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore — snarkjs has no published TypeScript types
+  const snarkjs = await import('snarkjs') as typeof import('snarkjs');
   const { proof, publicSignals } = (await snarkjs.groth16.fullProve(
     circuitInput,
     '/circuit.wasm',

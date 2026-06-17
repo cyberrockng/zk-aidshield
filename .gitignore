@@ -11,3 +11,10 @@ proofs/
 campaign.json
 __pycache__/
 .DS_Store
+
+# Circuit trusted-setup ceremony files (large, reproducible via setup.sh)
+*.ptau
+circuits/aidshield-groth16/build/
+
+# TypeScript incremental build info
+*.tsbuildinfo
