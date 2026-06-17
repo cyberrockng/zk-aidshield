@@ -1,7 +1,7 @@
-// Disbursement contract v2: real XLM SAC + on-chain verifier (deployed 2026-06-16)
-export const CONTRACT_ID = 'CBSGS6OBCWZ7Z464B7IOM2NGPRQ3QY55SYMJVWUGKCBHXOJVG3G7UV6P';
-// UltraHonk structural verifier contract (VK: 26a99ba4..., circuit: aidshield-membership)
-export const VERIFIER_CONTRACT_ID = 'CATC4XM7FA4HXCX5M27WFLOQEY5C23NHJZTGUJGFMQG6ZQISB7P4OWHH';
+// Disbursement contract v5: addr-binding with prod/test XDR offset fix (deployed 2026-06-16)
+export const CONTRACT_ID = 'CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2';
+// UltraHonk structural verifier v2: commitment check bytes 256-320 for bb.js 5.x (deployed 2026-06-16)
+export const VERIFIER_CONTRACT_ID = 'CBVQKXMW6LFY3AKGWZIKIBV6SCSVWUNAF7EMLZ46KW4HX4RS3ZJCUUGV';
 // XLM native SAC (Stellar Asset Contract) on testnet
 export const XLM_SAC_ADDRESS = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
 export const ADMIN_ADDRESS = 'GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ';
@@ -11,7 +11,7 @@ export const HORIZON_URL = 'https://horizon-testnet.stellar.org';
 export const EXPLORER_BASE = 'https://stellar.expert/explorer/testnet';
 
 export const DISBURSEMENT_ID = '0000000000000000000000000000000000000000000000000000000000000001';
-export const MERKLE_ROOT = '051f8864362ed4acd0eb4d77172a28eb1258438b80ce1314c26797f54122cd0c';
+export const MERKLE_ROOT = '102ffa549f08a26a52cab61b574eb36b0a3257c1e22f1b9af607e83582a8052a';
 
 export const STROOPS_PER_XLM = 10_000_000n;
 

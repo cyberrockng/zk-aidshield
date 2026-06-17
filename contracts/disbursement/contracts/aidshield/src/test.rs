@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{testutils::Address as _, Address, Bytes, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, xdr::ToXdr, Address, Bytes, BytesN, Env};
 
 // ── Mock verifier contracts ──────────────────────────────────────────────────
 
@@ -43,10 +43,23 @@ fn make_id(env: &Env, val: u8) -> BytesN<32> {
     BytesN::from_array(env, &bytes)
 }
 
+/// Mirrors stellarAddressToField: drops key[0], left-pads with 0x00.
+/// Handles both test env (40-byte ScAddress XDR) and production (44-byte ScVal XDR).
+fn addr_to_field(env: &Env, addr: &Address) -> BytesN<32> {
+    let xdr = addr.to_xdr(env);
+    let key_offset: u32 = if xdr.len() == 44 { 12 } else { 8 };
+    let mut out = [0u8; 32];
+    for i in 1u32..32u32 {
+        out[i as usize] = xdr.get_unchecked(key_offset + i);
+    }
+    BytesN::from_array(env, &out)
+}
+
 fn make_real_proof(env: &Env) -> Bytes {
-    // 14 656-byte proof with non-zero bytes in commitment region (32..96)
+    // 14 656-byte proof with non-zero bytes in commitment region (256..320)
+    // Matches bb.js 5.x UltraHonk proof format: W_L commitment starts at byte 256.
     let mut data = [0u8; 14_656];
-    for i in 32..96 {
+    for i in 256..320 {
         data[i] = (i as u8).wrapping_add(1);
     }
     Bytes::from_slice(env, &data)
@@ -127,7 +140,7 @@ fn test_claim_releases_tokens() {
     client.fund(&admin, &100_000_000i128);
 
     let inputs = ProofPublicInputs {
-        claimant_address_field: make_id(&env, 10),
+        claimant_address_field: addr_to_field(&env, &claimant),
         disbursement_id: campaign_id.clone(),
         merkle_root: merkle_root.clone(),
         nullifier: nullifier.clone(),
@@ -202,7 +215,7 @@ fn test_replay_attack_blocked() {
     client.fund(&admin, &100_000_000i128);
 
     let inputs = ProofPublicInputs {
-        claimant_address_field: make_id(&env, 10),
+        claimant_address_field: addr_to_field(&env, &claimant),
         disbursement_id: campaign_id,
         merkle_root,
         nullifier,
@@ -274,11 +287,46 @@ fn test_wrong_merkle_root_rejected() {
     client.fund(&admin, &100_000_000i128);
 
     let inputs = ProofPublicInputs {
-        claimant_address_field: make_id(&env, 10),
+        claimant_address_field: addr_to_field(&env, &claimant),
         disbursement_id: campaign_id,
-        merkle_root: fake_root, // tampered root
+        merkle_root: fake_root, // tampered root — triggers "Merkle root mismatch"
         nullifier: make_id(&env, 3),
     };
 
     client.claim(&claimant, &inputs, &make_real_proof(&env));
 }
+
+#[test]
+#[should_panic(expected = "Claimant address does not match proof")]
+fn test_address_mismatch_blocked() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let claimant = Address::generate(&env);
+    let other = Address::generate(&env); // proof was for "other", not "claimant"
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    sac.mint(&admin, &1_000_000_000i128);
+
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    let campaign_id = make_id(&env, 1);
+    let merkle_root = make_id(&env, 2);
+
+    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.set_paused(&false);
+    client.fund(&admin, &100_000_000i128);
+
+    let inputs = ProofPublicInputs {
+        claimant_address_field: addr_to_field(&env, &other), // mismatch: proof is for "other"
+        disbursement_id: campaign_id,
+        merkle_root,
+        nullifier: make_id(&env, 3),
+    };
+
+    client.claim(&claimant, &inputs, &make_real_proof(&env));
+}
+

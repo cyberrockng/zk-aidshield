@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
+import { CONTRACT_ID, EXPLORER_BASE } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'ZK AidShield — Privacy-Preserving Aid Distribution',
@@ -53,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </a>{' '}
           · Soroban Testnet ·{' '}
           <a
-            href={`https://stellar.expert/explorer/testnet/contract/CDYZQUX3PEMNXUEH3FA363RDIAXT7Y3OENHLZQLD5FE4ZNHMRKA43OSC`}
+            href={`${EXPLORER_BASE}/contract/${CONTRACT_ID}`}
             target="_blank"
             rel="noopener noreferrer"
             className="underline"

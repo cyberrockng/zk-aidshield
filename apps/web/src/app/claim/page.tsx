@@ -9,6 +9,24 @@ import {
 } from '@/lib/soroban';
 import { isFreighterInstalled, connectWallet, signTx } from '@/lib/freighter';
 import { EXPLORER_BASE, DISBURSEMENT_ID, MERKLE_ROOT, shortHex, stellarAddressToField } from '@/lib/constants';
+import { generateProof } from '@/lib/prover';
+
+const DEMO_CLAIM = JSON.stringify({
+  index: 0,
+  secret: '001bca481e121228f88eb4b19e6b525ff7f5d1d4d0257117da63e7cb12138848',
+  leaf: '19cd5d0baabcb88004de21f43dae4dc3792540726f07b9bb9c3da16b452c918b',
+  merkle_path: [
+    '0000000000000000000000000000000000000000000000000000000000000000',
+    '27b1d0839a5b23baf12a8d195b18ac288fcf401afb2f70b8a4b529ede5fa9fed',
+    '21dbfd1d029bf447152fcf89e355c334610d1632436ba170f738107266a71550',
+    '0bcd1f91cf7bdd471d0a30c58c4706f3fdab3807a954b8f5b5e3bfec87d001bb',
+    '06e62084ee7b602fe9abc15632dda3269f56fb0c6e12519a2eb2ec897091919d',
+    '03c9e2e67178ac638746f068907e6677b4cc7a9592ef234ab6ab518f17efffa0',
+    '15d28cad4c0736decea8997cb324cf0a0e0602f4d74472cd977bce2c8dd9923f',
+    '268ed1e1c94c3a45a14db4108bc306613a1c23fab68e0466a002dfb0a3f8d2ab',
+  ],
+  path_indices: [false, false, false, false, false, false, false, false],
+}, null, 2);
 
 type Step =
   | 'wallet'
@@ -99,27 +117,22 @@ export default function ClaimPage() {
       setStatusMsg('Disbursement ID matches ✓  Merkle root matches ✓');
       await delay(400);
 
-      // Step: prove — server derives nullifier from (secret, campaign_id, address)
+      // Step: prove — all computation runs in this browser; secret never leaves device
       setStep('prove');
-      setStatusMsg('Executing Noir circuit and generating UltraHonk proof…');
+      setStatusMsg('Initialising Barretenberg WASM…');
       const claimantField = stellarAddressToField(walletAddress);
-      const proveRes = await fetch('/api/prove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          secret: parsedClaim.secret,
-          merkle_path: parsedClaim.merkle_path,
-          path_indices: parsedClaim.path_indices,
-          disbursement_id: DISBURSEMENT_ID,
-          merkle_root: MERKLE_ROOT,
-          claimant_address: claimantField,
-        }),
-      });
-      if (!proveRes.ok) {
-        const err = await proveRes.json();
-        throw new Error(`Proof generation failed: ${err.error}`);
-      }
-      const { proof: proofHexFull, nullifier: derivedNullifier, proofSize } = await proveRes.json();
+      const { proof: proofHexFull, nullifier: derivedNullifier, proofSize } =
+        await generateProof(
+          {
+            secret: parsedClaim.secret,
+            merkle_path: parsedClaim.merkle_path,
+            path_indices: parsedClaim.path_indices,
+            disbursement_id: DISBURSEMENT_ID,
+            merkle_root: MERKLE_ROOT,
+            claimant_address: claimantField,
+          },
+          setStatusMsg,
+        );
       setProofHex(proofHexFull);
       setStatusMsg(`UltraHonk proof generated ✓ (${proofSize} bytes, ${(proofSize / 1024).toFixed(1)} KB)`);
 
@@ -252,15 +265,28 @@ export default function ClaimPage() {
         {/* Claim data section */}
         {walletAddress && (
           <div>
-            <div className="font-semibold text-sm mb-2">Claim Data</div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold text-sm">Claim Data</span>
+              <button
+                className="text-xs px-3 py-1 rounded"
+                style={{ background: '#1e293b', color: '#94a3b8', border: '1px solid #334155' }}
+                onClick={() => {
+                  setClaimJson(DEMO_CLAIM);
+                  setParsedClaim(null);
+                  setParseError('');
+                }}
+                disabled={step !== 'paste' && step !== 'error'}
+              >
+                Load demo claim
+              </button>
+            </div>
             <p className="text-xs mb-3" style={{ color: 'var(--muted)' }}>
-              Paste the claim entry you received from the aid coordinator (JSON with secret,
-              nullifier, merkle_path, path_indices).
+              Paste the claim entry from the aid coordinator, or click <strong>Load demo claim</strong> to test.
             </p>
             <textarea
               rows={6}
               className="mono text-xs"
-              placeholder='{ "index": 0, "secret": "...", "nullifier": "...", "merkle_path": [...], "path_indices": [...] }'
+              placeholder='{ "index": 0, "secret": "...", "merkle_path": [...], "path_indices": [...] }'
               value={claimJson}
               onChange={(e) => {
                 setClaimJson(e.target.value);
@@ -398,10 +424,10 @@ export default function ClaimPage() {
         className="mt-6 p-4 rounded-lg text-sm"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--muted)' }}
       >
-        🔒 <strong style={{ color: 'var(--text)' }}>Zero PII on-chain.</strong> Your claim
-        secret is sent to this server only to generate the ZK proof — it is never stored,
-        logged, or shared. The proof itself reveals only that you are in the approved
-        beneficiary set. Each nullifier can be used exactly once.
+        🔒 <strong style={{ color: 'var(--text)' }}>Your secret never leaves this device.</strong>{' '}
+        ZK proof generation runs entirely in your browser via WebAssembly — no server
+        ever sees your claim secret or can link you to a beneficiary. The proof reveals
+        only that you belong to the approved set. Each nullifier can be used exactly once.
       </div>
     </div>
   );

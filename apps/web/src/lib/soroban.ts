@@ -18,6 +18,19 @@ import {
   stellarAddressToField,
 } from './constants';
 
+// The Stellar SDK (12.x) fails to parse getTransaction responses from newer RPC nodes
+// with "Bad union switch: N". Use raw JSON-RPC fetch for polling instead.
+async function rpcGetTransaction(hash: string): Promise<{ status: string; errorResultXdr?: string }> {
+  const res = await fetch(RPC_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTransaction', params: { hash } }),
+  });
+  const json = await res.json() as { result?: { status: string; errorResultXdr?: string }; error?: { message: string } };
+  if (json.error) throw new Error(`RPC error: ${json.error.message}`);
+  return json.result!;
+}
+
 export interface CampaignStats {
   disbursement_id: Buffer;
   merkle_root: Buffer;
@@ -182,12 +195,12 @@ export async function submitSignedTransaction(signedXDR: string): Promise<string
   const hash = result.hash;
   for (let i = 0; i < 40; i++) {
     await new Promise((r) => setTimeout(r, 1500));
-    const status = await server.getTransaction(hash);
+    const status = await rpcGetTransaction(hash);
     if (status.status === 'SUCCESS') return hash;
     if (status.status === 'FAILED') {
       throw new Error('Transaction failed on-chain: ' + JSON.stringify(status));
     }
-    // status === 'NOT_FOUND' means still pending — keep polling
+    // 'NOT_FOUND' means still pending — keep polling
   }
   throw new Error('Transaction confirmation timed out after 60 s — check Stellar Explorer');
 }

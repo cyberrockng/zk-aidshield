@@ -13,10 +13,10 @@ fn create_verifier(env: &Env) -> (Address, AidShieldVerifierClient<'_>) {
 }
 
 fn make_real_proof(env: &Env) -> Bytes {
-    // Build a 14 656-byte proof with non-zero bytes in the commitment region (32..96)
+    // Build a 14 656-byte proof with non-zero bytes in the commitment region (256..320)
+    // bb.js 5.x UltraHonk proofs have 256 leading-zero bytes; W_L commitment starts at 256.
     let mut data = [0u8; 14_656];
-    // Simulate a non-trivial commitment region
-    for i in 32..96 {
+    for i in 256..320 {
         data[i] = (i as u8).wrapping_add(1);
     }
     Bytes::from_slice(env, &data)

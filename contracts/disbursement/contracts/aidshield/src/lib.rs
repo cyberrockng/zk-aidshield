@@ -3,7 +3,7 @@
 
 use soroban_sdk::{
     contract, contractclient, contractimpl, contracttype, symbol_short,
-    token, Address, Bytes, BytesN, Env,
+    token, xdr::ToXdr, Address, Bytes, BytesN, Env,
 };
 
 mod test;
@@ -145,6 +145,14 @@ impl AidShieldContract {
         env.storage().instance().get(&DataKey::Paused).unwrap_or(true)
     }
 
+    /// Update the verifier contract address (admin only). Allows hot-swapping
+    /// the verifier without redeploying the disbursement contract.
+    pub fn set_verifier(env: Env, verifier_address: Address) {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+        env.storage().instance().set(&DataKey::VerifierAddress, &verifier_address);
+    }
+
     pub fn claim(
         env: Env,
         claimant: Address,
@@ -180,6 +188,33 @@ impl AidShieldContract {
         }
 
         // ── Application-level checks ──────────────────────────────────────
+
+        // Check 0: claimant address matches the proof's public input
+        //
+        // stellarAddressToField encodes a G-address as [0x00, key[1..31]] —
+        // dropping key[0] keeps the value inside the BN254 scalar field.
+        // XDR layout for ScAddress::Account: 4B type + 4B key-type + 32B key = 40B total.
+        // Ed25519 key starts at byte 8.
+        {
+            let claimant_xdr: Bytes = claimant.clone().to_xdr(&env);
+            // Test env serialises ScAddress directly (40 B, key at offset 8).
+            // Production host serialises ScVal::ScvAddress(ScAddress) (44 B, key at offset 12).
+            // XDR layout (production): 4B SCV_ADDRESS tag + 4B account type + 4B key type + 32B key
+            // XDR layout (test env):                         4B account type + 4B key type + 32B key
+            let key_offset: u32 = if claimant_xdr.len() == 44 { 12 } else { 8 };
+            if claimant_xdr.len() < key_offset + 32 {
+                panic!("Claimant must be an Ed25519 account address");
+            }
+            // stellarAddressToField drops key[0] (for BN254 field safety) and left-pads with 0x00
+            let mut expected = [0u8; 32];
+            for i in 1u32..32u32 {
+                expected[i as usize] = claimant_xdr.get_unchecked(key_offset + i);
+            }
+            let expected_field = BytesN::<32>::from_array(&env, &expected);
+            if public_inputs.claimant_address_field != expected_field {
+                panic!("Claimant address does not match proof: proof was generated for a different wallet");
+            }
+        }
 
         // Check 1: disbursement_id
         let stored_id: BytesN<32> = env.storage().instance()

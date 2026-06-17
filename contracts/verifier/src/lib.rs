@@ -76,10 +76,12 @@ impl AidShieldVerifier {
             return false;
         }
 
-        // 3. Proof must not be all-zero bytes in the commitment region (bytes 32..96)
-        //    Real UltraHonk proofs have non-zero G1 point commitments in this range.
+        // 3. Proof must not be all-zero bytes in the commitment region (bytes 256..320)
+        //    bb.js 5.x / UltraHonk proofs have 256 leading-zero bytes; the first field
+        //    element (W_L commitment) starts at byte 256. Bytes 32..96 are zero in this
+        //    format, so we check the actual non-zero region instead.
         let mut commitment_nonzero = false;
-        for i in 32_u32..96_u32 {
+        for i in 256_u32..320_u32 {
             if proof.get_unchecked(i) != 0 {
                 commitment_nonzero = true;
                 break;

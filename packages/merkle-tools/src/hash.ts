@@ -4,15 +4,20 @@
  * Critical: any hash computed here must match what the Noir circuit computes.
  */
 
-import { Barretenberg, Fr } from "@aztec/bb.js";
+import { Barretenberg } from "@aztec/bb.js";
 
 let bb: Barretenberg | null = null;
 
 async function getBb(): Promise<Barretenberg> {
   if (!bb) {
-    bb = await Barretenberg.new(1);
+    bb = await Barretenberg.new({ threads: 1 });
   }
   return bb;
+}
+
+function toBytes32(n: bigint): Uint8Array {
+  const hex = n.toString(16).padStart(64, "0");
+  return Uint8Array.from(Buffer.from(hex, "hex"));
 }
 
 /**
@@ -21,9 +26,11 @@ async function getBb(): Promise<Barretenberg> {
  */
 export async function pedersenHash(inputs: bigint[]): Promise<bigint> {
   const barretenberg = await getBb();
-  const frInputs = inputs.map((n) => new Fr(n));
-  const result = await barretenberg.pedersenHash(frInputs, 0);
-  return BigInt("0x" + Buffer.from(result.value).toString("hex"));
+  const result = await barretenberg.pedersenHash({
+    inputs: inputs.map(toBytes32),
+    hashIndex: 0,
+  });
+  return BigInt("0x" + Buffer.from(result.hash).toString("hex"));
 }
 
 /**
