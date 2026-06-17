@@ -25,6 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span>ZK AidShield</span>
             </Link>
             <div className="flex items-center gap-6 text-sm" style={{ color: 'var(--muted)' }}>
+              <Link href="/stats" className="hover:text-white transition-colors">
+                Stats
+              </Link>
               <Link href="/admin" className="hover:text-white transition-colors">
                 Admin
               </Link>
