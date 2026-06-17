@@ -2,6 +2,7 @@
   "disbursement_id": "0000000000000000000000000000000000000000000000000000000000000001",
   "payout_amount_stroops": 10000000,
   "beneficiaries": [
-    { "name": "Demo Beneficiary", "id": "AID-DEMO-001" }
+    { "name": "Beneficiary A", "id": "AID-001", "wallet": "GAAA..." },
+    { "name": "Beneficiary B", "id": "AID-002", "wallet": "GBBB..." }
   ]
 }
