@@ -10,23 +10,25 @@
  */
 
 import { writeFileSync, readFileSync, existsSync } from "fs";
-import { computeLeaf, randomSecret } from "./hash.js";
+import { computeLeaf, randomSecret, stellarAddressToFieldBigint } from "./hash.js";
 import { buildMerkleTree, getMerkleWitness, toHex32, toHexDisplay, TREE_DEPTH } from "./merkle.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Beneficiary {
-  name: string;          // display only — never goes on-chain
-  id: string;            // display only — never goes on-chain
+  name: string;           // display only — never goes on-chain
+  id: string;             // display only — never goes on-chain
+  wallet: string;         // Stellar G... address pre-committed in the leaf
 }
 
 interface BeneficiaryClaim {
   index: number;
-  secret: string;        // hex — shared privately with beneficiary
-  leaf: string;          // hex — used to build Merkle tree
-  merkle_path: string[]; // hex array — used in Noir proof
+  claimant_address: string; // Stellar G... address — the only wallet that can use this slot
+  secret: string;           // hex — shared privately with beneficiary
+  leaf: string;             // hex — Poseidon(secret, disbursement_id, claimant_address_field)
+  merkle_path: string[];    // hex array — Merkle witness
   path_indices: boolean[];
-  // nullifier is address-bound (derived at claim time from secret+address); not pre-computed
+  // nullifier is derived at claim time: Poseidon(secret, disbursement_id, address, 1)
   // Name/ID deliberately excluded — zero PII in output files
 }
 
@@ -40,11 +42,14 @@ interface CampaignOutput {
 }
 
 // ── Demo seed data ─────────────────────────────────────────────────────────────
+// Wallets pre-committed into the Merkle tree for the hackathon demo.
+// Slot 0 is the admin/deployer wallet; slot 1 is the issuer wallet.
+// Each leaf = Poseidon(secret, disbursement_id, wallet_field) — wallet-bound at circuit level.
 
 const DEMO_BENEFICIARIES: Beneficiary[] = [
-  { name: "Beneficiary A", id: "AID-001" },
-  { name: "Beneficiary B", id: "AID-002" },
-  { name: "Beneficiary C", id: "AID-003" },
+  { name: "Beneficiary A", id: "AID-001", wallet: "GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ" },
+  { name: "Beneficiary B", id: "AID-002", wallet: "GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4" },
+  { name: "Beneficiary C", id: "AID-003", wallet: "GCTKVOPSICWARIBGBQCBQ7KM2QN6QGXMF7ILP7OL2IF5PBJKC5USPJ2U" },
 ];
 
 const DEMO_DISBURSEMENT_ID = "0000000000000000000000000000000000000000000000000000000000000001";
@@ -68,6 +73,9 @@ async function main() {
     const configPath = "beneficiaries.json";
     if (!existsSync(configPath)) {
       console.error(`❌  ${configPath} not found. Run with --seed for demo data.`);
+      console.error(`    beneficiaries.json must contain:`);
+      console.error(`    { "disbursement_id": "...", "payout_amount_stroops": 10000000,`);
+      console.error(`      "beneficiaries": [{ "name": "...", "id": "...", "wallet": "G..." }] }`);
       process.exit(1);
     }
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
@@ -82,23 +90,26 @@ async function main() {
   console.log(`   Disbursement ID: 0x${disbursementIdHex}`);
   console.log(`   Payout per claim: ${payoutStroops / 1_000_000} XLM\n`);
 
-  // Step 1: Generate secrets and compute leaves
-  console.log("🔑 Generating secrets and computing Poseidon (BLS12-381) leaves...");
+  // Step 1: Generate secrets and compute wallet-bound leaves
+  // leaf = Poseidon(secret, disbursement_id, claimant_address_field) — matches circuit
+  console.log("🔑 Generating secrets and computing wallet-bound Poseidon (BLS12-381) leaves...");
   const claims: BeneficiaryClaim[] = [];
   const leaves: bigint[] = [];
 
   for (let i = 0; i < beneficiaries.length; i++) {
     const secret = randomSecret();
-    const leaf = await computeLeaf(secret, disbursementId);
+    const addrField = stellarAddressToFieldBigint(beneficiaries[i].wallet);
+    const leaf = await computeLeaf(secret, disbursementId, addrField);
     leaves.push(leaf);
     claims.push({
       index: i,
+      claimant_address: beneficiaries[i].wallet,
       secret: toHex32(secret),
       leaf: toHex32(leaf),
       merkle_path: [], // filled after tree build
       path_indices: [],
     });
-    console.log(`   [${i}] leaf: ${toHexDisplay(leaf).slice(0, 18)}...`);
+    console.log(`   [${i}] wallet: ${beneficiaries[i].wallet.slice(0, 10)}… leaf: ${toHexDisplay(leaf).slice(0, 18)}...`);
   }
 
   // Step 2: Build Merkle tree

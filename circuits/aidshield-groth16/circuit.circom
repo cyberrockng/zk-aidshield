@@ -52,10 +52,12 @@ template AidShieldMembership(depth) {
     signal input nullifier;
     signal input claimant_address;
 
-    // Step 1: leaf = Poseidon(secret, disbursement_id)
-    component leafHasher = Poseidon(2);
+    // Step 1: leaf = Poseidon(secret, disbursement_id, claimant_address)
+    // Wallet-bound at the circuit level — the Merkle commitment encodes WHO can claim.
+    component leafHasher = Poseidon(3);
     leafHasher.inputs[0] <== secret;
     leafHasher.inputs[1] <== disbursement_id;
+    leafHasher.inputs[2] <== claimant_address;
 
     // Step 2: Merkle membership proof
     component tree = MerkleProof(depth);

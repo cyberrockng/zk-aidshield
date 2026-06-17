@@ -84,12 +84,12 @@ A beneficiary proves two things — they are on an approved list, and they haven
 | Contract | Address |
 |---|---|
 | AidShield Disbursement v5 | `CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2` |
-| Groth16 BLS12-381 Verifier | `CDANBD2PG5XAQYH57ERPSTLRCKODHKKGEPI7OSDEZR5EQ237KHYSELEE` |
+| Groth16 BLS12-381 Verifier (Phase 3) | `CAIU2ZX2P2UGHC6A7SWL7MVTVGHOM7Y57X6AI6NFWCAETM5ZU63ALDY4` |
 | XLM Native SAC (testnet) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-**Campaign:** disbursement\_id `000…001` · merkle\_root `222cfdd7…` · 1 XLM per claim
+**Campaign (Phase 3 — wallet-bound leaves):** disbursement\_id `000…001` · merkle\_root `140e321c…` · 1 XLM per claim
 
-Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2) · [Verifier](https://stellar.expert/explorer/testnet/contract/CDANBD2PG5XAQYH57ERPSTLRCKODHKKGEPI7OSDEZR5EQ237KHYSELEE)
+Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAIU2ZX2P2UGHC6A7SWL7MVTVGHOM7Y57X6AI6NFWCAETM5ZU63ALDY4)
 
 ---
 
@@ -109,8 +109,9 @@ circom circuit runs in-browser via snarkjs WASM (Groth16 · BLS12-381):
   ├─ Private inputs:  secret, merkle_path[8], path_indices[8]
   └─ Public inputs:   disbursement_id, merkle_root, nullifier, claimant_address
 
-Constraint 1 — Merkle membership:
-  leaf = Poseidon(secret)  →  merkle_verify(leaf, path, indices) == merkle_root
+Constraint 1 — Merkle membership (wallet-bound leaf):
+  leaf = Poseidon(secret, disbursement_id, claimant_address)
+  merkle_verify(leaf, path, indices) == merkle_root
 
 Constraint 2 — Nullifier correctness:
   nullifier = Poseidon(secret, disbursement_id, claimant_address, 1)

@@ -130,12 +130,54 @@ export async function poseidonHash(inputs: bigint[]): Promise<bigint> {
   return state[0];
 }
 
-/** leaf = Poseidon(secret, disbursement_id) — matches circuit leafHasher */
+/**
+ * leaf = Poseidon(secret, disbursement_id, claimant_address)
+ *
+ * claimantAddress must be the 31-byte (248-bit) field encoding of the Stellar wallet:
+ *   StrKey.decodeEd25519PublicKey(address).slice(1) → BigInt
+ * This matches how prover.ts encodes claimant_address before passing it to snarkjs.
+ */
 export async function computeLeaf(
   secret: bigint,
   disbursementId: bigint,
+  claimantAddress: bigint,
 ): Promise<bigint> {
-  return poseidonHash([secret, disbursementId]);
+  return poseidonHash([secret, disbursementId, claimantAddress]);
+}
+
+// ── Stellar address → field element ──────────────────────────────────────────
+
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function base32Decode(s: string): Buffer {
+  const bytes: number[] = [];
+  let buf = 0;
+  let bits = 0;
+  for (const ch of s) {
+    const v = BASE32_ALPHABET.indexOf(ch);
+    if (v < 0) throw new Error(`Invalid base32 char: ${ch}`);
+    buf = (buf << 5) | v;
+    bits += 5;
+    if (bits >= 8) {
+      bytes.push((buf >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(bytes);
+}
+
+/**
+ * Converts a Stellar G... address to a 248-bit BLS12-381 field element (bigint).
+ * Mirrors stellarAddressToField in apps/web/src/lib/constants.ts without the SDK dep.
+ *
+ * StrKey decodes to 35 bytes: version(1) + key(32) + checksum(2)
+ * We take key[1..31] (= decoded[2..32]) as 31 bytes → 248-bit field element.
+ */
+export function stellarAddressToFieldBigint(address: string): bigint {
+  const decoded = base32Decode(address); // 35 bytes
+  const fieldBytes = decoded.subarray(2, 33); // key bytes [1..31] → 31 bytes
+  const hex = Buffer.from(fieldBytes).toString('hex');
+  return BigInt('0x' + hex.padStart(64, '0'));
 }
 
 /** nullifier = Poseidon(secret, disbursement_id, claimant_address, 1) */

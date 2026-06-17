@@ -31,6 +31,7 @@ const ISSUER_PUBLIC = 'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4'
 // ── Campaign data (server-side only) ──────────────────────────────────────
 interface CampaignClaim {
   index: number;
+  claimant_address: string; // wallet pre-committed in this slot's leaf
   secret: string;
   leaf: string;
   merkle_path: string[];
@@ -81,14 +82,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid Stellar address format' }, { status: 400 });
   }
 
-  // Prevent re-issuing to the same wallet
-  if (issuedWallets.has(claimant_address)) {
-    return NextResponse.json(
-      { error: 'A credential has already been issued to this wallet in this session' },
-      { status: 409 },
-    );
-  }
-
   // Load campaign
   let campaign: Campaign;
   try {
@@ -97,11 +90,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 
-  // Find next available slot
-  const slot = campaign.claims.find((c) => !issuedSlots.has(c.index));
+  // Phase 3: the leaf is wallet-bound — find the slot pre-committed to this exact address
+  const slot = campaign.claims.find((c) => c.claimant_address === claimant_address);
   if (!slot) {
     return NextResponse.json(
-      { error: 'All credential slots have been issued for this session. Restart the server to reset.' },
+      { error: 'This wallet is not registered in the campaign. Only pre-approved wallets can receive credentials.' },
+      { status: 404 },
+    );
+  }
+
+  // Prevent re-issuing to the same wallet (slot already issued in this session)
+  if (issuedSlots.has(slot.index) || issuedWallets.has(claimant_address)) {
+    return NextResponse.json(
+      { error: 'A credential has already been issued to this wallet in this session' },
       { status: 409 },
     );
   }

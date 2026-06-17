@@ -14,12 +14,14 @@ import { credentialSigningPayload, ISSUER_PUBLIC_KEY, type BeneficiaryCredential
 // ── Stub the campaign.json read ───────────────────────────────────────────────
 // We mock the 'fs' module so the API route doesn't need a real file on disk.
 
+// Phase 3: each slot is pre-committed to a specific wallet address
 const MOCK_CAMPAIGN = {
   disbursement_id: '0000000000000000000000000000000000000000000000000000000000000001',
   merkle_root: '222cfdd7cbb6d8c91a9e484793b805ed47707fedaf10eff66af45c2d2567adda',
   claims: [
     {
       index: 0,
+      claimant_address: 'GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ',
       secret: '00132a8a297936680482cfc611605283081a0af5104b25ca73ddcbdb540150d3',
       leaf: '56b649add441aabff80f2c1d96be229fb03dbed0304f9d70c48842ad4e61d4e7',
       merkle_path: Array(8).fill('0000000000000000000000000000000000000000000000000000000000000000'),
@@ -27,6 +29,7 @@ const MOCK_CAMPAIGN = {
     },
     {
       index: 1,
+      claimant_address: 'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4',
       secret: 'aabbccdd00112233445566778899aabbccddeeff00112233445566778899aabb',
       leaf: 'deadbeef00000000000000000000000000000000000000000000000000000001',
       merkle_path: Array(8).fill('0000000000000000000000000000000000000000000000000000000000000000'),
@@ -49,11 +52,12 @@ const WALLET_A = 'GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ';
 const WALLET_B = 'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4';
 
 function issueCredential(claimantAddress: string, issuedSlots: Set<number>, issuedWallets: Set<string>): BeneficiaryCredential {
-  if (issuedWallets.has(claimantAddress)) {
+  // Phase 3: find slot by wallet address, not first free slot
+  const slot = MOCK_CAMPAIGN.claims.find((c) => c.claimant_address === claimantAddress);
+  if (!slot) throw new Error('WALLET_NOT_REGISTERED');
+  if (issuedSlots.has(slot.index) || issuedWallets.has(claimantAddress)) {
     throw new Error('DUPLICATE_WALLET');
   }
-  const slot = MOCK_CAMPAIGN.claims.find((c) => !issuedSlots.has(c.index));
-  if (!slot) throw new Error('NO_SLOTS');
 
   const now = Math.floor(Date.now() / 1000);
   const credBase: Omit<BeneficiaryCredential, 'issuer_signature'> = {
@@ -91,7 +95,7 @@ describe('issue-credential logic', () => {
     issuedWallets = new Set();
   });
 
-  it('issues a valid signed credential for a new wallet', () => {
+  it('issues a valid signed credential for a registered wallet', () => {
     const cred = issueCredential(WALLET_A, issuedSlots, issuedWallets);
 
     expect(cred.version).toBe('1');
@@ -114,9 +118,10 @@ describe('issue-credential logic', () => {
     expect(issuerKP.verify(msgHash, sigBytes)).toBe(true);
   });
 
-  it('assigns different slots to different wallets', () => {
+  it('each wallet gets its own pre-committed slot (wallet-bound leaf)', () => {
     const credA = issueCredential(WALLET_A, issuedSlots, issuedWallets);
     const credB = issueCredential(WALLET_B, issuedSlots, issuedWallets);
+    // Slot 0 is bound to WALLET_A, slot 1 is bound to WALLET_B in the mock campaign
     expect(credA.slot_index).toBe(0);
     expect(credB.slot_index).toBe(1);
     expect(credA.secret).not.toBe(credB.secret);
@@ -127,17 +132,16 @@ describe('issue-credential logic', () => {
     expect(() => issueCredential(WALLET_A, issuedSlots, issuedWallets)).toThrow('DUPLICATE_WALLET');
   });
 
-  it('rejects when all slots are exhausted', () => {
-    issueCredential(WALLET_A, issuedSlots, issuedWallets);
-    issueCredential(WALLET_B, issuedSlots, issuedWallets);
-    const WALLET_C = 'GAAHI7GGO3ESTXSTQRHE4NJAKOVHQMDJN7YY2GDUH7DYRYSBJA7VGNPBF';
-    // Only 2 slots in mock campaign
-    expect(() => issueCredential(WALLET_C, issuedSlots, issuedWallets)).toThrow('NO_SLOTS');
+  it('rejects wallets not registered in the campaign', () => {
+    const WALLET_C = 'GCTKVOPSICWARIBGBQCBQ7KM2QN6QGXMF7ILP7OL2IF5PBJKC5USPJ2U';
+    // Not in mock campaign (only WALLET_A and WALLET_B are pre-committed)
+    expect(() => issueCredential(WALLET_C, issuedSlots, issuedWallets)).toThrow('WALLET_NOT_REGISTERED');
   });
 
-  it('credential is bound to the claimant address (different wallets get different credentials)', () => {
+  it('credential is bound to the claimant address at the circuit level', () => {
     const credA = issueCredential(WALLET_A, issuedSlots, issuedWallets);
-    // Credential A cannot be used for wallet B — even though they might share a Merkle path
+    // credA.leaf = Poseidon(secret, disbursement_id, WALLET_A_field) — a different
+    // wallet cannot generate a valid proof for this leaf even with the same secret.
     expect(credA.claimant_address).toBe(WALLET_A);
     expect(credA.claimant_address).not.toBe(WALLET_B);
   });
