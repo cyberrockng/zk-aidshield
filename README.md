@@ -20,18 +20,64 @@ A beneficiary proves two things — they are on an approved list, and they haven
 - **Beneficiaries** get dignity and safety: zero PII on-chain, ever
 - **Auditors** get verifiable claim counts without seeing who claimed or when
 
-## Live Demo Flow (for Judges)
+## Judge Demo Script
 
-1. Go to `/admin` → connect Freighter wallet → enter a beneficiary's Stellar address → click **Issue Credential**
-2. The server signs a credential binding the Merkle witness to that specific wallet
-3. Download or copy the credential JSON — share it privately with the beneficiary
-4. Beneficiary visits `/claim` → connects Freighter → uploads/pastes the credential
-5. Signature is verified client-side — only the correct wallet can use this credential
-6. Click **Generate ZK Proof & Claim →** — Groth16 proof generates in browser (~15–30 s)
-7. Freighter signs the transaction — lands on Stellar testnet with a real XLM payout
-8. Try to claim again with the same credential → blocked on-chain: **nullifier already used**
+> **Setup:** Two browser windows — one as the **Operator** (Admin tab), one as the **Beneficiary** (Claim tab). Both need [Freighter](https://freighter.app) set to **Testnet**.
 
-> The secret inside the credential never leaves the beneficiary's browser. All computation is WebAssembly.
+### Step 1 — Operator: Issue a Credential (~30 seconds)
+
+1. Open `http://localhost:3000/admin` in browser A
+2. Scroll to **Issue Beneficiary Credential**
+3. Paste the beneficiary's Stellar address (or use your second Freighter account)
+4. Click **Issue Credential**
+5. A signed JSON credential appears — click **Download** or **Copy JSON**
+
+> _What happened:_ The server signed a credential binding the Merkle witness (secret + path) to that specific wallet using Ed25519. The secret never left the server. The browser received a signed token.
+
+### Step 2 — Beneficiary: Load and Verify (~5 seconds)
+
+1. Open `http://localhost:3000/claim` in browser B
+2. Connect Freighter — make sure it is the **same wallet** as the address in step 1
+3. Click **Upload credential file** and select the downloaded JSON — or paste it directly
+4. Click **Verify & Load Credential**
+5. You should see: `✓ Credential verified — slot #0`
+
+> _What happened:_ The frontend verified the Ed25519 signature client-side, confirmed `claimant_address` matches the connected wallet, and checked the expiry. No server call was made.
+
+### Step 3 — Beneficiary: Generate Proof (~15–30 seconds)
+
+1. Click **Generate ZK Proof & Claim →**
+2. Watch the spinning rings — a Groth16 BLS12-381 proof is being computed in your browser via WebAssembly
+3. The progress bar shows an asymptotic estimate (proof generation has no intermediate callbacks)
+4. When done: `✓ Groth16 proof (384 bytes): 0x…`
+
+> _What happened:_ snarkjs ran the circom circuit in WASM. The secret is a private input — it never appears in the proof. The public outputs are: Merkle root, disbursement ID, nullifier (wallet-bound), and claimant address.
+
+### Step 4 — On-chain Settlement (~10 seconds)
+
+1. Freighter pops up — click **Approve**
+2. The transaction is sent to Stellar testnet
+3. Success screen: **"Aid claimed! 🎉"** with a link to Stellar Expert
+
+> _What happened:_ The Soroban disbursement contract called the Groth16 verifier via `bls.pairing_check` (native BLS12-381 host function). The verifier confirmed the proof. The disbursement contract checked the nullifier is fresh, wrote it to persistent storage, and released 1 XLM from escrow.
+
+### Step 5 — Replay Attack Demo (~5 seconds)
+
+1. Click **Try again** on the success screen
+2. Load the **same credential** again
+3. Click **Generate ZK Proof & Claim →**
+4. After proving, you will see: _"This claim has already been used — nullifier found on-chain."_
+
+> _What happened:_ The nullifier `Poseidon(secret, disbursement_id, claimant_address, 1)` was stored permanently on-chain after the first claim. The contract rejected the duplicate before it could double-spend.
+
+### Step 6 — Wrong Wallet Demo (optional, ~10 seconds)
+
+1. In browser B, switch Freighter to a **different** wallet account
+2. Paste the credential from Step 1 (which was issued to the original wallet)
+3. Click **Verify & Load Credential**
+4. Error: _"Credential issued to GXXXX… but your wallet is GYYY…"_
+
+> _What happened:_ The signature check passed (the credential itself is valid), but the `claimant_address` field in the credential does not match the connected wallet. The credential is rejected before any proof is generated.
 
 ## Deployed Contracts (Stellar Testnet)
 
@@ -158,32 +204,56 @@ zk-aidshield/
 
 ## Running Locally
 
-**Prerequisites:** Node.js ≥ 20, pnpm, Freighter browser extension (set to Testnet)
+**Prerequisites:** Node.js ≥ 20, Freighter browser extension (set to Testnet)
 
 ```bash
-# 1. Start the web app
+# 1. Install dependencies and start the web app
 cd apps/web
-pnpm install
-pnpm dev
+npm install
+npm run dev
 # Open http://localhost:3000
 ```
 
 ```bash
-# 2. Generate a new campaign (creates campaign.json — keep private)
-cd packages/merkle-tools
-pnpm generate
+# 2. Run the frontend test suite (14 tests — credential + API logic)
+cd apps/web
+npm test
 ```
 
 ```bash
-# 3. Test Soroban contracts
+# 3. Generate a new campaign (creates campaign.json — keep private)
+cd packages/merkle-tools
+npm run generate
+```
+
+```bash
+# 4. Test Soroban contracts
 cd contracts/disbursement && cargo test
 cd contracts/verifier-groth16 && cargo test
 ```
 
 ```bash
-# 4. Deploy contracts to testnet
-./scripts/deploy-groth16.sh
+# 5. Full deployment to testnet (generate campaign → deploy → init → fund)
+export ADMIN_SECRET_KEY=S...
+bash scripts/setup.sh
 ```
+
+```bash
+# 6. Deploy only the Groth16 verifier (after circuit rebuild)
+export ADMIN_SECRET_KEY=S...
+bash scripts/deploy-groth16.sh
+```
+
+### Configuration
+
+Copy `.env.example` to `.env.local` and fill in the values:
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+# Edit .env.local — set contract addresses, keys, and campaign parameters
+```
+
+The app ships with testnet fallback values in `constants.ts`, so it works without `.env.local` for the deployed demo campaign.
 
 ## Credential System
 

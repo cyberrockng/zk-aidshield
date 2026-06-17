@@ -8,6 +8,8 @@
     "seed": "pnpm --dir packages/merkle-tools seed",
     "test:merkle": "pnpm --dir packages/merkle-tools test",
     "contracts:test": "cd contracts/disbursement && cargo test && cd ../verifier && cargo test",
-    "deploy:testnet": "./scripts/deploy-groth16.sh"
+    "deploy:testnet": "./scripts/deploy-groth16.sh",
+    "setup": "./scripts/setup.sh",
+    "test": "pnpm --dir apps/web test"
   }
 }

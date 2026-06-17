@@ -205,6 +205,53 @@ export async function submitSignedTransaction(signedXDR: string): Promise<string
   throw new Error('Transaction confirmation timed out after 60 s — check Stellar Explorer');
 }
 
+export async function fetchIsPaused(): Promise<boolean> {
+  const server = getServer();
+  const contract = getContract();
+  const op = contract.call('is_paused');
+
+  const account = await server.getAccount(ADMIN_ADDRESS);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(op)
+    .setTimeout(30)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) return true; // fail safe
+  return scValToNative(sim.result!.retval) as boolean;
+}
+
+export async function buildSetPausedTransaction(
+  adminAddress: string,
+  paused: boolean,
+): Promise<string> {
+  const server = getServer();
+  const contract = getContract();
+
+  const op = contract.call(
+    'set_paused',
+    nativeToScVal(paused, { type: 'bool' }),
+  );
+
+  const account = await server.getAccount(adminAddress);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(op)
+    .setTimeout(60)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) {
+    throw new Error(`set_paused simulation failed: ${sim.error}`);
+  }
+  return SorobanRpc.assembleTransaction(tx, sim).build().toXDR();
+}
+
 export async function buildFundTransaction(
   funderAddress: string,
   amountStroops: number,
