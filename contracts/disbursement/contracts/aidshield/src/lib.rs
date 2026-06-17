@@ -101,7 +101,6 @@ impl AidShieldContract {
         env.storage().instance().set(&DataKey::VerifierAddress, &verifier_address);
         env.storage().instance().set(&DataKey::ClaimedCount, &0u32);
         env.storage().instance().set(&DataKey::Initialized, &true);
-        // Claims start paused until the full BN254 verifier is wired in
         env.storage().instance().set(&DataKey::Paused, &true);
 
         // Keep instance storage alive for ~30 days (30d × 24h × 720 ledgers/h = 518 400)
@@ -167,7 +166,7 @@ impl AidShieldContract {
 
         let paused: bool = env.storage().instance().get(&DataKey::Paused).unwrap_or(true);
         if paused {
-            panic!("Claims are paused pending full verifier integration");
+            panic!("Claims are paused");
         }
 
         // ── ZK Proof verification ──────────────────────────────────────────
