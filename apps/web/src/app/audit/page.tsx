@@ -35,9 +35,9 @@ const TRUST_TABLE: TrustRow[] = [
     detail: 'Verified by the Groth16 verifier contract using native BLS12-381 pairing_check on Soroban. Cannot pass without a valid witness.',
   },
   {
-    property: 'Wallet binding (soft)',
-    status: 'off-chain',
-    detail: 'The issuer signature binds claimant_address to the credential. The circuit uses claimant_address in the nullifier hash, so the proof is wallet-specific. However, the Merkle leaf (Poseidon(secret)) is not wallet-bound — full binding requires a circuit upgrade.',
+    property: 'Wallet binding (circuit-level)',
+    status: 'on-chain',
+    detail: 'Phase 3: the Merkle leaf is Poseidon(secret, disbursement_id, claimant_address). The wallet address is committed into the Merkle tree at campaign-generation time. A stolen secret cannot generate a valid proof for a different wallet — the leaf itself encodes who can claim.',
   },
   {
     property: 'Credential issuance',
@@ -62,7 +62,7 @@ const TRUST_TABLE: TrustRow[] = [
   {
     property: 'Beneficiary identity',
     status: 'private',
-    detail: 'Never on-chain. The Merkle tree commits to secrets (Poseidon hashes), not names or IDs. The operator knows the mapping but it is never published.',
+    detail: 'Never on-chain. The Merkle tree commits to Poseidon(secret, disbursement_id, wallet) — no names or IDs. The wallet address is a pre-committed field element (248 bits), not a personal identifier. The operator knows the mapping but it is never published.',
   },
 ];
 
@@ -89,8 +89,8 @@ const ATTACKS: { attack: string; stopped: string; how: string }[] = [
   },
   {
     attack: 'Using another wallet\'s credential',
-    stopped: 'Off-chain + circuit',
-    how: 'Credential signature binds claimant_address. Nullifier includes claimant_address — proof generated for a different wallet produces a different nullifier and fails contract state check.',
+    stopped: 'On-chain',
+    how: 'Phase 3: leaf = Poseidon(secret, disbursement_id, claimant_address). A different wallet generates a different leaf, so no Merkle proof exists for it. Even if one did, the nullifier (Poseidon(secret, disburse_id, wallet, 1)) would mismatch the one written by the true claimant.',
   },
   {
     attack: 'Issuer impersonation',
@@ -197,12 +197,6 @@ export default function AuditPage() {
           <span style={{ color: 'var(--amber)' }}>⚠</span> Known Limitations (Hackathon Scope)
         </div>
         <ul className="space-y-2 text-sm" style={{ color: 'var(--muted)' }}>
-          <li>
-            <strong style={{ color: 'var(--text)' }}>Leaf wallet-binding:</strong> The Merkle leaf is{' '}
-            <code className="mono text-xs" style={{ color: 'var(--amber)' }}>Poseidon(secret)</code>, not{' '}
-            <code className="mono text-xs" style={{ color: 'var(--amber)' }}>Poseidon(secret, claimant_address)</code>.
-            The issuer signature compensates, but circuit-level binding requires a recompile and new trusted setup.
-          </li>
           <li>
             <strong style={{ color: 'var(--text)' }}>Credential expiry:</strong> Enforced client-side only.
             A party with the raw credential JSON could submit after expiry if they bypass the frontend.

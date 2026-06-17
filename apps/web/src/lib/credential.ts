@@ -25,8 +25,11 @@ export interface BeneficiaryCredential {
 }
 
 // Public key of the demo issuer (operator).
-// The matching secret lives only in the server-side API route.
-export const ISSUER_PUBLIC_KEY = 'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4';
+// Reads from NEXT_PUBLIC_ISSUER_PUBLIC_KEY env var first (Phase 7); falls back to
+// the testnet demo key. The matching secret lives only in the server-side API route.
+export const ISSUER_PUBLIC_KEY =
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_ISSUER_PUBLIC_KEY) ||
+  'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4';
 
 /**
  * Compute the signing payload for a credential (excludes the signature field).
