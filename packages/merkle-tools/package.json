@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "node --import tsx/esm src/merkle.test.ts",
+    "test": "node --import tsx/esm src/hash.test.ts",
     "generate": "node --import tsx/esm src/generate-campaign.ts",
     "seed": "node --import tsx/esm src/generate-campaign.ts --seed"
   },

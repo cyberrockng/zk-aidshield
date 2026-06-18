@@ -1,0 +1,59 @@
+/**
+ * GET /api/beneficiaries
+ *
+ * Returns the list of pre-registered beneficiary wallets from campaign.json,
+ * without exposing any secrets or private witnesses. Used by the admin
+ * dashboard to show registered slots and issue credentials in bulk.
+ *
+ * Response: { disbursement_id, merkle_root, slots: [{ index, claimant_address }] }
+ */
+
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { NextResponse } from 'next/server';
+
+interface CampaignClaim {
+  index: number;
+  claimant_address: string;
+}
+
+interface Campaign {
+  disbursement_id: string;
+  merkle_root: string;
+  claims: CampaignClaim[];
+}
+
+function loadCampaign(): Campaign {
+  const paths = [
+    join(process.cwd(), '../../packages/merkle-tools/campaign.json'),
+    join(process.cwd(), 'campaign.json'),
+  ];
+  for (const p of paths) {
+    try {
+      return JSON.parse(readFileSync(p, 'utf-8')) as Campaign;
+    } catch {
+      // try next path
+    }
+  }
+  throw new Error('campaign.json not found');
+}
+
+export async function GET(): Promise<NextResponse> {
+  try {
+    const campaign = loadCampaign();
+    return NextResponse.json({
+      disbursement_id: campaign.disbursement_id,
+      merkle_root: campaign.merkle_root,
+      total_slots: campaign.claims.length,
+      slots: campaign.claims.map((c) => ({
+        index: c.index,
+        claimant_address: c.claimant_address,
+      })),
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: String(e), slots: [] },
+      { status: 404 },
+    );
+  }
+}

@@ -20,6 +20,18 @@ type FundStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error
 type PauseStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 type IssueStep = 'idle' | 'issuing' | 'done' | 'error';
 
+interface BeneficiarySlot {
+  index: number;
+  claimant_address: string;
+}
+
+interface BeneficiaryList {
+  disbursement_id: string;
+  merkle_root: string;
+  total_slots: number;
+  slots: BeneficiarySlot[];
+}
+
 export default function AdminPage() {
   const [stats, setStats] = useState<CampaignStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -47,8 +59,51 @@ export default function AdminPage() {
 
   const [activityLog, setActivityLog] = useState<string[]>([]);
 
+  const [beneficiaries, setBeneficiaries] = useState<BeneficiaryList | null>(null);
+  const [beneficiariesError, setBeneficiariesError] = useState<string | null>(null);
+  const [issuedBySlot, setIssuedBySlot] = useState<Record<number, boolean>>({});
+  const [issuingSlot, setIssuingSlot] = useState<number | null>(null);
+
   function log(line: string) {
     setActivityLog((prev) => [`[${new Date().toLocaleTimeString()}] ${line}`, ...prev]);
+  }
+
+  useEffect(() => {
+    fetch('/api/beneficiaries')
+      .then((r) => r.json())
+      .then((data: BeneficiaryList & { error?: string }) => {
+        if (data.error) { setBeneficiariesError(data.error); return; }
+        setBeneficiaries(data);
+      })
+      .catch((e) => setBeneficiariesError(String(e)));
+  }, []);
+
+  async function handleIssueToSlot(slot: BeneficiarySlot) {
+    setIssuingSlot(slot.index);
+    log(`Issuing credential to slot #${slot.index} (${slot.claimant_address.slice(0, 8)}…)`);
+    try {
+      const res = await fetch('/api/issue-credential', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claimant_address: slot.claimant_address }),
+      });
+      const data = await res.json() as { error?: string; slot_index?: number };
+      if (!res.ok) throw new Error(data.error ?? 'Issue failed');
+      setIssuedBySlot((prev) => ({ ...prev, [slot.index]: true }));
+      log(`Credential issued ✓ slot #${slot.index}`);
+      // Trigger download
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aidshield-credential-slot${slot.index}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      log(`Issue error slot #${slot.index}: ${String(e).slice(0, 80)}`);
+    } finally {
+      setIssuingSlot(null);
+    }
   }
 
   const loadStats = useCallback(async () => {
@@ -396,6 +451,68 @@ export default function AdminPage() {
               Share privately with the beneficiary. They paste it into{' '}
               <a href="/claim" className="underline" style={{ color: 'var(--green)' }}>Claim</a>{' '}
               — the secret never leaves their device.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Registered Beneficiaries ── */}
+      <div className="card mb-6">
+        <div className="font-semibold mb-1 flex items-center gap-2">
+          Registered Beneficiaries
+          <span className="badge" style={{ background: '#1c2b3a', color: '#58a6ff', fontSize: '0.65rem' }}>
+            Wallet-bound slots
+          </span>
+        </div>
+        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+          Pre-approved wallets from campaign.json. Issue credentials to any slot — only the bound wallet can claim.
+        </p>
+
+        {beneficiariesError ? (
+          <div className="text-xs p-3 rounded-lg" style={{ background: '#1a0505', color: '#f87171', border: '1px solid #7f1d1d' }}>
+            {beneficiariesError.includes('not found')
+              ? 'campaign.json not found — run npm run generate in packages/merkle-tools first.'
+              : beneficiariesError}
+          </div>
+        ) : !beneficiaries ? (
+          <div className="text-sm" style={{ color: 'var(--muted)' }}>Loading…</div>
+        ) : (
+          <div className="space-y-2">
+            {beneficiaries.slots.map((slot) => (
+              <div
+                key={slot.index}
+                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg flex-wrap"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border-dim)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="mono text-xs px-2 py-0.5 rounded" style={{ background: 'var(--surface-3)', color: 'var(--muted)' }}>
+                    #{slot.index}
+                  </span>
+                  <span className="mono text-xs" style={{ color: 'var(--text)', wordBreak: 'break-all' }}>
+                    {slot.claimant_address}
+                  </span>
+                </div>
+                <button
+                  className="text-xs px-3 py-1.5 rounded-lg font-medium flex-shrink-0"
+                  style={
+                    issuedBySlot[slot.index]
+                      ? { background: '#0e3a1d', color: '#3fb950', border: '1px solid rgba(63,185,80,0.3)', cursor: 'default' }
+                      : { background: 'var(--surface-3)', color: 'var(--muted-2)', border: '1px solid var(--border)' }
+                  }
+                  onClick={() => !issuedBySlot[slot.index] && handleIssueToSlot(slot)}
+                  disabled={issuingSlot === slot.index || issuedBySlot[slot.index]}
+                >
+                  {issuedBySlot[slot.index]
+                    ? '✓ Issued'
+                    : issuingSlot === slot.index
+                    ? 'Signing…'
+                    : 'Issue & Download'}
+                </button>
+              </div>
+            ))}
+            <div className="text-xs pt-1" style={{ color: 'var(--muted)' }}>
+              {beneficiaries.total_slots} slot{beneficiaries.total_slots !== 1 ? 's' : ''} · Merkle root{' '}
+              <span className="mono">{beneficiaries.merkle_root.slice(0, 12)}…</span>
             </div>
           </div>
         )}
