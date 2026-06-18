@@ -2,7 +2,8 @@
   "disbursement_id": "0000000000000000000000000000000000000000000000000000000000000001",
   "payout_amount_stroops": 10000000,
   "beneficiaries": [
-    { "name": "Beneficiary A", "id": "AID-001", "wallet": "GAAA..." },
-    { "name": "Beneficiary B", "id": "AID-002", "wallet": "GBBB..." }
+    { "name": "Beneficiary A", "id": "AID-001", "wallet": "GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ" },
+    { "name": "Beneficiary B", "id": "AID-002", "wallet": "GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4" },
+    { "name": "Beneficiary C", "id": "AID-003", "wallet": "GCTKVOPSICWARIBGBQCBQ7KM2QN6QGXMF7ILP7OL2IF5PBJKC5USPJ2U" }
   ]
 }

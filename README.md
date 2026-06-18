@@ -87,7 +87,7 @@ A beneficiary proves two things — they are on an approved list, and they haven
 | Groth16 BLS12-381 Verifier (Phase 3) | `CAIU2ZX2P2UGHC6A7SWL7MVTVGHOM7Y57X6AI6NFWCAETM5ZU63ALDY4` |
 | XLM Native SAC (testnet) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-**Campaign (Phase 3 — wallet-bound leaves):** disbursement\_id `000…001` · merkle\_root `140e321c…` · 1 XLM per claim
+**Campaign (Phase 3 — wallet-bound leaves):** disbursement\_id `000…001` · merkle\_root `4a8cb9e9…` · 1 XLM per claim
 
 Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAIU2ZX2P2UGHC6A7SWL7MVTVGHOM7Y57X6AI6NFWCAETM5ZU63ALDY4)
 

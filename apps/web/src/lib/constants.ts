@@ -39,7 +39,7 @@ export const DISBURSEMENT_ID =
 
 export const MERKLE_ROOT =
   process.env.NEXT_PUBLIC_MERKLE_ROOT ||
-  '140e321cda8c4b49c1484f27727a97884dfe073415a1915f31026f889d7383a4';
+  '4a8cb9e95c92334c7d8a47b5d1ea463eebb7df71fe2316f22aaf8ae3c1c78e41';
 
 // SHA-256 of the Groth16 verification key JSON (circuits/aidshield-groth16/build/verification_key_v2.json).
 // Lets judges independently verify the on-chain VK matches the circuit build.
