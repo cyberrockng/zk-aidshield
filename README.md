@@ -188,7 +188,7 @@ zk-aidshield/
 │        └─ circuit_final.zkey         # Groth16 proving key (3.5 MB)
 ├─ circuits/
 │  └─ aidshield-groth16/              # circom circuit
-│     └─ aidshield.circom             # Merkle membership + Poseidon nullifier
+│     └─ circuit.circom               # Merkle membership + Poseidon nullifier
 ├─ contracts/
 │  ├─ disbursement/                   # Soroban: nullifier registry, payout logic
 │  └─ verifier-groth16/               # Soroban: Groth16 BLS12-381 verifier
