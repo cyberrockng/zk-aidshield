@@ -195,10 +195,11 @@ zk-aidshield/
 ├─ packages/
 │  └─ merkle-tools/                   # Poseidon Merkle tree + campaign generator
 │     ├─ src/generate-campaign.ts     # Generates secrets + paths → campaign.json
+│     ├─ src/hash.test.ts             # 20-test suite: Poseidon leaf/nullifier/Merkle
+│     ├─ demo-claim.sample.json       # Safe structural sample for judges/docs
 │     └─ campaign.json                # ⚠ GITIGNORED — contains private secrets
 └─ scripts/
-   ├─ deploy-groth16.sh               # Deploy + initialize verifier + disbursement
-   └─ init-verifier.sh                # Initialize verifier with VK + link contracts
+   └─ deploy-groth16.sh               # Deploy + initialize verifier + disbursement
 ```
 
 > **Security note:** `campaign.json` contains private claim secrets. It is `.gitignore`d and must **never** be committed or shared publicly.

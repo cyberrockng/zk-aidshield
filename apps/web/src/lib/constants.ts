@@ -41,6 +41,12 @@ export const MERKLE_ROOT =
   process.env.NEXT_PUBLIC_MERKLE_ROOT ||
   '140e321cda8c4b49c1484f27727a97884dfe073415a1915f31026f889d7383a4';
 
+// SHA-256 of the Groth16 verification key JSON (circuits/aidshield-groth16/build/verification_key_v2.json).
+// Lets judges independently verify the on-chain VK matches the circuit build.
+export const VK_HASH =
+  process.env.NEXT_PUBLIC_VK_HASH ||
+  '24398dad8cb124a9419b926c5512a9a54918be5094c32ce030ee71130ce6b382';
+
 export const STROOPS_PER_XLM = 10_000_000n;
 
 export function stroopsToXlm(stroops: bigint | number): string {

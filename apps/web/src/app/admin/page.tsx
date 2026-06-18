@@ -12,13 +12,32 @@ import {
 import { isFreighterInstalled, connectWallet, signTx } from '@/lib/freighter';
 import {
   CONTRACT_ID, VERIFIER_CONTRACT_ID, EXPLORER_BASE,
-  stroopsToXlm, shortHex, DISBURSEMENT_ID, MERKLE_ROOT,
+  stroopsToXlm, shortHex, DISBURSEMENT_ID, MERKLE_ROOT, // MERKLE_ROOT kept for existing use
 } from '@/lib/constants';
 import type { BeneficiaryCredential } from '@/lib/credential';
 
 type FundStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 type PauseStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 type IssueStep = 'idle' | 'issuing' | 'done' | 'error';
+
+interface CsvRow { name: string; id: string; wallet: string }
+
+function parseCsv(text: string): CsvRow[] {
+  const lines = text.trim().split(/\r?\n/);
+  const header = lines[0].toLowerCase().split(',').map((h) => h.trim());
+  const nameIdx = header.indexOf('name');
+  const idIdx = header.findIndex((h) => h === 'id' || h === 'beneficiary_id');
+  const walletIdx = header.findIndex((h) => h === 'wallet' || h === 'address');
+  if (nameIdx < 0 || idIdx < 0 || walletIdx < 0) {
+    throw new Error('CSV must have columns: name, id (or beneficiary_id), wallet (or address)');
+  }
+  return lines.slice(1).filter((l) => l.trim()).map((line) => {
+    const cols = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
+    const wallet = cols[walletIdx] ?? '';
+    if (!/^G[A-Z0-9]{55}$/.test(wallet)) throw new Error(`Invalid Stellar address: ${wallet}`);
+    return { name: cols[nameIdx] ?? '', id: cols[idIdx] ?? '', wallet };
+  });
+}
 
 interface BeneficiarySlot {
   index: number;
@@ -64,6 +83,10 @@ export default function AdminPage() {
   const [issuedBySlot, setIssuedBySlot] = useState<Record<number, boolean>>({});
   const [issuingSlot, setIssuingSlot] = useState<number | null>(null);
 
+  const [csvRows, setCsvRows] = useState<CsvRow[] | null>(null);
+  const [csvError, setCsvError] = useState('');
+  const [csvDownloaded, setCsvDownloaded] = useState(false);
+
   function log(line: string) {
     setActivityLog((prev) => [`[${new Date().toLocaleTimeString()}] ${line}`, ...prev]);
   }
@@ -77,6 +100,45 @@ export default function AdminPage() {
       })
       .catch((e) => setBeneficiariesError(String(e)));
   }, []);
+
+  function handleCsvUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    setCsvError('');
+    setCsvRows(null);
+    setCsvDownloaded(false);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const rows = parseCsv(ev.target?.result as string);
+        if (rows.length === 0) throw new Error('CSV has no data rows');
+        if (rows.length > 256) throw new Error('Maximum 256 beneficiaries per campaign');
+        setCsvRows(rows);
+        log(`CSV loaded: ${rows.length} beneficiary rows`);
+      } catch (err) {
+        setCsvError(String(err));
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function handleCsvDownload() {
+    if (!csvRows) return;
+    const output = {
+      disbursement_id: DISBURSEMENT_ID,
+      payout_amount_stroops: 10_000_000,
+      beneficiaries: csvRows.map((r) => ({ name: r.name, id: r.id, wallet: r.wallet })),
+    };
+    const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'beneficiaries.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    setCsvDownloaded(true);
+    log(`beneficiaries.json downloaded (${csvRows.length} rows) — run npm run generate in packages/merkle-tools`);
+  }
 
   async function handleIssueToSlot(slot: BeneficiarySlot) {
     setIssuingSlot(slot.index);
@@ -451,6 +513,72 @@ export default function AdminPage() {
               Share privately with the beneficiary. They paste it into{' '}
               <a href="/claim" className="underline" style={{ color: 'var(--green)' }}>Claim</a>{' '}
               — the secret never leaves their device.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── CSV Campaign Builder ── */}
+      <div className="card mb-6">
+        <div className="font-semibold mb-1 flex items-center gap-2">
+          Campaign Builder — CSV Upload
+          <span className="badge" style={{ background: '#2d1c3d', color: '#d2a8ff', fontSize: '0.65rem' }}>
+            Off-chain
+          </span>
+        </div>
+        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+          Upload a CSV of beneficiaries to generate a wallet-bound campaign.
+          Required columns: <span className="mono text-xs">name, id, wallet</span>
+        </p>
+
+        <div className="mb-3">
+          <label className="text-xs block mb-1" style={{ color: 'var(--muted)' }}>
+            Beneficiary list (.csv)
+          </label>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleCsvUpload}
+            className="text-sm"
+            style={{ color: 'var(--text)' }}
+          />
+        </div>
+
+        {csvError && (
+          <div className="text-xs p-3 rounded-lg mb-3" style={{ background: '#1a0505', color: '#f87171', border: '1px solid #7f1d1d' }}>
+            {csvError}
+          </div>
+        )}
+
+        {csvRows && (
+          <div>
+            <div className="text-xs p-3 rounded-lg mb-3" style={{ background: '#0a1628', color: 'var(--muted)', border: '1px solid var(--border-dim)' }}>
+              <div className="font-semibold mb-2" style={{ color: 'var(--text)' }}>
+                {csvRows.length} beneficiary row{csvRows.length !== 1 ? 's' : ''} parsed
+              </div>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {csvRows.map((r, i) => (
+                  <div key={i} className="flex gap-3 mono">
+                    <span style={{ color: 'var(--muted-2)', minWidth: 24 }}>#{i}</span>
+                    <span style={{ minWidth: 80, flexShrink: 0 }}>{r.name}</span>
+                    <span style={{ color: 'var(--muted-2)' }}>{r.wallet.slice(0, 8)}…</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-3 items-start flex-wrap">
+              <button
+                className="btn-primary text-sm"
+                onClick={handleCsvDownload}
+              >
+                {csvDownloaded ? '✓ Downloaded' : 'Download beneficiaries.json'}
+              </button>
+              {csvDownloaded && (
+                <div className="text-xs p-3 rounded-lg flex-1" style={{ background: '#0a1f14', color: 'var(--green)', border: '1px solid var(--green-dim)' }}>
+                  Next: place beneficiaries.json in packages/merkle-tools/ then run{' '}
+                  <span className="mono">npm run generate</span> to build the Merkle tree and campaign.json.
+                </div>
+              )}
             </div>
           </div>
         )}

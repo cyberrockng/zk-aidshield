@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { fetchStats, type CampaignStats } from '@/lib/soroban';
 import {
   CONTRACT_ID, VERIFIER_CONTRACT_ID, EXPLORER_BASE,
-  DISBURSEMENT_ID, MERKLE_ROOT, stroopsToXlm, shortHex, RPC_URL,
+  DISBURSEMENT_ID, MERKLE_ROOT, VK_HASH, stroopsToXlm, shortHex, RPC_URL,
 } from '@/lib/constants';
 
 interface ClaimEvent {
@@ -55,9 +55,11 @@ const ZK_FACTS = [
   { label: 'Elliptic curve', value: 'BLS12-381' },
   { label: 'Circuit language', value: 'circom 2.1' },
   { label: 'Hash function', value: 'Poseidon (BLS12-381 scalar field)' },
+  { label: 'Leaf formula', value: 'Poseidon(secret, disburse_id, wallet)' },
+  { label: 'Nullifier formula', value: 'Poseidon(secret, disburse_id, wallet, 1)' },
   { label: 'Merkle tree depth', value: '8 levels · 256 slots' },
   { label: 'Proof size', value: '384 bytes (G1 + G2 + G1 uncompressed)' },
-  { label: 'Public inputs', value: '4 × 32 bytes (128 bytes total)' },
+  { label: 'Public inputs', value: '4 (disburse_id, merkle_root, nullifier, wallet)' },
   { label: 'On-chain verification', value: 'Native BLS12-381 pairing_check on Soroban' },
   { label: 'Proving location', value: 'Browser WASM (secret never leaves device)' },
   { label: 'Proving time', value: '~15–30 s (single-thread WASM)' },
@@ -227,6 +229,37 @@ export default function StatsPage() {
               >
                 {shortHex(c.id)} ↗
               </a>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Verifier status */}
+      <div className="card mb-6">
+        <div className="font-semibold mb-4 flex items-center gap-2">
+          Verifier Status
+          <span className="mono text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: '#0e3a1d', color: '#3fb950' }}>
+            on-chain · full pairing
+          </span>
+        </div>
+        <div className="space-y-3 text-sm">
+          {[
+            { label: 'On-chain check', value: 'Native BLS12-381 bls.pairing_check' },
+            { label: 'Verifier contract', value: shortHex(VERIFIER_CONTRACT_ID), link: `${EXPLORER_BASE}/contract/${VERIFIER_CONTRACT_ID}` },
+            { label: 'VK hash (SHA-256)', value: `${VK_HASH.slice(0, 12)}…${VK_HASH.slice(-8)}`, mono: true, full: VK_HASH },
+            { label: 'Constraints', value: '2516 non-linear (circom 2.1)' },
+          ].map((r) => (
+            <div key={r.label} className="flex items-start justify-between gap-4">
+              <span style={{ color: 'var(--muted)', flexShrink: 0 }}>{r.label}</span>
+              {r.link ? (
+                <a href={r.link} target="_blank" rel="noopener noreferrer" className="mono text-xs underline text-right" style={{ color: 'var(--green)', wordBreak: 'break-all' }}>
+                  {r.value} ↗
+                </a>
+              ) : (
+                <span className={r.mono ? 'mono text-xs text-right' : 'text-right'} style={{ wordBreak: 'break-all' }} title={r.full}>
+                  {r.value}
+                </span>
+              )}
             </div>
           ))}
         </div>

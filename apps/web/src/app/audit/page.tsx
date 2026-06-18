@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { ISSUER_PUBLIC_KEY } from '@/lib/credential';
-import { CONTRACT_ID, VERIFIER_CONTRACT_ID, DISBURSEMENT_ID, MERKLE_ROOT, EXPLORER_BASE, shortHex } from '@/lib/constants';
+import { CONTRACT_ID, VERIFIER_CONTRACT_ID, DISBURSEMENT_ID, MERKLE_ROOT, VK_HASH, EXPLORER_BASE, shortHex } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Trust Audit — ZK AidShield',
@@ -206,9 +206,9 @@ export default function AuditPage() {
             hardcoded in the frontend. Production would need on-chain key registry and revocation.
           </li>
           <li>
-            <strong style={{ color: 'var(--text)' }}>Single-slot demo:</strong> The current campaign has one
-            Merkle slot. Multiple beneficiaries with the same secret would all produce valid proofs (different nullifiers).
-            Full deployment would use one slot per beneficiary.
+            <strong style={{ color: 'var(--text)' }}>Trusted setup (Groth16):</strong> The proving key was generated
+            with a single-contributor ceremony (demo only). Production requires a multi-party trusted setup to
+            eliminate the toxic waste risk.
           </li>
         </ul>
       </div>
@@ -263,6 +263,7 @@ export default function AuditPage() {
             ['On-chain check', 'Native bls.pairing_check on Soroban'],
             ['Proving location', 'Browser WASM (secret never leaves device)'],
             ['Trusted setup', 'Groth16 (requires ceremony for production)'],
+            ['VK hash (SHA-256)', shortHex(VK_HASH)],
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between gap-2 py-1" style={{ borderBottom: '1px solid var(--border-dim)' }}>
               <span style={{ color: 'var(--muted)' }}>{k}</span>
