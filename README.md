@@ -10,15 +10,15 @@
 
 Humanitarian aid systems leak data. Names, ID numbers, and claim records end up in databases that get hacked, sold, or handed to hostile actors. In conflict zones, a paper trail can be lethal.
 
-ZK AidShield removes that paper trail entirely — using real zero-knowledge cryptography, not just encryption.
+ZK AidShield removes the aid-list paper trail from public settlement — using real zero-knowledge cryptography, not just encryption.
 
 ## What It Does
 
-A beneficiary proves two things — they are on an approved list, and they haven't claimed before — **without revealing who they are**. No name, address, or ID ever touches the blockchain.
+A beneficiary proves two things — they are on an approved list, and they haven't claimed before — **without revealing their eligibility record or private credential**. No name, ID number, beneficiary database row, credential secret, or Merkle witness ever touches the blockchain.
 
 - **Aid operators** get cryptographic fraud resistance: replay attacks are impossible by construction
-- **Beneficiaries** get dignity and safety: zero PII on-chain, ever
-- **Auditors** get verifiable claim counts without seeing who claimed or when
+- **Beneficiaries** get dignity and safety: no names, IDs, or aid-list entries on-chain
+- **Auditors** get verifiable claim counts, escrow state, and payout events without seeing the private eligibility list
 
 ## Why This Can Win
 
@@ -277,6 +277,8 @@ cp apps/web/.env.example apps/web/.env.local
 
 The app ships with testnet fallback values in `constants.ts`, so it works without `.env.local` for the deployed demo campaign.
 
+Protected operator APIs do not ship with server-side fallbacks. Set `ISSUER_SECRET_KEY`, `ADMIN_API_SECRET`, and `LEDGER_HMAC_SECRET` in `apps/web/.env.local` before using `/admin` to issue credentials or inspect the local issuance ledger.
+
 ## Credential System
 
 The operator's API route (`POST /api/issue-credential`) signs a credential JSON with an Ed25519 key. The signing key lives only on the server — it is never bundled into the frontend.
@@ -295,6 +297,12 @@ See [`/audit`](http://localhost:3000/audit) for the full trust model breakdown, 
 - What is enforced on-chain vs. off-chain
 - Attack resistance analysis (replay, forgery, wallet-switching)
 - Known limitations at hackathon scope
+
+## Security Posture
+
+AidShield keeps names, IDs, beneficiary-list membership, credential secrets, Merkle witnesses, and issuance records off-chain. Beneficiary credentials are wallet-bound and issuer-signed; claims are replay-protected by on-chain nullifiers; operator-only APIs require an admin secret; the local issuance ledger stores keyed HMAC identifiers instead of raw wallet addresses.
+
+Public settlement still reveals the payout wallet, timing, amount, contract IDs, Merkle root, verifier key hash, and nullifier. This is the intended accountability layer on Stellar, not an anonymity guarantee for the final token transfer.
 
 ---
 

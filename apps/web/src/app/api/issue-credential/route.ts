@@ -23,12 +23,17 @@ import type { BeneficiaryCredential } from '@/lib/credential';
 import { credentialSigningPayload } from '@/lib/credential';
 import { ISSUER_KEY_ID, ISSUER_PUBLIC_KEY } from '@/lib/constants';
 import { appendIssuanceLedgerEntry } from '@/lib/issuance-ledger-store';
+import { requireAdmin } from '@/lib/admin-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-// ── Issuer keypair (demo — never expose in client bundle) ──────────────────
-// In production, read from ISSUER_SECRET_KEY env var via a secret manager.
-const ISSUER_SECRET = process.env.ISSUER_SECRET_KEY ?? 'SBMF2UKOVBCU5XG24BBQMCXF4QFGNUHMBMHH6HQO4NEMF6MKTDWN5XKU';
+// ── Issuer keypair (server-side only; never expose in client bundle) ───────
 const ISSUER_PUBLIC = ISSUER_PUBLIC_KEY;
+
+function issuerSecret(): string {
+  const secret = process.env.ISSUER_SECRET_KEY;
+  if (!secret) throw new Error('ISSUER_SECRET_KEY is not configured on the server');
+  return secret;
+}
 
 // ── Campaign data (server-side only) ──────────────────────────────────────
 interface CampaignClaim {
@@ -71,6 +76,9 @@ const issuedSlots = new Set<number>();
 const issuedWallets = new Set<string>();
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   let body: { claimant_address?: string };
   try {
     body = await req.json() as { claimant_address?: string };
@@ -136,7 +144,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Sign: Ed25519 over SHA-256 of the canonical payload
   const payload = credentialSigningPayload(credBase);
   const msgHash = createHash('sha256').update(payload).digest();
-  const issuerKP = Keypair.fromSecret(ISSUER_SECRET);
+  let issuerKP: Keypair;
+  try {
+    issuerKP = Keypair.fromSecret(issuerSecret());
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 503 });
+  }
   const sigBytes = issuerKP.sign(msgHash);
   const issuer_signature = Buffer.from(sigBytes).toString('hex');
 

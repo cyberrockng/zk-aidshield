@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash, createHmac } from 'crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import type { BeneficiaryCredential } from './credential';
@@ -8,6 +8,12 @@ const LEDGER_PATH = join(process.cwd(), '.data', 'issuance-ledger.json');
 
 function sha256Hex(value: string): string {
   return createHash('sha256').update(value).digest('hex');
+}
+
+function ledgerHmacHex(value: string): string {
+  const secret = process.env.LEDGER_HMAC_SECRET ?? process.env.ADMIN_API_SECRET;
+  if (!secret) throw new Error('LEDGER_HMAC_SECRET is not configured on the server');
+  return createHmac('sha256', secret).update(value).digest('hex');
 }
 
 function ensureLedgerDir() {
@@ -36,7 +42,7 @@ export function credentialHash(credential: BeneficiaryCredential): string {
 export function createLedgerEntry(credential: BeneficiaryCredential, deliveryMode: DeliveryMode = 'issued'): IssuanceLedgerEntry {
   return {
     slot_index: credential.slot_index,
-    claimant_address_hash: sha256Hex(credential.claimant_address),
+    claimant_address_hash: ledgerHmacHex(credential.claimant_address),
     issuer_key_id: credential.issuer_key_id,
     issued_at: credential.issued_at,
     expires_at: credential.expires_at,

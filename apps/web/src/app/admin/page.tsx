@@ -85,6 +85,9 @@ export default function AdminPage() {
   const [qrPassphrase, setQrPassphrase] = useState('');
 
   const [activityLog, setActivityLog] = useState<string[]>([]);
+  const [adminSecret, setAdminSecret] = useState(() =>
+    typeof window === 'undefined' ? '' : window.localStorage.getItem('aidshield_admin_secret') ?? '',
+  );
 
   const [beneficiaries, setBeneficiaries] = useState<BeneficiaryList | null>(null);
   const [beneficiariesError, setBeneficiariesError] = useState<string | null>(null);
@@ -101,19 +104,43 @@ export default function AdminPage() {
     setActivityLog((prev) => [`[${new Date().toLocaleTimeString()}] ${line}`, ...prev]);
   }
 
+  const adminHeaders = useCallback((contentType = false): HeadersInit => {
+    const headers: Record<string, string> = {};
+    if (contentType) headers['Content-Type'] = 'application/json';
+    if (adminSecret.trim()) headers['x-admin-secret'] = adminSecret.trim();
+    return headers;
+  }, [adminSecret]);
+
   useEffect(() => {
-    fetch('/api/beneficiaries')
+    window.localStorage.setItem('aidshield_admin_secret', adminSecret);
+  }, [adminSecret]);
+
+  useEffect(() => {
+    if (!adminSecret.trim()) {
+      setBeneficiariesError('Enter the admin API secret to load registered beneficiaries');
+      setBeneficiaries(null);
+      return;
+    }
+
+    fetch('/api/beneficiaries', { headers: adminHeaders() })
       .then((r) => r.json())
       .then((data: BeneficiaryList & { error?: string }) => {
         if (data.error) { setBeneficiariesError(data.error); return; }
+        setBeneficiariesError(null);
         setBeneficiaries(data);
       })
       .catch((e) => setBeneficiariesError(String(e)));
-  }, []);
+  }, [adminHeaders, adminSecret]);
 
   const loadIssuanceLedger = useCallback(async () => {
+    if (!adminSecret.trim()) {
+      setIssuanceLedger(null);
+      setIssuanceLedgerError('Enter the admin API secret to load the issuance ledger');
+      return;
+    }
+
     try {
-      const res = await fetch('/api/issuance-ledger');
+      const res = await fetch('/api/issuance-ledger', { headers: adminHeaders() });
       const data = await res.json() as IssuanceLedgerResponse & { error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Failed to load issuance ledger');
       setIssuanceLedger(data);
@@ -121,7 +148,7 @@ export default function AdminPage() {
     } catch (e) {
       setIssuanceLedgerError(String(e));
     }
-  }, []);
+  }, [adminHeaders, adminSecret]);
 
   useEffect(() => {
     loadIssuanceLedger();
@@ -210,7 +237,7 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/issue-credential', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminHeaders(true),
         body: JSON.stringify({ claimant_address: slot.claimant_address }),
       });
       const data = await res.json() as { error?: string; slot_index?: number };
@@ -346,7 +373,7 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/issue-credential', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminHeaders(true),
         body: JSON.stringify({ claimant_address: addr }),
       });
       if (!res.ok) {
@@ -414,7 +441,7 @@ export default function AdminPage() {
       const credential_hash = await credentialHashClient(issuedCredential);
       const res = await fetch('/api/issuance-ledger', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminHeaders(true),
         body: JSON.stringify({ credential_hash, delivery_mode: deliveryMode }),
       });
       if (!res.ok) return;
@@ -461,6 +488,21 @@ export default function AdminPage() {
             Explorer ↗
           </a>
         </div>
+      </div>
+
+      <div className="card mb-6">
+        <div className="font-semibold mb-2">Operator Authorization</div>
+        <p className="text-sm mb-3" style={{ color: 'var(--muted)' }}>
+          Protected routes require the server-side admin secret before beneficiary slots, credential issuance, or ledger records can load.
+        </p>
+        <input
+          type="password"
+          value={adminSecret}
+          onChange={(e) => setAdminSecret(e.target.value)}
+          placeholder="ADMIN_API_SECRET"
+          className="input mono"
+          autoComplete="off"
+        />
       </div>
 
       {/* ── Campaign State ── */}
@@ -841,7 +883,7 @@ export default function AdminPage() {
           </span>
         </div>
         <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
-          Durable local issuance records for operator accountability. Wallets and credentials are stored as SHA-256 hashes, not raw beneficiary data.
+          Durable local issuance records for operator accountability. Wallets are stored as keyed HMAC identifiers, not raw beneficiary data.
         </p>
 
         {issuanceLedgerError ? (

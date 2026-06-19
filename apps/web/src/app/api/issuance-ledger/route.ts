@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { DeliveryMode } from '@/lib/issuance-ledger';
 import { readIssuanceLedger, recordLedgerDelivery } from '@/lib/issuance-ledger-store';
+import { requireAdmin } from '@/lib/admin-auth';
 
 const DELIVERY_MODES = new Set<DeliveryMode>([
   'issued',
@@ -10,11 +11,17 @@ const DELIVERY_MODES = new Set<DeliveryMode>([
   'qr_payload_copy',
 ]);
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   return NextResponse.json(readIssuanceLedger());
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   let body: { credential_hash?: string; delivery_mode?: DeliveryMode };
   try {
     body = await req.json() as { credential_hash?: string; delivery_mode?: DeliveryMode };

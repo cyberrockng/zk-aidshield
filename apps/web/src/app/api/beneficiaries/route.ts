@@ -10,7 +10,8 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/admin-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 interface CampaignClaim {
   index: number;
@@ -38,7 +39,10 @@ function loadCampaign(): Campaign {
   throw new Error('campaign.json not found');
 }
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const authError = requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const campaign = loadCampaign();
     return NextResponse.json({
