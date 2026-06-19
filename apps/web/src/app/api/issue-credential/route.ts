@@ -56,6 +56,10 @@ interface Campaign {
 }
 
 function loadCampaign(): Campaign {
+  if (process.env.CAMPAIGN_JSON) {
+    return JSON.parse(process.env.CAMPAIGN_JSON) as Campaign;
+  }
+
   // Path relative to Next.js CWD (apps/web)
   const paths = [
     join(process.cwd(), '../../packages/merkle-tools/campaign.json'),
@@ -68,7 +72,7 @@ function loadCampaign(): Campaign {
       // try next path
     }
   }
-  throw new Error('campaign.json not found — run generate-campaign first');
+  throw new Error('CAMPAIGN_JSON env var or campaign.json file is required — run generate-campaign first');
 }
 
 // In-memory issue tracking (resets on restart — acceptable for demo)

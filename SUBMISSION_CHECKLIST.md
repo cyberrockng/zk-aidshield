@@ -20,6 +20,7 @@ Set these server-side secrets in the hosting provider. Do not prefix them with `
 - `ISSUER_SECRET_KEY`
 - `ADMIN_API_SECRET`
 - `LEDGER_HMAC_SECRET`
+- `CAMPAIGN_JSON`
 
 Set these browser-visible deployment values:
 
