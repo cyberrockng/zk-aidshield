@@ -60,15 +60,39 @@ def bn_to_soroban_hex(pt, size=48):
     v = int(pt)
     return v.to_bytes(size, 'big').hex()
 
+G1_INFINITY = "40" + ("00" * 95)
+G2_INFINITY = "40" + ("00" * 191)
+
+def is_zero(v):
+    if isinstance(v, list):
+        return all(int(x) == 0 for x in v)
+    return int(v) == 0
+
+def is_one(v):
+    if isinstance(v, list):
+        return int(v[0]) == 1 and all(int(x) == 0 for x in v[1:])
+    return int(v) == 1
+
 with open(sys.argv[1]) as f:
     vk = json.load(f)
 
-# G1: be_bytes(X, 48) || be_bytes(Y, 48) = 96 bytes
+# G1: be_bytes(X, 48) || be_bytes(Y, 48) = 96 bytes.
+# Projective infinity is encoded with the Soroban BLS12-381 infinity flag.
 def g1_hex(pt):
+    if len(pt) >= 3:
+        if is_zero(pt[2]):
+            return G1_INFINITY
+        if not is_one(pt[2]):
+            raise SystemExit(f"Unsupported projective G1 z-coordinate: {pt[2]}")
     return bn_to_soroban_hex(pt[0]) + bn_to_soroban_hex(pt[1])
 
-# G2: be_bytes(X_c1, 48) || be_bytes(X_c0, 48) || be_bytes(Y_c1, 48) || be_bytes(Y_c0, 48) = 192 bytes
+# G2: be_bytes(X_c1, 48) || be_bytes(X_c0, 48) || be_bytes(Y_c1, 48) || be_bytes(Y_c0, 48) = 192 bytes.
 def g2_hex(pt):
+    if len(pt) >= 3:
+        if is_zero(pt[2]):
+            return G2_INFINITY
+        if not is_one(pt[2]):
+            raise SystemExit(f"Unsupported projective G2 z-coordinate: {pt[2]}")
     return (bn_to_soroban_hex(pt[0][1]) + bn_to_soroban_hex(pt[0][0]) +
             bn_to_soroban_hex(pt[1][1]) + bn_to_soroban_hex(pt[1][0]))
 
@@ -89,12 +113,36 @@ PYEOF
 eval $(python3 - "$VK_JSON" <<'PYEOF'
 import json, sys
 
+G1_INFINITY = "40" + ("00" * 95)
+G2_INFINITY = "40" + ("00" * 191)
+
 def bn_to_hex(pt, size=48):
     return int(pt).to_bytes(size, 'big').hex()
 
-def g1_hex(pt): return bn_to_hex(pt[0]) + bn_to_hex(pt[1])
+def is_zero(v):
+    if isinstance(v, list):
+        return all(int(x) == 0 for x in v)
+    return int(v) == 0
+
+def is_one(v):
+    if isinstance(v, list):
+        return int(v[0]) == 1 and all(int(x) == 0 for x in v[1:])
+    return int(v) == 1
+
+def g1_hex(pt):
+    if len(pt) >= 3:
+        if is_zero(pt[2]):
+            return G1_INFINITY
+        if not is_one(pt[2]):
+            raise SystemExit(f"Unsupported projective G1 z-coordinate: {pt[2]}")
+    return bn_to_hex(pt[0]) + bn_to_hex(pt[1])
 
 def g2_hex(pt):
+    if len(pt) >= 3:
+        if is_zero(pt[2]):
+            return G2_INFINITY
+        if not is_one(pt[2]):
+            raise SystemExit(f"Unsupported projective G2 z-coordinate: {pt[2]}")
     return (bn_to_hex(pt[0][1]) + bn_to_hex(pt[0][0]) +
             bn_to_hex(pt[1][1]) + bn_to_hex(pt[1][0]))
 

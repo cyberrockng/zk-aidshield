@@ -81,13 +81,36 @@ echo "=== Parse verification key ==="
 eval "$(python3 - "$VK_JSON" <<'PYEOF'
 import json, sys
 
+G1_INFINITY = "40" + ("00" * 95)
+G2_INFINITY = "40" + ("00" * 191)
+
 def bn_to_hex(pt, size=48):
     return int(pt).to_bytes(size, 'big').hex()
 
+def is_zero(v):
+    if isinstance(v, list):
+        return all(int(x) == 0 for x in v)
+    return int(v) == 0
+
+def is_one(v):
+    if isinstance(v, list):
+        return int(v[0]) == 1 and all(int(x) == 0 for x in v[1:])
+    return int(v) == 1
+
 def g1_hex(pt):
+    if len(pt) >= 3:
+        if is_zero(pt[2]):
+            return G1_INFINITY
+        if not is_one(pt[2]):
+            raise SystemExit(f"Unsupported projective G1 z-coordinate: {pt[2]}")
     return bn_to_hex(pt[0]) + bn_to_hex(pt[1])
 
 def g2_hex(pt):
+    if len(pt) >= 3:
+        if is_zero(pt[2]):
+            return G2_INFINITY
+        if not is_one(pt[2]):
+            raise SystemExit(f"Unsupported projective G2 z-coordinate: {pt[2]}")
     return (bn_to_hex(pt[0][1]) + bn_to_hex(pt[0][0]) +
             bn_to_hex(pt[1][1]) + bn_to_hex(pt[1][0]))
 

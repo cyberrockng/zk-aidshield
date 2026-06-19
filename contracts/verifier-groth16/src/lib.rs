@@ -33,6 +33,7 @@ use soroban_sdk::{
 // G1/G2 use **uncompressed** affine encoding:
 //   G1: be_bytes(X, 48) || be_bytes(Y, 48)  = 96 bytes
 //   G2: be_bytes(X_c1, 48) || be_bytes(X_c0, 48) || be_bytes(Y_c1, 48) || be_bytes(Y_c0, 48)  = 192 bytes
+//   Infinity points use Soroban's BLS12-381 infinity flag encoding, not X=0,Y=1.
 // Negation uses soroban_sdk's Neg impl (negates the Y coordinate mod p).
 
 const G1_SIZE: u32 = 96;
