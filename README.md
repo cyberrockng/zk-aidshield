@@ -95,15 +95,15 @@ See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/
 
 | Contract | Address |
 |---|---|
-| AidShield Disbursement Phase 4 | `CAXACYKGE4V5DWMS45ZD74FAG4CCJBXT3ILITP4VXJXW3ATICRV3H7LT` |
-| Groth16 BLS12-381 Verifier Phase 4 | `CAAHWYYIFYYTJXI3RYJBCJVTQD3GNVQOARR2BHDUGYPU5E5RIX6TPKGZ` |
+| AidShield Disbursement Phase 4 | `CDKODSLWLQ6FSRMDEFWLOMCTQOKJ6PTNAJE3RNJYL7NJFQ3JDRBLAHFO` |
+| Groth16 BLS12-381 Verifier Phase 4 | `CAUJSUQBLM4E4N2CW26M2FJ2CM2LV4BE44PS76V7AYIN77DVDA7ZPYP4` |
 | XLM Native SAC (testnet) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-**Campaign (Phase 4 — wallet-, expiry-, and issuer-bound leaves):** disbursement\_id `000…001` · merkle\_root `0b2a5135…` · 1 XLM per claim · 50 XLM escrow
+**Campaign (Phase 4 — wallet-, expiry-, and issuer-bound leaves):** disbursement\_id `000…001` · merkle\_root `6631aeab…` · 1 XLM per claim · 50 XLM escrow
 
 > Phase 4 was deployed on Stellar testnet with the upgraded 6-public-input circuit and on-chain issuer/expiry enforcement.
 
-Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CAXACYKGE4V5DWMS45ZD74FAG4CCJBXT3ILITP4VXJXW3ATICRV3H7LT) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAAHWYYIFYYTJXI3RYJBCJVTQD3GNVQOARR2BHDUGYPU5E5RIX6TPKGZ)
+Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CDKODSLWLQ6FSRMDEFWLOMCTQOKJ6PTNAJE3RNJYL7NJFQ3JDRBLAHFO) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAUJSUQBLM4E4N2CW26M2FJ2CM2LV4BE44PS76V7AYIN77DVDA7ZPYP4)
 
 ---
 

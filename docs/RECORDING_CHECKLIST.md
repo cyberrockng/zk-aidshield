@@ -7,8 +7,8 @@ Target length: 2-3 minutes.
 - Freighter installed and set to Stellar Testnet.
 - Use the deployed Phase 4 frontend or local `http://localhost:3000`.
 - Keep Stellar Explorer tabs ready for:
-  - Disbursement: `https://stellar.expert/explorer/testnet/contract/CAXACYKGE4V5DWMS45ZD74FAG4CCJBXT3ILITP4VXJXW3ATICRV3H7LT`
-  - Verifier: `https://stellar.expert/explorer/testnet/contract/CAAHWYYIFYYTJXI3RYJBCJVTQD3GNVQOARR2BHDUGYPU5E5RIX6TPKGZ`
+  - Disbursement: `https://stellar.expert/explorer/testnet/contract/CDKODSLWLQ6FSRMDEFWLOMCTQOKJ6PTNAJE3RNJYL7NJFQ3JDRBLAHFO`
+  - Verifier: `https://stellar.expert/explorer/testnet/contract/CAUJSUQBLM4E4N2CW26M2FJ2CM2LV4BE44PS76V7AYIN77DVDA7ZPYP4`
 
 ## Script
 

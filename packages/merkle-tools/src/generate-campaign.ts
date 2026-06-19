@@ -48,13 +48,13 @@ interface CampaignOutput {
 
 // ── Demo seed data ─────────────────────────────────────────────────────────────
 // Wallets pre-committed into the Merkle tree for the hackathon demo.
-// Slot 0 is the admin/deployer wallet; slot 1 is the issuer wallet.
-// Each leaf = Poseidon(secret, disbursement_id, wallet_field) — wallet-bound at circuit level.
+// Slot 0 is the admin/deployer wallet; slot 1 is the issuer wallet; slot 2 is the demo claimant.
+// Each leaf = Poseidon(secret, disbursement_id, wallet_field, expires_at, issuer_key_id).
 
 const DEMO_BENEFICIARIES: Beneficiary[] = [
   { name: "Beneficiary A", id: "AID-001", wallet: "GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ" },
   { name: "Beneficiary B", id: "AID-002", wallet: "GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4" },
-  { name: "Beneficiary C", id: "AID-003", wallet: "GCTKVOPSICWARIBGBQCBQ7KM2QN6QGXMF7ILP7OL2IF5PBJKC5USPJ2U" },
+  { name: "Beneficiary C", id: "AID-003", wallet: "GD7KEWXME3KNSEUZIZZZEHTXC5AQCQOZLL2TTKQGR2OBXA2YJBXM7WQS" },
 ];
 
 const DEMO_DISBURSEMENT_ID = "0000000000000000000000000000000000000000000000000000000000000001";
