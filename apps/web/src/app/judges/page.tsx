@@ -25,9 +25,9 @@ const PROOF_POINTS = [
 const DIFFERENTIATORS = [
   'End-to-end flow: operator issuance, local proof, wallet signature, Soroban verification, XLM payout.',
   'Mobile QR credential delivery: field officers can issue an encrypted credential QR; beneficiaries decrypt it locally before the same signature and wallet checks run.',
-  'Operational accountability: admin can export a non-PII issuance ledger with wallet hashes, credential hashes, issuer key, expiry, and delivery mode.',
+  'Operational accountability: admin can export a non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key, expiry, and delivery mode.',
   'Beneficiary receipt: successful payout creates a local receipt with transaction hash, nullifier, amount, and campaign metadata.',
-  'Not an identity wallet: identity checks stay off-chain; final claim is anonymous on-chain.',
+  'Honest privacy boundary: eligibility data stays private, while payout wallet, timing, amount, and nullifier remain public settlement data.',
   'Not only a demo circuit: deployed contracts, test coverage, audit page, stats page, and replay/wrong-wallet demos.',
   'Stellar-native: uses Soroban and BLS12-381 pairing host functions instead of off-chain verification.',
 ];
@@ -45,8 +45,9 @@ const BUILT_NOW = [
   'Wallet-, expiry-, and issuer-bound credentials',
   'Replay protection with persistent nullifiers',
   'Encrypted QR credential delivery',
-  'Non-PII issuance ledger and export',
+  'Admin-protected non-PII issuance ledger and export',
   'Local beneficiary claim receipt',
+  'Admin-protected credential issuance and beneficiary-slot APIs',
   'Admin, claim, stats, audit, and judge pages',
 ];
 
@@ -54,7 +55,13 @@ const NEXT_STEPS = [
   ['Threshold issuer governance', 'Require multiple admin approvals for issuer registration, revocation, pause, and fund movement.'],
   ['Per-issuer operational limits', 'Cap issuance volume per field officer and alert on unusual credential activity.'],
   ['Vendor/voucher mode', 'Support restricted relief budgets where approved vendors can redeem without exposing beneficiary identity.'],
-  ['Optional identity adapters', 'Use Human Passport or Self/OpenPassport during enrollment while keeping the payout claim anonymous.'],
+  ['Optional identity adapters', 'Use Human Passport or Self/OpenPassport during enrollment while keeping eligibility proofs private.'],
+];
+
+const SECURITY_POSTURE = [
+  ['Kept private', 'Names, IDs, beneficiary-list membership, credential secrets, Merkle witnesses, and local issuance records.'],
+  ['Public by design', 'Payout wallet, timing, amount, contract IDs, Merkle root, verifier key hash, and nullifier.'],
+  ['Abuse resistance', 'Operator APIs require an admin secret, ledger wallet identifiers use keyed HMACs, and replay is blocked on-chain.'],
 ];
 
 function FactCard({ label, value }: { label: string; value: string }) {
@@ -186,6 +193,18 @@ export default function JudgesPage() {
               ) : (
                 <span className="mono text-xs text-right" style={{ wordBreak: 'break-all' }}>{value}</span>
               )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card mb-8">
+        <h2 className="font-bold text-lg mb-4">Security Posture</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {SECURITY_POSTURE.map(([title, body]) => (
+            <div key={title} className="rounded-lg p-4" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-dim)' }}>
+              <div className="font-semibold mb-2">{title}</div>
+              <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>{body}</p>
             </div>
           ))}
         </div>

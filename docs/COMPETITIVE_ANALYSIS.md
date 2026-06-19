@@ -22,7 +22,7 @@ This is not just another identity wallet. The lead is the combination of:
 | MACI | Private voting/tallying with anti-collusion properties for high-stakes funding and governance. | Funding allocation is different from individual aid claims. AidShield can borrow anti-coercion ideas without becoming a voting system. |
 | Self / OpenPassport | Strong privacy-preserving proofs from passports, ID cards, and Aadhaar; large repo and SDK ecosystem. | It proves identity attributes, not aid-list membership plus payout. AidShield can integrate it as optional intake, not replace the current claim layer. |
 | Anon Aadhaar | Client-side ZK proof from government-signed Aadhaar data, React SDK, EVM verification. | Region-specific and identity-heavy. AidShield can learn from its SDK packaging and selective disclosure posture. |
-| Human Passport | Sybil resistance, identity scoring, individual verifications, and documented Stellar support. | It is an eligibility signal provider. AidShield can use it as one optional pre-screening signal while keeping the final aid claim anonymous. |
+| Human Passport | Sybil resistance, identity scoring, individual verifications, and documented Stellar support. | It is an eligibility signal provider. AidShield can use it as one optional pre-screening signal while keeping final aid-list membership private. |
 | ICRC-aligned privacy-preserving aid research | Clear humanitarian threat model: privacy, dignity, accountability, scale, smart-card/mobile deployment. | Mostly research and physical-goods/wallet architecture. AidShield can productize the on-chain cash payout version and add operational UX. |
 | World ID | Strong proof-of-humanity story, uniqueness, phone-stored private proof, ecosystem traction. | Biometric onboarding is sensitive for humanitarian settings. AidShield should support uniqueness as an optional plugin, not a mandatory dependency. |
 | Gitcoin / quadratic funding ecosystem | Strong public-goods funding mechanics and fraud analysis. | Public-goods grants are donor allocation, not beneficiary disbursement. AidShield can add a donor/auditor funding layer later. |
@@ -79,7 +79,7 @@ Do not force biometric or government identity into the base product. Add optiona
 - Self/OpenPassport for passport-based eligibility checks
 - Anon Aadhaar-style regional adapter pattern where legally appropriate
 
-The key product message: identity checks happen before list commitment; the final claim remains anonymous.
+The key product message: identity checks happen before list commitment; the final claim proves private eligibility while public settlement still shows payout wallet, timing, amount, and nullifier.
 
 ### 4. Mobile-first claimant flow
 

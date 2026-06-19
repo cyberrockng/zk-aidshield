@@ -2,11 +2,11 @@
 
 ## Tagline
 
-Privacy-preserving humanitarian aid payouts on Stellar: prove eligibility, claim once, reveal no identity.
+Privacy-preserving humanitarian aid payouts on Stellar: prove eligibility, claim once, keep aid-list membership private.
 
 ## Inspiration
 
-Humanitarian aid systems often require beneficiaries to expose names, IDs, and claim records to receive help. In conflict or displacement settings, that data trail can become dangerous. ZK AidShield uses zero-knowledge proofs so recipients can prove eligibility without publishing who they are.
+Humanitarian aid systems often require beneficiaries to expose names, IDs, and claim records to receive help. In conflict or displacement settings, that data trail can become dangerous. ZK AidShield uses zero-knowledge proofs so recipients can prove eligibility without publishing names, IDs, private credentials, or aid-list membership.
 
 ## What It Does
 
@@ -14,7 +14,7 @@ ZK AidShield lets an aid operator commit an approved beneficiary set as a Poseid
 
 Operators can deliver credentials as JSON files, copied payloads, or passphrase-protected QR codes for phone-first field use. QR import decrypts locally, then preserves the same signature, wallet-binding, expiry, and nullifier checks.
 
-For operator accountability, the admin dashboard keeps a durable non-PII issuance ledger with wallet hashes, credential hashes, issuer key IDs, expiry windows, and delivery modes. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
+For operator accountability, the admin dashboard keeps an admin-protected non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
 
 ## What Is New In Phase 4
 
@@ -23,8 +23,9 @@ For operator accountability, the admin dashboard keeps a durable non-PII issuanc
 - on-chain issuer registry with revocation
 - on-chain credential expiry enforcement by ledger timestamp
 - encrypted mobile QR credential export/import
-- durable non-PII issuance ledger
+- admin-protected non-PII issuance ledger
 - local beneficiary claim receipts
+- admin-protected credential issuance and beneficiary-slot APIs
 - fresh Stellar testnet deployment with 50 XLM escrow
 
 ## Built With
@@ -56,6 +57,12 @@ For operator accountability, the admin dashboard keeps a durable non-PII issuanc
 7. Retry the same credential to show replay protection.
 8. Switch wallets to show wrong-wallet rejection.
 9. Open `/audit` to show trust boundaries and known limitations.
+
+## Security Posture
+
+AidShield keeps names, IDs, beneficiary-list membership, credential secrets, Merkle witnesses, and issuance records off-chain. Operator APIs are protected by an admin secret, and ledger wallet identifiers use keyed HMACs instead of raw addresses.
+
+The Stellar payout itself remains public settlement data: observers can see payout wallet, timing, amount, contract IDs, Merkle root, verifier key hash, and nullifier. That is the accountability layer, not a claim that the final token transfer is anonymous.
 
 ## Why It Matters
 

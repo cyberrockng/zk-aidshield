@@ -1,6 +1,6 @@
 # ZK AidShield — Claim Aid, Not Your Identity
 
-> Privacy-preserving humanitarian disbursement on Stellar. Prove eligibility with zero knowledge. Reveal nothing.
+> Privacy-preserving humanitarian disbursement on Stellar. Prove eligibility with zero knowledge. Keep aid-list membership private.
 
 **Stellar Hacks: Real-World ZK · DoraHacks · June 2026**
 
