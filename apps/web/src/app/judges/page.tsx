@@ -25,14 +25,34 @@ const PROOF_POINTS = [
 const DIFFERENTIATORS = [
   'End-to-end flow: operator issuance, local proof, wallet signature, Soroban verification, XLM payout.',
   'Mobile QR credential delivery: field officers can issue an encrypted credential QR; beneficiaries decrypt it locally before the same signature and wallet checks run.',
+  'Operational accountability: admin can export a non-PII issuance ledger with wallet hashes, credential hashes, issuer key, expiry, and delivery mode.',
+  'Beneficiary receipt: successful payout creates a local receipt with transaction hash, nullifier, amount, and campaign metadata.',
   'Not an identity wallet: identity checks stay off-chain; final claim is anonymous on-chain.',
   'Not only a demo circuit: deployed contracts, test coverage, audit page, stats page, and replay/wrong-wallet demos.',
   'Stellar-native: uses Soroban and BLS12-381 pairing host functions instead of off-chain verification.',
 ];
 
+const DEMO_STEPS = [
+  ['1', 'Issue', 'Open Admin, issue a wallet-bound credential, set QR passphrase, and show encrypted QR.'],
+  ['2', 'Audit', 'Open the non-PII ledger: slot, wallet hash, credential hash, issuer key, delivery mode.'],
+  ['3', 'Claim', 'Open Claim, enter passphrase, import QR/payload, generate the browser Groth16 proof.'],
+  ['4', 'Settle', 'Approve Freighter, show Stellar transaction, claim receipt, then replay rejection.'],
+];
+
+const BUILT_NOW = [
+  'Groth16 BLS12-381 proof verified on Soroban',
+  'Real XLM escrow payout through Stellar SAC',
+  'Wallet-, expiry-, and issuer-bound credentials',
+  'Replay protection with persistent nullifiers',
+  'Encrypted QR credential delivery',
+  'Non-PII issuance ledger and export',
+  'Local beneficiary claim receipt',
+  'Admin, claim, stats, audit, and judge pages',
+];
+
 const NEXT_STEPS = [
-  ['Multi-issuer operations', 'Add threshold admin controls, per-issuer issuance limits, and a durable non-PII issuance ledger.'],
-  ['Multi-issuer governance', 'Support field-officer issuer keys, revocation, and per-issuer limits for NGO operations.'],
+  ['Threshold issuer governance', 'Require multiple admin approvals for issuer registration, revocation, pause, and fund movement.'],
+  ['Per-issuer operational limits', 'Cap issuance volume per field officer and alert on unusual credential activity.'],
   ['Vendor/voucher mode', 'Support restricted relief budgets where approved vendors can redeem without exposing beneficiary identity.'],
   ['Optional identity adapters', 'Use Human Passport or Self/OpenPassport during enrollment while keeping the payout claim anonymous.'],
 ];
@@ -71,6 +91,54 @@ export default function JudgesPage() {
         <FactCard label="Public inputs" value="6 field elements" />
         <FactCard label="Claim scope" value="1 payout per nullifier" />
         <FactCard label="Current capacity" value="256 slots per campaign" />
+      </section>
+
+      <section className="card mb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+          <div>
+            <h2 className="font-bold text-lg mb-1">Demo Control Panel</h2>
+            <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+              Follow this path to verify the product end to end in under three minutes.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin" className="btn-primary text-sm">Admin</Link>
+            <Link href="/claim" className="btn-outline text-sm">Claim</Link>
+            <Link href="/stats" className="btn-outline text-sm">Stats</Link>
+            <Link href="/audit" className="btn-outline text-sm">Audit</Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
+          {DEMO_STEPS.map(([num, title, body]) => (
+            <div key={title} className="rounded-lg p-4" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-dim)' }}>
+              <div className="mono text-xs mb-2" style={{ color: 'var(--amber)' }}>{num}</div>
+              <div className="font-semibold mb-1">{title}</div>
+              <p className="text-xs" style={{ color: 'var(--muted)', lineHeight: 1.55 }}>{body}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <a
+            href={`${EXPLORER_BASE}/contract/${CONTRACT_ID}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg p-3 mono underline"
+            style={{ background: '#0a1628', border: '1px solid var(--border-dim)', color: 'var(--green)', wordBreak: 'break-all' }}
+          >
+            Disbursement explorer: {shortHex(CONTRACT_ID)} ↗
+          </a>
+          <a
+            href={`${EXPLORER_BASE}/contract/${VERIFIER_CONTRACT_ID}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg p-3 mono underline"
+            style={{ background: '#0a1628', border: '1px solid var(--border-dim)', color: 'var(--green)', wordBreak: 'break-all' }}
+          >
+            Verifier explorer: {shortHex(VERIFIER_CONTRACT_ID)} ↗
+          </a>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -124,19 +192,35 @@ export default function JudgesPage() {
       </section>
 
       <section className="card mb-8">
-        <h2 className="font-bold text-lg mb-4">Next Value To Add</h2>
-        <div className="space-y-4">
-          {NEXT_STEPS.map(([title, body], index) => (
-            <div key={title} className="flex gap-4 pb-4" style={{ borderBottom: '1px solid var(--border-dim)' }}>
-              <div className="mono text-xs" style={{ color: 'var(--amber)', width: 28, flexShrink: 0 }}>
-                {String(index + 1).padStart(2, '0')}
-              </div>
-              <div>
-                <div className="font-semibold mb-1">{title}</div>
-                <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>{body}</p>
-              </div>
+        <h2 className="font-bold text-lg mb-4">Built vs Next</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <div className="text-sm font-semibold mb-3" style={{ color: 'var(--green-bright)' }}>Built now</div>
+            <div className="space-y-2">
+              {BUILT_NOW.map((item) => (
+                <div key={item} className="text-sm flex gap-3" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
+                  <span style={{ color: 'var(--green-bright)', flexShrink: 0 }}>✓</span>
+                  <span>{item}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <div>
+            <div className="text-sm font-semibold mb-3" style={{ color: 'var(--amber)' }}>Next after submission</div>
+            <div className="space-y-4">
+              {NEXT_STEPS.map(([title, body], index) => (
+                <div key={title} className="flex gap-4 pb-4" style={{ borderBottom: '1px solid var(--border-dim)' }}>
+                  <div className="mono text-xs" style={{ color: 'var(--amber)', width: 28, flexShrink: 0 }}>
+                    {String(index + 1).padStart(2, '0')}
+                  </div>
+                  <div>
+                    <div className="font-semibold mb-1">{title}</div>
+                    <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
