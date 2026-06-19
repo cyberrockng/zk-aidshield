@@ -11,7 +11,7 @@ The demo shows:
 - browser-side Groth16 proof generation
 - on-chain BLS12-381 verification on Soroban
 - replay protection with persistent nullifiers
-- mobile QR credential export/import for field delivery
+- encrypted mobile QR credential export/import for field delivery
 - real XLM escrow payout through the Stellar Asset Contract
 - auditor-facing stats and trust model
 
@@ -23,13 +23,13 @@ The demo shows:
 | ZK depth | Circom circuit proves Merkle membership and nullifier correctness while hiding the secret |
 | Stellar fit | Low-cost, fast settlement with native SAC payout and Soroban BLS12-381 host functions |
 | Security thinking | Wallet-bound leaves, on-chain replay blocking, pause switch, trust model, and threat model |
-| Demo completeness | Admin, QR credential delivery, claim, stats, audit, deployed testnet contracts, and automated tests |
+| Demo completeness | Admin, encrypted QR credential delivery, claim, stats, audit, deployed testnet contracts, and automated tests |
 | Expansion path | Issuer governance, vendor/voucher mode, optional identity adapters, and public trusted setup |
 
 ## Strongest Demo Path
 
 1. Show the admin page and issue a credential to a specific Freighter wallet.
-2. Show the generated credential QR, then switch to the claim page and load the credential.
+2. Show the encrypted credential QR, then switch to the claim page and decrypt/load the credential.
 3. Generate the Groth16 proof in-browser.
 4. Approve the transaction in Freighter.
 5. Show the Stellar Explorer transaction and the stats page update.

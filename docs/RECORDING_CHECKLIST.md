@@ -14,8 +14,8 @@ Target length: 2-3 minutes.
 
 1. Show `/judges`: "This is privacy-preserving aid payout infrastructure on Stellar."
 2. Show `/stats`: "50 XLM is funded in escrow; each valid proof releases 1 XLM."
-3. Show `/admin`: issue a credential to the connected testnet wallet and display the QR.
-4. Show `/claim`: import the credential by QR image, file, or paste and verify it.
+3. Show `/admin`: issue a credential to the connected testnet wallet, set a QR passphrase, and display the encrypted QR.
+4. Show `/claim`: enter the passphrase, import the credential by QR image, file, or paste, and verify it.
 5. Generate proof: "The secret stays in-browser; the proof is 384 bytes."
 6. Approve Freighter transaction.
 7. Show success and Explorer transaction.
@@ -27,7 +27,7 @@ Target length: 2-3 minutes.
 
 - "No name, ID, or beneficiary list is stored on-chain."
 - "The Merkle leaf binds wallet, expiry, and issuer key."
-- "Field officers can deliver the signed credential by QR without changing the anonymous claim path."
+- "Field officers can deliver an encrypted credential QR without changing the anonymous claim path."
 - "The contract rejects expired or revoked-issuer credentials."
 - "The nullifier makes double claims impossible."
 - "Auditors can verify funds and claim counts without seeing identities."

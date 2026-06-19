@@ -117,6 +117,7 @@ export default function ClaimPage() {
   const [parseError, setParseError] = useState('');
   const [qrScanError, setQrScanError] = useState('');
   const [qrScanBusy, setQrScanBusy] = useState(false);
+  const [qrPassphrase, setQrPassphrase] = useState('');
 
   const [step, setStep] = useState<Step>('wallet');
   const [statusMsg, setStatusMsg] = useState('');
@@ -175,7 +176,7 @@ export default function ClaimPage() {
       const raw = codes.find((c) => c.rawValue)?.rawValue;
       if (!raw) throw new Error('No QR credential found in this image.');
 
-      const credential = decodeCredentialQr(raw);
+      const credential = await decodeCredentialQr(raw, qrPassphrase);
       setCredJson(prettyCredentialJson(credential));
       setStatusMsg('QR credential imported');
       setStep('paste');
@@ -193,7 +194,7 @@ export default function ClaimPage() {
 
     let obj: BeneficiaryCredential;
     try {
-      obj = decodeCredentialQr(credJson);
+      obj = await decodeCredentialQr(credJson, qrPassphrase);
     } catch (e) {
       setParseError(`Credential parse error: ${String(e)}`);
       return;
@@ -384,6 +385,19 @@ export default function ClaimPage() {
               Your credential was issued by the aid operator. It is signed and bound to this wallet
               address — it cannot be used by anyone else, and the secret inside never leaves your device.
             </div>
+
+            <label className="text-xs mb-1 block" style={{ color: 'var(--muted)' }}>
+              QR passphrase
+            </label>
+            <input
+              type="password"
+              value={qrPassphrase}
+              onChange={(e) => { setQrPassphrase(e.target.value); setParseError(''); setQrScanError(''); }}
+              placeholder="Required for encrypted QR payloads"
+              className="text-sm mb-3"
+              autoComplete="current-password"
+              disabled={step !== 'paste' && step !== 'error'}
+            />
 
             {/* File upload */}
             <label

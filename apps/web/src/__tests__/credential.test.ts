@@ -17,7 +17,14 @@ import {
   ISSUER_KEY_ID,
   type BeneficiaryCredential,
 } from '../lib/credential';
-import { CREDENTIAL_QR_PREFIX, decodeCredentialQr, encodeCredentialQr, prettyCredentialJson } from '../lib/credential-qr';
+import {
+  CREDENTIAL_QR_PREFIX,
+  ENCRYPTED_CREDENTIAL_QR_PREFIX,
+  decodeCredentialQr,
+  encodeCredentialQr,
+  encodeEncryptedCredentialQr,
+  prettyCredentialJson,
+} from '../lib/credential-qr';
 
 // ── Demo issuer keypair (matches constants in credential.ts / API route) ──────
 const ISSUER_SECRET = 'SBMF2UKOVBCU5XG24BBQMCXF4QFGNUHMBMHH6HQO4NEMF6MKTDWN5XKU';
@@ -149,15 +156,30 @@ describe('verifyCredential', () => {
 });
 
 describe('credential QR payloads', () => {
-  it('round-trips a signed credential through the QR payload format', () => {
+  it('round-trips a signed credential through the legacy QR payload format', async () => {
     const cred = makeCred();
     const payload = encodeCredentialQr(cred);
     expect(payload.startsWith(CREDENTIAL_QR_PREFIX)).toBe(true);
-    expect(decodeCredentialQr(payload)).toEqual(cred);
+    await expect(decodeCredentialQr(payload)).resolves.toEqual(cred);
   });
 
-  it('also accepts raw credential JSON for backwards-compatible paste flow', () => {
+  it('round-trips a signed credential through encrypted QR with a passphrase', async () => {
     const cred = makeCred();
-    expect(decodeCredentialQr(prettyCredentialJson(cred))).toEqual(cred);
+    const payload = await encodeEncryptedCredentialQr(cred, 'field-passphrase-42');
+    expect(payload.startsWith(ENCRYPTED_CREDENTIAL_QR_PREFIX)).toBe(true);
+    expect(payload).not.toContain(cred.secret);
+    await expect(decodeCredentialQr(payload, 'field-passphrase-42')).resolves.toEqual(cred);
+  });
+
+  it('rejects encrypted QR payloads without the correct passphrase', async () => {
+    const cred = makeCred();
+    const payload = await encodeEncryptedCredentialQr(cred, 'field-passphrase-42');
+    await expect(decodeCredentialQr(payload)).rejects.toThrow(/passphrase|required|decrypt/i);
+    await expect(decodeCredentialQr(payload, 'wrong-passphrase')).rejects.toThrow(/decrypt|passphrase/i);
+  });
+
+  it('also accepts raw credential JSON for backwards-compatible paste flow', async () => {
+    const cred = makeCred();
+    await expect(decodeCredentialQr(prettyCredentialJson(cred))).resolves.toEqual(cred);
   });
 });

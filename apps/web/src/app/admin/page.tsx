@@ -16,7 +16,7 @@ import {
   stroopsToXlm, shortHex, DISBURSEMENT_ID, MERKLE_ROOT, ISSUER_PUBLIC_KEY, ISSUER_KEY_ID, // MERKLE_ROOT kept for existing use
 } from '@/lib/constants';
 import type { BeneficiaryCredential } from '@/lib/credential';
-import { encodeCredentialQr, prettyCredentialJson } from '@/lib/credential-qr';
+import { encodeEncryptedCredentialQr, prettyCredentialJson } from '@/lib/credential-qr';
 
 type FundStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 type PauseStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
@@ -81,6 +81,7 @@ export default function AdminPage() {
   const [credentialQr, setCredentialQr] = useState('');
   const [credentialQrPayload, setCredentialQrPayload] = useState('');
   const [credentialQrError, setCredentialQrError] = useState('');
+  const [qrPassphrase, setQrPassphrase] = useState('');
 
   const [activityLog, setActivityLog] = useState<string[]>([]);
 
@@ -114,16 +115,25 @@ export default function AdminPage() {
     setCredentialQrError('');
     setQrCopied(false);
     if (!issuedCredential) return;
+    const passphrase = qrPassphrase.trim();
+    if (!passphrase) {
+      setCredentialQrError('Enter a QR passphrase to generate encrypted QR');
+      return;
+    }
 
-    const payload = encodeCredentialQr(issuedCredential);
-    setCredentialQrPayload(payload);
-    QRCode.toDataURL(payload, {
-      errorCorrectionLevel: 'L',
-      margin: 2,
-      scale: 7,
-      color: { dark: '#0d1117', light: '#ffffff' },
-    })
+    encodeEncryptedCredentialQr(issuedCredential, passphrase)
+      .then((payload) => {
+        if (!active) return;
+        setCredentialQrPayload(payload);
+        return QRCode.toDataURL(payload, {
+          errorCorrectionLevel: 'L',
+          margin: 2,
+          scale: 7,
+          color: { dark: '#0d1117', light: '#ffffff' },
+        });
+      })
       .then((url) => {
+        if (!url) return;
         if (active) setCredentialQr(url);
       })
       .catch((e) => {
@@ -131,7 +141,7 @@ export default function AdminPage() {
       });
 
     return () => { active = false; };
-  }, [issuedCredential]);
+  }, [issuedCredential, qrPassphrase]);
 
   function handleCsvUpload(e: React.ChangeEvent<HTMLInputElement>) {
     setCsvError('');
@@ -583,8 +593,29 @@ export default function AdminPage() {
                     Mobile QR credential
                   </div>
                   <div className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--muted)' }}>
-                    Field officers can show this QR to the beneficiary phone. The QR contains the signed credential payload; the claim page still verifies issuer signature, wallet binding, expiry, and nullifier status.
+                    Field officers can show this encrypted QR to the beneficiary phone. Share the passphrase separately. After decryption, the claim page still verifies issuer signature, wallet binding, expiry, and nullifier status.
                   </div>
+                  <label className="text-xs mb-1 block" style={{ color: 'var(--muted)' }}>
+                    QR passphrase
+                  </label>
+                  <input
+                    type="password"
+                    value={qrPassphrase}
+                    onChange={(e) => setQrPassphrase(e.target.value)}
+                    placeholder="8+ characters, share separately"
+                    className="text-sm mb-2"
+                    autoComplete="new-password"
+                  />
+                  {credentialQrError && (
+                    <div className="text-xs mb-3" style={{ color: '#f87171' }}>
+                      {credentialQrError}
+                    </div>
+                  )}
+                  {credentialQrPayload && (
+                    <div className="text-xs mb-3" style={{ color: 'var(--green)' }}>
+                      Encrypted QR ready. The credential secret is not readable from the QR without this passphrase.
+                    </div>
+                  )}
                   <div className="flex gap-2 flex-wrap">
                     <button
                       className="text-xs px-3 py-1.5 rounded-lg font-medium"

@@ -24,7 +24,7 @@ const PROOF_POINTS = [
 
 const DIFFERENTIATORS = [
   'End-to-end flow: operator issuance, local proof, wallet signature, Soroban verification, XLM payout.',
-  'Mobile QR credential delivery: field officers can issue a signed credential QR and beneficiaries can import it on the claim page.',
+  'Mobile QR credential delivery: field officers can issue an encrypted credential QR; beneficiaries decrypt it locally before the same signature and wallet checks run.',
   'Not an identity wallet: identity checks stay off-chain; final claim is anonymous on-chain.',
   'Not only a demo circuit: deployed contracts, test coverage, audit page, stats page, and replay/wrong-wallet demos.',
   'Stellar-native: uses Soroban and BLS12-381 pairing host functions instead of off-chain verification.',
