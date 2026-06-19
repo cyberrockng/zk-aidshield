@@ -14,6 +14,8 @@ ZK AidShield lets an aid operator commit an approved beneficiary set as a Poseid
 
 Operators can deliver credentials as JSON files, copied payloads, or passphrase-protected QR codes for phone-first field use. QR import decrypts locally, then preserves the same signature, wallet-binding, expiry, and nullifier checks.
 
+For operator accountability, the admin dashboard keeps a durable non-PII issuance ledger with wallet hashes, credential hashes, issuer key IDs, expiry windows, and delivery modes. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
+
 ## What Is New In Phase 4
 
 - 6-public-input Groth16 circuit
@@ -21,6 +23,8 @@ Operators can deliver credentials as JSON files, copied payloads, or passphrase-
 - on-chain issuer registry with revocation
 - on-chain credential expiry enforcement by ledger timestamp
 - encrypted mobile QR credential export/import
+- durable non-PII issuance ledger
+- local beneficiary claim receipts
 - fresh Stellar testnet deployment with 50 XLM escrow
 
 ## Built With
@@ -46,11 +50,12 @@ Operators can deliver credentials as JSON files, copied payloads, or passphrase-
 1. Open `/judges` to show the short technical brief.
 2. Open `/stats` to show live 50 XLM escrow and deployed contracts.
 3. Open `/admin` and issue a beneficiary credential as JSON or encrypted QR.
-4. Open `/claim`, decrypt/load the credential by file, QR image, or paste, and generate the browser Groth16 proof.
+4. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, and generate the browser Groth16 proof.
 5. Approve in Freighter and show the Stellar Explorer transaction.
-6. Retry the same credential to show replay protection.
-7. Switch wallets to show wrong-wallet rejection.
-8. Open `/audit` to show trust boundaries and known limitations.
+6. Download/copy the local claim receipt.
+7. Retry the same credential to show replay protection.
+8. Switch wallets to show wrong-wallet rejection.
+9. Open `/audit` to show trust boundaries and known limitations.
 
 ## Why It Matters
 

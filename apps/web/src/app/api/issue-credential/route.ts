@@ -22,6 +22,7 @@ import { Keypair } from '@stellar/stellar-sdk';
 import type { BeneficiaryCredential } from '@/lib/credential';
 import { credentialSigningPayload } from '@/lib/credential';
 import { ISSUER_KEY_ID, ISSUER_PUBLIC_KEY } from '@/lib/constants';
+import { appendIssuanceLedgerEntry } from '@/lib/issuance-ledger-store';
 import { NextRequest, NextResponse } from 'next/server';
 
 // ── Issuer keypair (demo — never expose in client bundle) ──────────────────
@@ -140,6 +141,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const issuer_signature = Buffer.from(sigBytes).toString('hex');
 
   const credential: BeneficiaryCredential = { ...credBase, issuer_signature };
+  appendIssuanceLedgerEntry(credential);
 
   // Mark slot + wallet as issued
   issuedSlots.add(slot.index);

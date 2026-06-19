@@ -19,6 +19,18 @@ type BarcodeDetectorCtor = new (options?: { formats?: string[] }) => {
   detect(source: ImageBitmapSource): Promise<Array<{ rawValue?: string }>>;
 };
 
+interface ClaimReceipt {
+  version: '1';
+  tx_hash: string;
+  nullifier: string;
+  disbursement_id: string;
+  merkle_root: string;
+  amount: string;
+  claimed_at: string;
+  slot_index: number;
+  issuer_key_id: string;
+}
+
 const FLOW_STEPS: Step[] = ['wallet', 'paste', 'validate', 'prove', 'sign', 'submit', 'done'];
 
 const STEP_LABELS: Record<Step, string> = {
@@ -124,6 +136,8 @@ export default function ClaimPage() {
   const [proofHex, setProofHex] = useState('');
   const [txHash, setTxHash] = useState('');
   const [error, setError] = useState('');
+  const [claimReceipt, setClaimReceipt] = useState<ClaimReceipt | null>(null);
+  const [receiptCopied, setReceiptCopied] = useState(false);
   const proveStartedAt = useRef<number>(0);
 
   useEffect(() => {
@@ -215,6 +229,7 @@ export default function ClaimPage() {
     setError('');
     setProofHex('');
     setTxHash('');
+    setClaimReceipt(null);
 
     const claimEntry: ClaimEntry = {
       index: parsedCred.leaf_index,
@@ -269,6 +284,17 @@ export default function ClaimPage() {
       setStatusMsg('Broadcasting to Stellar testnet…');
       const hash = await submitSignedTransaction(signedXDR);
       setTxHash(hash);
+      setClaimReceipt({
+        version: '1',
+        tx_hash: hash,
+        nullifier: derivedNullifier,
+        disbursement_id: DISBURSEMENT_ID,
+        merkle_root: MERKLE_ROOT,
+        amount: '1 XLM',
+        claimed_at: new Date().toISOString(),
+        slot_index: parsedCred.slot_index,
+        issuer_key_id: parsedCred.issuer_key_id,
+      });
 
       setStep('done');
       setStatusMsg('');
@@ -279,6 +305,24 @@ export default function ClaimPage() {
   }
 
   const currentStepIdx = FLOW_STEPS.indexOf(step);
+
+  function handleDownloadReceipt() {
+    if (!claimReceipt) return;
+    const blob = new Blob([JSON.stringify(claimReceipt, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aidshield-claim-receipt-${claimReceipt.tx_hash.slice(0, 12)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleCopyReceipt() {
+    if (!claimReceipt) return;
+    await navigator.clipboard.writeText(JSON.stringify(claimReceipt, null, 2));
+    setReceiptCopied(true);
+    setTimeout(() => setReceiptCopied(false), 2000);
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -540,6 +584,35 @@ export default function ClaimPage() {
             >
               View transaction on Stellar Expert ↗
             </a>
+            {claimReceipt && (
+              <div className="mt-5 mx-auto text-left rounded-lg p-4" style={{ maxWidth: 460, background: '#06110a', border: '1px solid rgba(63,185,80,0.2)' }}>
+                <div className="font-semibold text-sm mb-2" style={{ color: 'var(--green-bright)' }}>
+                  Private claim receipt
+                </div>
+                <div className="mono text-xs space-y-1" style={{ color: 'var(--muted)' }}>
+                  <div>tx: {shortHex(claimReceipt.tx_hash)}</div>
+                  <div>nullifier: {shortHex(claimReceipt.nullifier)}</div>
+                  <div>amount: {claimReceipt.amount}</div>
+                  <div>claimed: {new Date(claimReceipt.claimed_at).toLocaleString()}</div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                    style={{ background: 'var(--green-dim)', color: 'var(--green-bright)', border: '1px solid rgba(63,185,80,0.3)' }}
+                    onClick={handleDownloadReceipt}
+                  >
+                    Download receipt
+                  </button>
+                  <button
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                    style={{ background: 'var(--surface-2)', color: 'var(--muted-2)', border: '1px solid var(--border)' }}
+                    onClick={handleCopyReceipt}
+                  >
+                    {receiptCopied ? 'Copied!' : 'Copy receipt'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -27,8 +27,9 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Real payout path:** valid proof triggers an XLM transfer from Soroban escrow
 - **Wallet-bound privacy:** credentials and nullifiers are bound to the claimant wallet without revealing identity
 - **Fraud resistance:** double claims and wrong-wallet claims are blocked
-- **Auditor visibility:** contracts, campaign root, VK hash, stats, and trust boundaries are inspectable
+- **Auditor visibility:** contracts, campaign root, VK hash, stats, non-PII issuance ledger, and trust boundaries are inspectable
 - **Field-ready credential delivery:** operators can export JSON or passphrase-protected mobile QR credentials
+- **Beneficiary receipts:** successful claims produce a local receipt with transaction hash, nullifier, amount, and campaign metadata
 - **Production path:** documented next steps for issuer governance, vendor/voucher mode, and optional identity adapters
 
 See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).

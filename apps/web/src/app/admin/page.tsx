@@ -17,6 +17,7 @@ import {
 } from '@/lib/constants';
 import type { BeneficiaryCredential } from '@/lib/credential';
 import { encodeEncryptedCredentialQr, prettyCredentialJson } from '@/lib/credential-qr';
+import type { DeliveryMode, IssuanceLedgerResponse } from '@/lib/issuance-ledger';
 
 type FundStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 type PauseStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
@@ -93,6 +94,8 @@ export default function AdminPage() {
   const [csvRows, setCsvRows] = useState<CsvRow[] | null>(null);
   const [csvError, setCsvError] = useState('');
   const [csvDownloaded, setCsvDownloaded] = useState(false);
+  const [issuanceLedger, setIssuanceLedger] = useState<IssuanceLedgerResponse | null>(null);
+  const [issuanceLedgerError, setIssuanceLedgerError] = useState('');
 
   function log(line: string) {
     setActivityLog((prev) => [`[${new Date().toLocaleTimeString()}] ${line}`, ...prev]);
@@ -107,6 +110,22 @@ export default function AdminPage() {
       })
       .catch((e) => setBeneficiariesError(String(e)));
   }, []);
+
+  const loadIssuanceLedger = useCallback(async () => {
+    try {
+      const res = await fetch('/api/issuance-ledger');
+      const data = await res.json() as IssuanceLedgerResponse & { error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Failed to load issuance ledger');
+      setIssuanceLedger(data);
+      setIssuanceLedgerError('');
+    } catch (e) {
+      setIssuanceLedgerError(String(e));
+    }
+  }, []);
+
+  useEffect(() => {
+    loadIssuanceLedger();
+  }, [loadIssuanceLedger]);
 
   useEffect(() => {
     let active = true;
@@ -210,6 +229,7 @@ export default function AdminPage() {
       a.download = `aidshield-credential-slot${slot.index}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      await loadIssuanceLedger();
     } catch (e) {
       log(`Issue error slot #${slot.index}: ${String(e).slice(0, 80)}`);
     } finally {
@@ -337,6 +357,7 @@ export default function AdminPage() {
       setIssuedCredential(cred);
       setIssueStep('done');
       log(`Credential issued ✓ slot ${cred.slot_index} → ${addr.slice(0, 8)}…`);
+      await loadIssuanceLedger();
     } catch (e) {
       setIssueError(String(e));
       setIssueStep('error');
@@ -353,6 +374,7 @@ export default function AdminPage() {
     a.download = `aidshield-credential-slot${issuedCredential.slot_index}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    recordDeliveryMode('json_download');
   }
 
   async function handleCopyCredential() {
@@ -360,6 +382,7 @@ export default function AdminPage() {
     await navigator.clipboard.writeText(prettyCredentialJson(issuedCredential));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    await recordDeliveryMode('json_copy');
   }
 
   function handleDownloadCredentialQr() {
@@ -368,6 +391,7 @@ export default function AdminPage() {
     a.href = credentialQr;
     a.download = `aidshield-credential-slot${issuedCredential.slot_index}-qr.png`;
     a.click();
+    recordDeliveryMode('encrypted_qr');
   }
 
   async function handleCopyCredentialQrPayload() {
@@ -375,6 +399,40 @@ export default function AdminPage() {
     await navigator.clipboard.writeText(credentialQrPayload);
     setQrCopied(true);
     setTimeout(() => setQrCopied(false), 2000);
+    await recordDeliveryMode('qr_payload_copy');
+  }
+
+  async function credentialHashClient(credential: BeneficiaryCredential): Promise<string> {
+    const bytes = new TextEncoder().encode(JSON.stringify(credential));
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Buffer.from(digest).toString('hex');
+  }
+
+  async function recordDeliveryMode(deliveryMode: DeliveryMode) {
+    if (!issuedCredential) return;
+    try {
+      const credential_hash = await credentialHashClient(issuedCredential);
+      const res = await fetch('/api/issuance-ledger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential_hash, delivery_mode: deliveryMode }),
+      });
+      if (!res.ok) return;
+      await loadIssuanceLedger();
+    } catch {
+      // Delivery tracking is operational metadata only; credential delivery still succeeds.
+    }
+  }
+
+  function handleDownloadLedger() {
+    if (!issuanceLedger) return;
+    const blob = new Blob([JSON.stringify(issuanceLedger, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'aidshield-issuance-ledger.json';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   const fundBusy = fundStep === 'building' || fundStep === 'signing' || fundStep === 'submitting';
@@ -769,6 +827,75 @@ export default function AdminPage() {
             <div className="text-xs pt-1" style={{ color: 'var(--muted)' }}>
               {beneficiaries.total_slots} slot{beneficiaries.total_slots !== 1 ? 's' : ''} · Merkle root{' '}
               <span className="mono">{beneficiaries.merkle_root.slice(0, 12)}…</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Non-PII Issuance Ledger ── */}
+      <div className="card mb-6">
+        <div className="font-semibold mb-1 flex items-center gap-2">
+          Non-PII Issuance Ledger
+          <span className="badge" style={{ background: '#1c2b3a', color: '#58a6ff', fontSize: '0.65rem' }}>
+            Audit trail
+          </span>
+        </div>
+        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+          Durable local issuance records for operator accountability. Wallets and credentials are stored as SHA-256 hashes, not raw beneficiary data.
+        </p>
+
+        {issuanceLedgerError ? (
+          <div className="text-xs p-3 rounded-lg" style={{ background: '#1a0505', color: '#f87171', border: '1px solid #7f1d1d' }}>
+            {issuanceLedgerError}
+          </div>
+        ) : !issuanceLedger ? (
+          <div className="text-sm" style={{ color: 'var(--muted)' }}>Loading…</div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                ['Total issued', issuanceLedger.summary.total_issued],
+                ['Issued today', issuanceLedger.summary.issued_today],
+                ['Issuer keys', issuanceLedger.summary.active_issuers],
+                ['Expiring soon', issuanceLedger.summary.expiring_within_7_days],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg p-3" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-dim)' }}>
+                  <div className="text-xs mb-1" style={{ color: 'var(--muted)' }}>{label}</div>
+                  <div className="text-xl font-bold">{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2 max-h-52 overflow-y-auto">
+              {issuanceLedger.entries.length === 0 ? (
+                <div className="text-xs" style={{ color: 'var(--muted)' }}>No credentials issued in this server ledger yet.</div>
+              ) : issuanceLedger.entries.slice(0, 8).map((entry) => (
+                <div
+                  key={entry.credential_hash}
+                  className="rounded-lg p-3 text-xs"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border-dim)' }}
+                >
+                  <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
+                    <span className="mono" style={{ color: 'var(--green-bright)' }}>slot #{entry.slot_index}</span>
+                    <span className="mono" style={{ color: 'var(--muted)' }}>{new Date(entry.issued_at * 1000).toLocaleString()}</span>
+                  </div>
+                  <div className="mono" style={{ color: 'var(--muted)', wordBreak: 'break-all' }}>
+                    wallet_hash: {entry.claimant_address_hash.slice(0, 16)}… · credential_hash: {entry.credential_hash.slice(0, 16)}…
+                  </div>
+                  <div className="mt-1" style={{ color: 'var(--muted-2)' }}>
+                    delivery: {entry.delivery_modes.join(', ')}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
+              <button className="btn-outline text-sm" onClick={loadIssuanceLedger}>
+                Refresh Ledger
+              </button>
+              <button className="btn-primary text-sm" onClick={handleDownloadLedger} disabled={issuanceLedger.entries.length === 0}>
+                Export Ledger
+              </button>
             </div>
           </div>
         )}
