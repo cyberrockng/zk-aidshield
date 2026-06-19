@@ -200,6 +200,8 @@ export default function ClaimPage() {
             disbursement_id: DISBURSEMENT_ID,
             merkle_root: MERKLE_ROOT,
             claimant_address: claimantField,
+            expires_at: parsedCred.expires_at,
+            issuer_key_id: parsedCred.issuer_key_id,
           },
           setStatusMsg,
         );
@@ -211,7 +213,13 @@ export default function ClaimPage() {
 
       setStep('sign');
       setStatusMsg('Building Soroban transaction…');
-      const txXDR = await buildClaimTransaction(walletAddress, derivedNullifier, proofHexFull);
+      const txXDR = await buildClaimTransaction(
+        walletAddress,
+        derivedNullifier,
+        proofHexFull,
+        parsedCred.expires_at,
+        parsedCred.issuer_key_id,
+      );
       setStatusMsg('Please approve in Freighter…');
       const signedXDR = await signTx(txXDR, walletAddress);
 
@@ -350,7 +358,7 @@ export default function ClaimPage() {
             <textarea
               rows={5}
               className="mono text-xs"
-              placeholder='{ "version": "1", "claimant_address": "G…", "secret": "…", … }'
+              placeholder='{ "version": "2", "claimant_address": "G…", "secret": "…", … }'
               value={credJson}
               onChange={(e) => { setCredJson(e.target.value); setParsedCred(null); setParseError(''); }}
               disabled={step !== 'paste' && step !== 'error'}
@@ -386,6 +394,9 @@ export default function ClaimPage() {
                 </div>
                 <div style={{ color: 'var(--muted)' }}>
                   expires: <span style={{ color: 'var(--muted-2)' }}>{new Date(parsedCred.expires_at * 1000).toLocaleDateString()}</span>
+                </div>
+                <div style={{ color: 'var(--muted)' }}>
+                  issuer key: <span style={{ color: 'var(--muted-2)' }}>{shortHex(parsedCred.issuer_key_id)}</span>
                 </div>
                 <div style={{ color: 'var(--muted)' }}>
                   nullifier: <span style={{ fontStyle: 'italic' }}>computed from wallet at claim time</span>

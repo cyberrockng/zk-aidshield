@@ -12,7 +12,7 @@ import {
 import { isFreighterInstalled, connectWallet, signTx } from '@/lib/freighter';
 import {
   CONTRACT_ID, VERIFIER_CONTRACT_ID, EXPLORER_BASE,
-  stroopsToXlm, shortHex, DISBURSEMENT_ID, MERKLE_ROOT, // MERKLE_ROOT kept for existing use
+  stroopsToXlm, shortHex, DISBURSEMENT_ID, MERKLE_ROOT, ISSUER_PUBLIC_KEY, ISSUER_KEY_ID, // MERKLE_ROOT kept for existing use
 } from '@/lib/constants';
 import type { BeneficiaryCredential } from '@/lib/credential';
 
@@ -127,6 +127,9 @@ export default function AdminPage() {
     const output = {
       disbursement_id: DISBURSEMENT_ID,
       payout_amount_stroops: 10_000_000,
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
+      issuer_public_key: ISSUER_PUBLIC_KEY,
+      issuer_key_id: ISSUER_KEY_ID,
       beneficiaries: csvRows.map((r) => ({ name: r.name, id: r.id, wallet: r.wallet })),
     };
     const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });

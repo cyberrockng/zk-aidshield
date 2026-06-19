@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{testutils::Address as _, xdr::ToXdr, Address, Bytes, BytesN, Env};
+use soroban_sdk::{testutils::{Address as _, Ledger}, xdr::ToXdr, Address, Bytes, BytesN, Env};
 
 // ── Mock verifier contracts ──────────────────────────────────────────────────
 
@@ -56,13 +56,38 @@ fn addr_to_field(env: &Env, addr: &Address) -> BytesN<32> {
 }
 
 fn make_real_proof(env: &Env) -> Bytes {
-    // 14 656-byte proof with non-zero bytes in commitment region (256..320)
-    // Matches bb.js 5.x UltraHonk proof format: W_L commitment starts at byte 256.
-    let mut data = [0u8; 14_656];
-    for i in 256..320 {
+    // 384-byte Groth16 proof-shaped payload. The mock verifier accepts it; the
+    // real verifier contract tests proof length and pairing behavior separately.
+    let mut data = [0u8; 384];
+    for i in 0..64 {
         data[i] = (i as u8).wrapping_add(1);
     }
     Bytes::from_slice(env, &data)
+}
+
+fn valid_expires_at() -> u64 {
+    2_000_000_000
+}
+
+fn issuer_key(env: &Env) -> BytesN<32> {
+    make_id(env, 9)
+}
+
+fn make_inputs(
+    env: &Env,
+    claimant: &Address,
+    campaign_id: BytesN<32>,
+    merkle_root: BytesN<32>,
+    nullifier: BytesN<32>,
+) -> ProofPublicInputs {
+    ProofPublicInputs {
+        claimant_address_field: addr_to_field(env, claimant),
+        disbursement_id: campaign_id,
+        expires_at: valid_expires_at(),
+        issuer_key_id: issuer_key(env),
+        merkle_root,
+        nullifier,
+    }
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -142,10 +167,13 @@ fn test_claim_releases_tokens() {
     let inputs = ProofPublicInputs {
         claimant_address_field: addr_to_field(&env, &claimant),
         disbursement_id: campaign_id.clone(),
+        expires_at: valid_expires_at(),
+        issuer_key_id: issuer_key(&env),
         merkle_root: merkle_root.clone(),
         nullifier: nullifier.clone(),
     };
 
+    client.add_issuer(&issuer_key(&env));
     let token_client = soroban_sdk::token::TokenClient::new(&env, &token_id);
     let before = token_client.balance(&claimant);
     client.claim(&claimant, &inputs, &make_real_proof(&env));
@@ -183,6 +211,8 @@ fn test_paused_blocks_claim() {
     let inputs = ProofPublicInputs {
         claimant_address_field: make_id(&env, 10),
         disbursement_id: campaign_id,
+        expires_at: valid_expires_at(),
+        issuer_key_id: issuer_key(&env),
         merkle_root,
         nullifier: make_id(&env, 3),
     };
@@ -214,13 +244,9 @@ fn test_replay_attack_blocked() {
     client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
 
-    let inputs = ProofPublicInputs {
-        claimant_address_field: addr_to_field(&env, &claimant),
-        disbursement_id: campaign_id,
-        merkle_root,
-        nullifier,
-    };
+    let inputs = make_inputs(&env, &claimant, campaign_id, merkle_root, nullifier);
 
+    client.add_issuer(&issuer_key(&env));
     client.claim(&claimant, &inputs.clone(), &make_real_proof(&env));
     client.claim(&claimant, &inputs, &make_real_proof(&env)); // must panic
 }
@@ -253,6 +279,8 @@ fn test_invalid_proof_rejected() {
     let inputs = ProofPublicInputs {
         claimant_address_field: make_id(&env, 10),
         disbursement_id: campaign_id,
+        expires_at: valid_expires_at(),
+        issuer_key_id: issuer_key(&env),
         merkle_root,
         nullifier: make_id(&env, 3),
     };
@@ -289,6 +317,8 @@ fn test_wrong_merkle_root_rejected() {
     let inputs = ProofPublicInputs {
         claimant_address_field: addr_to_field(&env, &claimant),
         disbursement_id: campaign_id,
+        expires_at: valid_expires_at(),
+        issuer_key_id: issuer_key(&env),
         merkle_root: fake_root, // tampered root — triggers "Merkle root mismatch"
         nullifier: make_id(&env, 3),
     };
@@ -323,6 +353,8 @@ fn test_address_mismatch_blocked() {
     let inputs = ProofPublicInputs {
         claimant_address_field: addr_to_field(&env, &other), // mismatch: proof is for "other"
         disbursement_id: campaign_id,
+        expires_at: valid_expires_at(),
+        issuer_key_id: issuer_key(&env),
         merkle_root,
         nullifier: make_id(&env, 3),
     };
@@ -330,3 +362,84 @@ fn test_address_mismatch_blocked() {
     client.claim(&claimant, &inputs, &make_real_proof(&env));
 }
 
+#[test]
+#[should_panic(expected = "Credential issuer is not active")]
+fn test_inactive_issuer_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let claimant = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    sac.mint(&admin, &1_000_000_000i128);
+
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    let campaign_id = make_id(&env, 1);
+    let merkle_root = make_id(&env, 2);
+    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.set_paused(&false);
+    client.fund(&admin, &100_000_000i128);
+
+    let inputs = make_inputs(&env, &claimant, campaign_id, merkle_root, make_id(&env, 3));
+    client.claim(&claimant, &inputs, &make_real_proof(&env));
+}
+
+#[test]
+#[should_panic(expected = "Credential issuer is not active")]
+fn test_revoked_issuer_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let claimant = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    sac.mint(&admin, &1_000_000_000i128);
+
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    let campaign_id = make_id(&env, 1);
+    let merkle_root = make_id(&env, 2);
+    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.add_issuer(&issuer_key(&env));
+    client.revoke_issuer(&issuer_key(&env));
+    client.set_paused(&false);
+    client.fund(&admin, &100_000_000i128);
+
+    let inputs = make_inputs(&env, &claimant, campaign_id, merkle_root, make_id(&env, 3));
+    client.claim(&claimant, &inputs, &make_real_proof(&env));
+}
+
+#[test]
+#[should_panic(expected = "Credential expired")]
+fn test_expired_credential_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().set_timestamp(2_000_000_001);
+
+    let admin = Address::generate(&env);
+    let claimant = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    sac.mint(&admin, &1_000_000_000i128);
+
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    let campaign_id = make_id(&env, 1);
+    let merkle_root = make_id(&env, 2);
+    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.add_issuer(&issuer_key(&env));
+    client.set_paused(&false);
+    client.fund(&admin, &100_000_000i128);
+
+    let inputs = make_inputs(&env, &claimant, campaign_id, merkle_root, make_id(&env, 3));
+    client.claim(&claimant, &inputs, &make_real_proof(&env));
+}

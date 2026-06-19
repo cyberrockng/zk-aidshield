@@ -6,8 +6,8 @@
  * optimised sponge with BigInt arithmetic mod the BLS12-381 prime.
  *
  * Round constants (C, S, M, P) come from circomlibjs poseidon_constants_opt.js.
- * Every constant is a BN254 field element; since BN254_prime < BLS12381_prime,
- * all values are valid BLS12-381 field elements — only the modulus changes.
+ * The constants are reduced under the BLS12-381 scalar-field modulus used by
+ * the compiled circuit.
  */
 
 import { pathToFileURL } from "node:url";
@@ -131,7 +131,7 @@ export async function poseidonHash(inputs: bigint[]): Promise<bigint> {
 }
 
 /**
- * leaf = Poseidon(secret, disbursement_id, claimant_address)
+ * leaf = Poseidon(secret, disbursement_id, claimant_address, expires_at, issuer_key_id)
  *
  * claimantAddress must be the 31-byte (248-bit) field encoding of the Stellar wallet:
  *   StrKey.decodeEd25519PublicKey(address).slice(1) → BigInt
@@ -141,8 +141,10 @@ export async function computeLeaf(
   secret: bigint,
   disbursementId: bigint,
   claimantAddress: bigint,
+  expiresAt: bigint,
+  issuerKeyId: bigint,
 ): Promise<bigint> {
-  return poseidonHash([secret, disbursementId, claimantAddress]);
+  return poseidonHash([secret, disbursementId, claimantAddress, expiresAt, issuerKeyId]);
 }
 
 // ── Stellar address → field element ──────────────────────────────────────────

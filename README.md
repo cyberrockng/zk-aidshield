@@ -20,6 +20,18 @@ A beneficiary proves two things — they are on an approved list, and they haven
 - **Beneficiaries** get dignity and safety: zero PII on-chain, ever
 - **Auditors** get verifiable claim counts without seeing who claimed or when
 
+## Why This Can Win
+
+ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive demo:
+
+- **Real payout path:** valid proof triggers an XLM transfer from Soroban escrow
+- **Wallet-bound privacy:** credentials and nullifiers are bound to the claimant wallet without revealing identity
+- **Fraud resistance:** double claims and wrong-wallet claims are blocked
+- **Auditor visibility:** contracts, campaign root, VK hash, stats, and trust boundaries are inspectable
+- **Production path:** documented next steps for issuer registry, on-chain expiry, mobile QR credentials, and vendor/voucher mode
+
+See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).
+
 ## Judge Demo Script
 
 > **Setup:** Two browser windows — one as the **Operator** (Admin tab), one as the **Beneficiary** (Claim tab). Both need [Freighter](https://freighter.app) set to **Testnet**.
@@ -83,13 +95,15 @@ A beneficiary proves two things — they are on an approved list, and they haven
 
 | Contract | Address |
 |---|---|
-| AidShield Disbursement v5 | `CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2` |
-| Groth16 BLS12-381 Verifier (Phase 3) | `CAIU2ZX2P2UGHC6A7SWL7MVTVGHOM7Y57X6AI6NFWCAETM5ZU63ALDY4` |
+| AidShield Disbursement Phase 4 | `CAXACYKGE4V5DWMS45ZD74FAG4CCJBXT3ILITP4VXJXW3ATICRV3H7LT` |
+| Groth16 BLS12-381 Verifier Phase 4 | `CAAHWYYIFYYTJXI3RYJBCJVTQD3GNVQOARR2BHDUGYPU5E5RIX6TPKGZ` |
 | XLM Native SAC (testnet) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-**Campaign (Phase 3 — wallet-bound leaves):** disbursement\_id `000…001` · merkle\_root `4a8cb9e9…` · 1 XLM per claim
+**Campaign (Phase 4 — wallet-, expiry-, and issuer-bound leaves):** disbursement\_id `000…001` · merkle\_root `0b2a5135…` · 1 XLM per claim · 50 XLM escrow
 
-Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAIU2ZX2P2UGHC6A7SWL7MVTVGHOM7Y57X6AI6NFWCAETM5ZU63ALDY4)
+> Phase 4 was deployed on Stellar testnet with the upgraded 6-public-input circuit and on-chain issuer/expiry enforcement.
+
+Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CAXACYKGE4V5DWMS45ZD74FAG4CCJBXT3ILITP4VXJXW3ATICRV3H7LT) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAAHWYYIFYYTJXI3RYJBCJVTQD3GNVQOARR2BHDUGYPU5E5RIX6TPKGZ)
 
 ---
 
@@ -107,10 +121,11 @@ Beneficiary loads credential in browser → signature verified locally
         ↓
 circom circuit runs in-browser via snarkjs WASM (Groth16 · BLS12-381):
   ├─ Private inputs:  secret, merkle_path[8], path_indices[8]
-  └─ Public inputs:   disbursement_id, merkle_root, nullifier, claimant_address
+  └─ Public inputs:   disbursement_id, merkle_root, nullifier, claimant_address,
+                      expires_at, issuer_key_id
 
-Constraint 1 — Merkle membership (wallet-bound leaf):
-  leaf = Poseidon(secret, disbursement_id, claimant_address)
+Constraint 1 — Merkle membership (wallet-, expiry-, and issuer-bound leaf):
+  leaf = Poseidon(secret, disbursement_id, claimant_address, expires_at, issuer_key_id)
   merkle_verify(leaf, path, indices) == merkle_root
 
 Constraint 2 — Nullifier correctness:
@@ -124,6 +139,8 @@ AidShield Verifier contract:
 AidShield Disbursement contract:
   ├─ disbursement_id matches campaign ✓
   ├─ merkle_root matches on-chain value ✓
+  ├─ issuer_key_id is active in the issuer registry ✓
+  ├─ expires_at has not passed according to ledger time ✓
   ├─ nullifier is fresh (written to persistent storage after claim) ✓
   └─ claimant_address matches transaction signer ✓
         ↓
@@ -151,7 +168,8 @@ XLM released to beneficiary via Stellar Asset Contract
 | Hash function | Poseidon (BLS12-381 scalar field) |
 | Merkle tree | 8 levels · 256 slots |
 | Proof size | **384 bytes** (G1 96 + G2 192 + G1 96, uncompressed) |
-| Public inputs | 4 × 32 bytes = 128 bytes |
+| Public inputs | 6 × 32 bytes = 192 bytes |
+| Circuit constraints | 2,576 non-linear constraints |
 | On-chain verification | Native `bls.pairing_check` host function on Soroban |
 | Proving location | Browser WASM (secret never leaves device) |
 | Proving time | ~15–30 s (single-thread WASM) |
@@ -195,7 +213,7 @@ zk-aidshield/
 ├─ packages/
 │  └─ merkle-tools/                   # Poseidon Merkle tree + campaign generator
 │     ├─ src/generate-campaign.ts     # Generates secrets + paths → campaign.json
-│     ├─ src/hash.test.ts             # 20-test suite: Poseidon leaf/nullifier/Merkle
+│     ├─ src/hash.test.ts             # 22-test suite: Poseidon leaf/nullifier/Merkle
 │     ├─ demo-claim.sample.json       # Safe structural sample for judges/docs
 │     └─ campaign.json                # ⚠ GITIGNORED — contains private secrets
 └─ scripts/
@@ -235,9 +253,9 @@ cd contracts/verifier-groth16 && cargo test
 ```
 
 ```bash
-# 5. Full deployment to testnet (generate campaign → deploy → init → fund)
+# 5. Full Phase 4 deployment to testnet (fresh verifier + fresh disbursement)
 export ADMIN_SECRET_KEY=S...
-bash scripts/setup.sh
+bash scripts/setup-phase4.sh
 ```
 
 ```bash

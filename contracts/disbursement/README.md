@@ -4,7 +4,7 @@ Soroban smart contract for the ZK AidShield aid disbursement system.
 
 ## Deployed (Stellar Testnet)
 
-`CBSGS6OBCWZ7Z464B7IOM2NGPRQ3QY55SYMJVWUGKCBHXOJVG3G7UV6P`
+`CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2`
 
 ## What It Does
 
@@ -12,7 +12,7 @@ Manages a ZK-gated aid campaign on Stellar:
 
 - **`initialize`** — admin sets campaign params: disbursement_id, Merkle root, payout amount, XLM SAC address, verifier contract address
 - **`fund`** — deposits real XLM into the escrow via the native Stellar Asset Contract
-- **`claim`** — beneficiary submits a 14,656-byte UltraHonk proof; contract cross-calls the verifier, checks disbursement_id + merkle_root, enforces nullifier uniqueness, then releases XLM
+- **`claim`** — beneficiary submits a 384-byte Groth16 proof; contract cross-calls the verifier, checks disbursement_id + merkle_root, enforces nullifier uniqueness, then releases XLM
 - **`stats`** — returns live campaign stats; escrow balance is read directly from the SAC
 - **`is_nullifier_used`** — replay-protection check (public read)
 - **`update_root`** — admin can rotate the Merkle root for a new beneficiary list
@@ -27,12 +27,12 @@ Manages a ZK-gated aid campaign on Stellar:
 
 **Event emission.** `claim()` emits a `claim.paid` event (disbursement_id, nullifier, claimant, amount). `update_root()` emits a `root.updated` event (old_root, new_root) so auditors can track beneficiary list rotations.
 
-**Address field encoding.** The Noir circuit's `claimant_address` public input is a BN254 field element (31 bytes of the Ed25519 public key, zero-padded to 32 bytes). `ProofPublicInputs.claimant_address_field` carries this value; `claimant.require_auth()` enforces the wallet signature.
+**Address field encoding.** The circom circuit's `claimant_address` public input is a BLS12-381 field element (31 bytes of the Ed25519 public key, zero-padded to 32 bytes). `ProofPublicInputs.claimant_address_field` carries this value; `claimant.require_auth()` enforces the wallet signature.
 
 ## Building and Testing
 
 ```bash
-# Run tests (6 tests: fund, claim, replay, wrong root, bad proof, SAC balance)
+# Run tests: fund, claim, replay, wrong root, bad proof, SAC balance, pause, address binding
 cargo test
 
 # Build WASM

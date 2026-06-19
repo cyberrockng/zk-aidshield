@@ -9,15 +9,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createHash } from 'crypto';
 import { Keypair } from '@stellar/stellar-sdk';
-import { credentialSigningPayload, ISSUER_PUBLIC_KEY, type BeneficiaryCredential } from '../lib/credential';
+import { credentialSigningPayload, ISSUER_KEY_ID, ISSUER_PUBLIC_KEY, type BeneficiaryCredential } from '../lib/credential';
 
 // ── Stub the campaign.json read ───────────────────────────────────────────────
 // We mock the 'fs' module so the API route doesn't need a real file on disk.
 
-// Phase 3: each slot is pre-committed to a specific wallet address
+// Phase 4: each slot is pre-committed to a wallet address, expiry, and issuer.
 const MOCK_CAMPAIGN = {
   disbursement_id: '0000000000000000000000000000000000000000000000000000000000000001',
   merkle_root: '222cfdd7cbb6d8c91a9e484793b805ed47707fedaf10eff66af45c2d2567adda',
+  expires_at: 2_000_000_000,
+  issuer_key_id: ISSUER_KEY_ID,
   claims: [
     {
       index: 0,
@@ -52,7 +54,7 @@ const WALLET_A = 'GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ';
 const WALLET_B = 'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4';
 
 function issueCredential(claimantAddress: string, issuedSlots: Set<number>, issuedWallets: Set<string>): BeneficiaryCredential {
-  // Phase 3: find slot by wallet address, not first free slot
+  // Phase 4: find slot by wallet address, not first free slot
   const slot = MOCK_CAMPAIGN.claims.find((c) => c.claimant_address === claimantAddress);
   if (!slot) throw new Error('WALLET_NOT_REGISTERED');
   if (issuedSlots.has(slot.index) || issuedWallets.has(claimantAddress)) {
@@ -61,7 +63,7 @@ function issueCredential(claimantAddress: string, issuedSlots: Set<number>, issu
 
   const now = Math.floor(Date.now() / 1000);
   const credBase: Omit<BeneficiaryCredential, 'issuer_signature'> = {
-    version: '1',
+    version: '2',
     campaign_id: MOCK_CAMPAIGN.disbursement_id,
     claimant_address: claimantAddress,
     slot_index: slot.index,
@@ -70,7 +72,8 @@ function issueCredential(claimantAddress: string, issuedSlots: Set<number>, issu
     merkle_path: slot.merkle_path,
     path_indices: slot.path_indices,
     issued_at: now,
-    expires_at: now + 30 * 24 * 3600,
+    expires_at: MOCK_CAMPAIGN.expires_at,
+    issuer_key_id: MOCK_CAMPAIGN.issuer_key_id,
     issuer_public_key: ISSUER_PUBLIC_KEY,
   };
 
@@ -98,7 +101,7 @@ describe('issue-credential logic', () => {
   it('issues a valid signed credential for a registered wallet', () => {
     const cred = issueCredential(WALLET_A, issuedSlots, issuedWallets);
 
-    expect(cred.version).toBe('1');
+    expect(cred.version).toBe('2');
     expect(cred.claimant_address).toBe(WALLET_A);
     expect(cred.slot_index).toBe(0);
     expect(cred.issuer_public_key).toBe(ISSUER_PUBLIC_KEY);
@@ -106,6 +109,7 @@ describe('issue-credential logic', () => {
     expect(cred.merkle_path).toHaveLength(8);
     expect(cred.path_indices).toHaveLength(8);
     expect(cred.expires_at).toBeGreaterThan(cred.issued_at);
+    expect(cred.issuer_key_id).toBe(ISSUER_KEY_ID);
   });
 
   it('the issued credential signature verifies correctly with the issuer public key', () => {

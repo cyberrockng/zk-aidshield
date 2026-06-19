@@ -110,13 +110,15 @@ export async function checkNullifier(nullifierHex: string): Promise<boolean> {
  * Encode ProofPublicInputs as the Soroban ScMap the contract expects.
  *
  * The Rust struct fields are sorted lexicographically by name (Soroban XDR encoding):
- *   claimant_address_field, disbursement_id, merkle_root, nullifier
+ *   claimant_address_field, disbursement_id, expires_at, issuer_key_id, merkle_root, nullifier
  *
  * claimant_address_field is BytesN<32> (field element derived from the Ed25519 key).
  */
 function buildPublicInputsScVal(
   nullifierHex: string,
   claimantAddressField: string, // 62-hex string from stellarAddressToField()
+  expiresAt: number,
+  issuerKeyId: string,
 ): xdr.ScVal {
   const fieldBytes = Buffer.alloc(32, 0);
   const fieldHex = Buffer.from(claimantAddressField, 'hex');
@@ -130,6 +132,14 @@ function buildPublicInputsScVal(
     new xdr.ScMapEntry({
       key: xdr.ScVal.scvSymbol('disbursement_id'),
       val: xdr.ScVal.scvBytes(Buffer.from(DISBURSEMENT_ID, 'hex')),
+    }),
+    new xdr.ScMapEntry({
+      key: xdr.ScVal.scvSymbol('expires_at'),
+      val: nativeToScVal(BigInt(expiresAt), { type: 'u64' }),
+    }),
+    new xdr.ScMapEntry({
+      key: xdr.ScVal.scvSymbol('issuer_key_id'),
+      val: xdr.ScVal.scvBytes(Buffer.from(issuerKeyId, 'hex')),
     }),
     new xdr.ScMapEntry({
       key: xdr.ScVal.scvSymbol('merkle_root'),
@@ -146,12 +156,14 @@ export async function buildClaimTransaction(
   claimantAddress: string,
   nullifierHex: string,
   proofHex: string,  // 384-byte Groth16 proof (pi_a || pi_b || pi_c, BLS12-381 uncompressed affine)
+  expiresAt: number,
+  issuerKeyId: string,
 ): Promise<string> {
   const server = getServer();
   const contract = getContract();
 
   const claimantField = stellarAddressToField(claimantAddress);
-  const publicInputs = buildPublicInputsScVal(nullifierHex, claimantField);
+  const publicInputs = buildPublicInputsScVal(nullifierHex, claimantField, expiresAt, issuerKeyId);
   const proofBytes = xdr.ScVal.scvBytes(Buffer.from(proofHex, 'hex'));
 
   const op = contract.call(

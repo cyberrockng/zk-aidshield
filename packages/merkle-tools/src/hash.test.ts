@@ -27,17 +27,25 @@ async function main() {
   const secret = 0xdeadbeef1234n;
   const disbId = 1n;
   const addrField = field;
+  const expiresAt = 2_000_000_000n;
+  const issuerKeyId = stellarAddressToFieldBigint(addr2);
 
-  const leaf = await computeLeaf(secret, disbId, addrField);
+  const leaf = await computeLeaf(secret, disbId, addrField, expiresAt, issuerKeyId);
   ok('leaf is bigint', typeof leaf === 'bigint');
   ok('leaf is non-zero', leaf > 0n);
-  ok('leaf is deterministic', (await computeLeaf(secret, disbId, addrField)) === leaf);
+  ok('leaf is deterministic', (await computeLeaf(secret, disbId, addrField, expiresAt, issuerKeyId)) === leaf);
 
-  const leaf2 = await computeLeaf(secret + 1n, disbId, addrField);
+  const leaf2 = await computeLeaf(secret + 1n, disbId, addrField, expiresAt, issuerKeyId);
   ok('different secret → different leaf', leaf2 !== leaf);
 
-  const leaf3 = await computeLeaf(secret, disbId, stellarAddressToFieldBigint(addr2));
+  const leaf3 = await computeLeaf(secret, disbId, stellarAddressToFieldBigint(addr2), expiresAt, issuerKeyId);
   ok('different wallet → different leaf', leaf3 !== leaf);
+
+  const leaf4 = await computeLeaf(secret, disbId, addrField, expiresAt + 1n, issuerKeyId);
+  ok('different expiry → different leaf', leaf4 !== leaf);
+
+  const leaf5 = await computeLeaf(secret, disbId, addrField, expiresAt, issuerKeyId + 1n);
+  ok('different issuer → different leaf', leaf5 !== leaf);
 
   const nullifier = await computeNullifier(secret, disbId, addrField);
   ok('nullifier is bigint', typeof nullifier === 'bigint');

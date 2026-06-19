@@ -37,7 +37,7 @@ const TRUST_TABLE: TrustRow[] = [
   {
     property: 'Wallet binding (circuit-level)',
     status: 'on-chain',
-    detail: 'Phase 3: the Merkle leaf is Poseidon(secret, disbursement_id, claimant_address). The wallet address is committed into the Merkle tree at campaign-generation time. A stolen secret cannot generate a valid proof for a different wallet — the leaf itself encodes who can claim.',
+    detail: 'Phase 4: the Merkle leaf is Poseidon(secret, disbursement_id, claimant_address, expires_at, issuer_key_id). The wallet, expiry, and issuer are committed into the tree at campaign-generation time. A stolen secret cannot generate a valid proof for a different wallet or later expiry.',
   },
   {
     property: 'Credential issuance',
@@ -46,8 +46,13 @@ const TRUST_TABLE: TrustRow[] = [
   },
   {
     property: 'Credential expiry',
-    status: 'off-chain',
-    detail: 'Enforced client-side by the claim frontend. An attacker with a raw secret could bypass expiry — on-chain expiry requires a contract upgrade.',
+    status: 'on-chain',
+    detail: 'The expiry timestamp is a public circuit input bound into the Merkle leaf and checked against ledger time by the disbursement contract.',
+  },
+  {
+    property: 'Issuer registry',
+    status: 'on-chain',
+    detail: 'The issuer_key_id is committed into each Merkle leaf. The contract accepts claims only when that issuer key is active and rejects claims after revocation.',
   },
   {
     property: 'Payout amount',
@@ -62,7 +67,7 @@ const TRUST_TABLE: TrustRow[] = [
   {
     property: 'Beneficiary identity',
     status: 'private',
-    detail: 'Never on-chain. The Merkle tree commits to Poseidon(secret, disbursement_id, wallet) — no names or IDs. The wallet address is a pre-committed field element (248 bits), not a personal identifier. The operator knows the mapping but it is never published.',
+    detail: 'Never on-chain. The Merkle tree commits to Poseidon(secret, disbursement_id, wallet, expires_at, issuer_key_id) — no names or IDs. The wallet address is a pre-committed field element (248 bits), not a personal identifier. The operator knows the mapping but it is never published.',
   },
 ];
 
@@ -90,7 +95,7 @@ const ATTACKS: { attack: string; stopped: string; how: string }[] = [
   {
     attack: 'Using another wallet\'s credential',
     stopped: 'On-chain',
-    how: 'Phase 3: leaf = Poseidon(secret, disbursement_id, claimant_address). A different wallet generates a different leaf, so no Merkle proof exists for it. Even if one did, the nullifier (Poseidon(secret, disburse_id, wallet, 1)) would mismatch the one written by the true claimant.',
+    how: 'Phase 4: leaf = Poseidon(secret, disbursement_id, claimant_address, expires_at, issuer_key_id). A different wallet generates a different leaf, so no Merkle proof exists for it. The nullifier remains wallet-bound.',
   },
   {
     attack: 'Issuer impersonation',
@@ -198,12 +203,12 @@ export default function AuditPage() {
         </div>
         <ul className="space-y-2 text-sm" style={{ color: 'var(--muted)' }}>
           <li>
-            <strong style={{ color: 'var(--text)' }}>Credential expiry:</strong> Enforced client-side only.
-            A party with the raw credential JSON could submit after expiry if they bypass the frontend.
+            <strong style={{ color: 'var(--text)' }}>Credential expiry:</strong> Now bound into the ZK leaf
+            and enforced against ledger time by the disbursement contract.
           </li>
           <li>
-            <strong style={{ color: 'var(--text)' }}>Issuer key rotation:</strong> The issuer public key is
-            hardcoded in the frontend. Production would need on-chain key registry and revocation.
+            <strong style={{ color: 'var(--text)' }}>Issuer governance:</strong> The upgraded contract supports
+            issuer add/revoke. Production should add threshold admin controls and per-issuer limits.
           </li>
           <li>
             <strong style={{ color: 'var(--text)' }}>Trusted setup (Groth16):</strong> The proving key was generated
@@ -258,7 +263,7 @@ export default function AuditPage() {
             ['Circuit language', 'circom 2.1'],
             ['Hash function', 'Poseidon (BLS12-381 scalar field)'],
             ['Private inputs', 'secret, merkle_path (not revealed)'],
-            ['Public inputs', 'disbursement_id, merkle_root, nullifier, claimant_address'],
+            ['Public inputs', 'disbursement_id, merkle_root, nullifier, claimant_address, expires_at, issuer_key_id'],
             ['Proof size', '384 bytes (G1 + G2 + G1 uncompressed)'],
             ['On-chain check', 'Native bls.pairing_check on Soroban'],
             ['Proving location', 'Browser WASM (secret never leaves device)'],

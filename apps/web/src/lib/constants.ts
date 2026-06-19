@@ -3,11 +3,11 @@
 
 export const CONTRACT_ID =
   process.env.NEXT_PUBLIC_CONTRACT_ID ||
-  'CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2';
+  'CAXACYKGE4V5DWMS45ZD74FAG4CCJBXT3ILITP4VXJXW3ATICRV3H7LT';
 
 export const VERIFIER_CONTRACT_ID =
   process.env.NEXT_PUBLIC_VERIFIER_CONTRACT_ID ||
-  'CAIU2ZX2P2UGHC6A7SWL7MVTVGHOM7Y57X6AI6NFWCAETM5ZU63ALDY4';
+  'CAAHWYYIFYYTJXI3RYJBCJVTQD3GNVQOARR2BHDUGYPU5E5RIX6TPKGZ';
 
 export const XLM_SAC_ADDRESS =
   process.env.NEXT_PUBLIC_XLM_SAC_ADDRESS ||
@@ -16,6 +16,10 @@ export const XLM_SAC_ADDRESS =
 export const ADMIN_ADDRESS =
   process.env.NEXT_PUBLIC_ADMIN_ADDRESS ||
   'GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ';
+
+export const ISSUER_PUBLIC_KEY =
+  process.env.NEXT_PUBLIC_ISSUER_PUBLIC_KEY ||
+  'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4';
 
 export const NETWORK_PASSPHRASE =
   process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE ||
@@ -39,13 +43,13 @@ export const DISBURSEMENT_ID =
 
 export const MERKLE_ROOT =
   process.env.NEXT_PUBLIC_MERKLE_ROOT ||
-  '4a8cb9e95c92334c7d8a47b5d1ea463eebb7df71fe2316f22aaf8ae3c1c78e41';
+  '0b2a5135fbab2916278fc7f06dba510f856e4829a1743461d8ef4b2bee1cd931';
 
-// SHA-256 of the Groth16 verification key JSON (circuits/aidshield-groth16/build/verification_key_v2.json).
+// SHA-256 of the Groth16 verification key JSON (circuits/aidshield-groth16/build/verification_key.json).
 // Lets judges independently verify the on-chain VK matches the circuit build.
 export const VK_HASH =
   process.env.NEXT_PUBLIC_VK_HASH ||
-  '24398dad8cb124a9419b926c5512a9a54918be5094c32ce030ee71130ce6b382';
+  'ae6fe01643bcc5965d24d9a3d95ea22210ee13293e134f9a50de3134e6f0be3c';
 
 export const STROOPS_PER_XLM = 10_000_000n;
 
@@ -62,10 +66,38 @@ export function shortHex(hex: string): string {
   return `${hex.slice(0, 6)}…${hex.slice(-6)}`;
 }
 
-// Encodes a Stellar G... public key as a 31-byte hex field element (248 bits).
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function base32Decode(s: string): Uint8Array {
+  const bytes: number[] = [];
+  let buf = 0;
+  let bits = 0;
+  for (const ch of s) {
+    const v = BASE32_ALPHABET.indexOf(ch);
+    if (v < 0) throw new Error(`Invalid base32 char: ${ch}`);
+    buf = (buf << 5) | v;
+    bits += 5;
+    if (bits >= 8) {
+      bytes.push((buf >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Uint8Array.from(bytes);
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Encodes a Stellar G... public key as a zero-padded 32-byte field element.
+// StrKey decodes to version(1) + key(32) + checksum(2). We use key[1..31].
 // 31 bytes (248 bits) always fits below the BLS12-381 scalar field prime (255 bits).
 export function stellarAddressToField(address: string): string {
-  const { StrKey } = require('@stellar/stellar-sdk') as typeof import('@stellar/stellar-sdk');
-  const bytes = StrKey.decodeEd25519PublicKey(address) as Buffer;
-  return bytes.slice(1).toString('hex');
+  const decoded = base32Decode(address);
+  const fieldBytes = decoded.subarray(2, 33);
+  return bytesToHex(fieldBytes).padStart(64, '0');
 }
+
+export const ISSUER_KEY_ID =
+  process.env.NEXT_PUBLIC_ISSUER_KEY_ID ||
+  stellarAddressToField(ISSUER_PUBLIC_KEY);

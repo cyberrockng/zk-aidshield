@@ -59,7 +59,7 @@ export async function buildMerkleTree(leaves: bigint[]): Promise<MerkleTree> {
 
 /**
  * Generates a Merkle membership witness for a leaf at a given index.
- * Returns the sibling path and left/right indices needed by the Noir circuit.
+ * Returns the sibling path and left/right indices needed by the circom circuit.
  */
 export function getMerkleWitness(tree: MerkleTree, leafIndex: number): MerkleWitness {
   if (leafIndex >= TREE_SIZE) {

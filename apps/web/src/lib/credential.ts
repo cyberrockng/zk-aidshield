@@ -10,7 +10,7 @@
  */
 
 export interface BeneficiaryCredential {
-  version: '1';
+  version: '2';
   campaign_id: string;        // hex64 disbursement_id
   claimant_address: string;   // Stellar G... address — must match connected wallet
   slot_index: number;         // leaf index in the Merkle tree
@@ -20,16 +20,14 @@ export interface BeneficiaryCredential {
   path_indices: boolean[];    // 8 booleans: false=left, true=right
   issued_at: number;          // unix timestamp (seconds)
   expires_at: number;         // unix timestamp (seconds)
+  issuer_key_id: string;      // hex64 field element registered on-chain
   issuer_public_key: string;  // Stellar G... address of issuing operator
   issuer_signature: string;   // hex128 Ed25519 signature
 }
 
-// Public key of the demo issuer (operator).
-// Reads from NEXT_PUBLIC_ISSUER_PUBLIC_KEY env var first (Phase 7); falls back to
-// the testnet demo key. The matching secret lives only in the server-side API route.
-export const ISSUER_PUBLIC_KEY =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_ISSUER_PUBLIC_KEY) ||
-  'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4';
+import { ISSUER_KEY_ID, ISSUER_PUBLIC_KEY, stellarAddressToField } from './constants';
+
+export { ISSUER_KEY_ID, ISSUER_PUBLIC_KEY };
 
 /**
  * Compute the signing payload for a credential (excludes the signature field).
@@ -52,7 +50,7 @@ export async function verifyCredential(
   connectedWallet: string,
 ): Promise<string | null> {
   // 1. Version check
-  if (cred.version !== '1') return `Unsupported credential version: ${cred.version}`;
+  if (cred.version !== '2') return `Unsupported credential version: ${cred.version}`;
 
   // 2. Wallet binding
   if (cred.claimant_address !== connectedWallet) {
@@ -76,7 +74,15 @@ export async function verifyCredential(
     return 'merkle_path and path_indices must each have 8 elements';
   }
 
-  // 6. Signature verification using Stellar SDK Keypair (Ed25519)
+  // 6. On-chain issuer key id
+  if (!/^[0-9a-fA-F]{64}$/.test(cred.issuer_key_id)) {
+    return 'issuer_key_id must be a 32-byte hex field element';
+  }
+  if (cred.issuer_key_id !== ISSUER_KEY_ID || cred.issuer_key_id !== stellarAddressToField(cred.issuer_public_key)) {
+    return 'Credential issuer key id does not match the configured issuer';
+  }
+
+  // 7. Signature verification using Stellar SDK Keypair (Ed25519)
   try {
     const { Keypair } = await import('@stellar/stellar-sdk');
     const { issuer_signature, ...rest } = cred;

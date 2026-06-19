@@ -40,6 +40,8 @@ template MerkleProof(depth) {
 //   merkle_root      — root stored on Soroban
 //   nullifier        — one-time claim token (address-bound)
 //   claimant_address — Ed25519 key field encoding; Soroban checks tx signer matches
+//   expires_at       — Unix timestamp after which this credential cannot claim
+//   issuer_key_id    — registered issuer field element
 template AidShieldMembership(depth) {
     // Private
     signal input secret;
@@ -51,13 +53,18 @@ template AidShieldMembership(depth) {
     signal input merkle_root;
     signal input nullifier;
     signal input claimant_address;
+    signal input expires_at;
+    signal input issuer_key_id;
 
-    // Step 1: leaf = Poseidon(secret, disbursement_id, claimant_address)
-    // Wallet-bound at the circuit level — the Merkle commitment encodes WHO can claim.
-    component leafHasher = Poseidon(3);
+    // Step 1: leaf = Poseidon(secret, disbursement_id, claimant_address, expires_at, issuer_key_id)
+    // Wallet-, expiry-, and issuer-bound at the circuit level — the Merkle commitment
+    // encodes who can claim, until when, and under which active issuer authority.
+    component leafHasher = Poseidon(5);
     leafHasher.inputs[0] <== secret;
     leafHasher.inputs[1] <== disbursement_id;
     leafHasher.inputs[2] <== claimant_address;
+    leafHasher.inputs[3] <== expires_at;
+    leafHasher.inputs[4] <== issuer_key_id;
 
     // Step 2: Merkle membership proof
     component tree = MerkleProof(depth);
@@ -79,5 +86,5 @@ template AidShieldMembership(depth) {
     nullifierHasher.out === nullifier;
 }
 
-component main { public [disbursement_id, merkle_root, nullifier, claimant_address] }
+component main { public [disbursement_id, merkle_root, nullifier, claimant_address, expires_at, issuer_key_id] }
     = AidShieldMembership(8);

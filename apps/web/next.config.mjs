@@ -20,6 +20,12 @@ const nextConfig = {
   },
 
   webpack: (config, { isServer }) => {
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      { module: /node_modules\/require-addon\/lib\/node\.js/ },
+      { module: /node_modules\/sodium-native\/index\.js/ },
+    ];
+
     // Polyfill Node.js built-ins absent in the browser
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -32,7 +38,14 @@ const nextConfig = {
     };
 
     if (!isServer) {
-      config.externals = [...(config.externals || []), 'sodium-native'];
+      config.resolve.alias = {
+        ...(config.resolve.alias || {}),
+        // Stellar's signing module falls back to tweetnacl when sodium-native is
+        // unavailable. Disable the optional native addon path in browser bundles
+        // to avoid warnings from require-addon during Next builds.
+        'sodium-native': false,
+      };
+
       // Required by snarkjs and circomlibjs for async WASM (circuit.wasm)
       config.experiments = { ...config.experiments, asyncWebAssembly: true };
 
@@ -40,6 +53,7 @@ const nextConfig = {
       // An absolute-path alias bypasses webpack 5's exports-field check entirely.
       config.resolve.alias = {
         ...(config.resolve.alias || {}),
+        '@stellar/stellar-sdk': path.join(__dirname, 'node_modules', '@stellar', 'stellar-sdk', 'lib', 'browser.js'),
         'circomlibjs/src/poseidon_constants_opt.js':
           path.join(__dirname, 'node_modules', 'circomlibjs', 'src', 'poseidon_constants_opt.js'),
       };

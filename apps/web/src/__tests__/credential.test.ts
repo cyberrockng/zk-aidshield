@@ -14,6 +14,7 @@ import {
   verifyCredential,
   credentialSigningPayload,
   ISSUER_PUBLIC_KEY,
+  ISSUER_KEY_ID,
   type BeneficiaryCredential,
 } from '../lib/credential';
 
@@ -33,7 +34,7 @@ function sign(payload: string): string {
 function makeCred(overrides: Partial<BeneficiaryCredential> = {}): BeneficiaryCredential {
   const now = Math.floor(Date.now() / 1000);
   const base: Omit<BeneficiaryCredential, 'issuer_signature'> = {
-    version: '1',
+    version: '2',
     campaign_id: '0000000000000000000000000000000000000000000000000000000000000001',
     claimant_address: WALLET_A,
     slot_index: 0,
@@ -52,6 +53,7 @@ function makeCred(overrides: Partial<BeneficiaryCredential> = {}): BeneficiaryCr
     path_indices: [false, false, false, false, false, false, false, false],
     issued_at: now - 60,
     expires_at: now + 30 * 24 * 3600,
+    issuer_key_id: ISSUER_KEY_ID,
     issuer_public_key: ISSUER_PUBLIC_KEY,
     ...overrides,
   };
@@ -107,7 +109,7 @@ describe('verifyCredential', () => {
     const otherKP = Keypair.random();
     // Build a cred signed by a different key
     const base: Omit<BeneficiaryCredential, 'issuer_signature'> = {
-      version: '1',
+      version: '2',
       campaign_id: '0000000000000000000000000000000000000000000000000000000000000001',
       claimant_address: WALLET_A,
       slot_index: 0,
@@ -117,6 +119,7 @@ describe('verifyCredential', () => {
       path_indices: Array(8).fill(false),
       issued_at: Math.floor(Date.now() / 1000) - 60,
       expires_at: Math.floor(Date.now() / 1000) + 3600,
+      issuer_key_id: '0000000000000000000000000000000000000000000000000000000000000001',
       issuer_public_key: otherKP.publicKey(),
     };
     const payload = credentialSigningPayload(base);
@@ -130,7 +133,7 @@ describe('verifyCredential', () => {
 
   it('rejects a credential with wrong version', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cred = makeCred({ version: '2' as any });
+    const cred = makeCred({ version: '1' as any });
     const err = await verifyCredential(cred, WALLET_A);
     expect(err).not.toBeNull();
     expect(err).toMatch(/version/i);

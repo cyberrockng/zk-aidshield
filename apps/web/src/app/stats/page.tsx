@@ -55,11 +55,11 @@ const ZK_FACTS = [
   { label: 'Elliptic curve', value: 'BLS12-381' },
   { label: 'Circuit language', value: 'circom 2.1' },
   { label: 'Hash function', value: 'Poseidon (BLS12-381 scalar field)' },
-  { label: 'Leaf formula', value: 'Poseidon(secret, disburse_id, wallet)' },
+  { label: 'Leaf formula', value: 'Poseidon(secret, disburse_id, wallet, expires_at, issuer_key_id)' },
   { label: 'Nullifier formula', value: 'Poseidon(secret, disburse_id, wallet, 1)' },
   { label: 'Merkle tree depth', value: '8 levels · 256 slots' },
   { label: 'Proof size', value: '384 bytes (G1 + G2 + G1 uncompressed)' },
-  { label: 'Public inputs', value: '4 (disburse_id, merkle_root, nullifier, wallet)' },
+  { label: 'Public inputs', value: '6 (disburse_id, merkle_root, nullifier, wallet, expires_at, issuer)' },
   { label: 'On-chain verification', value: 'Native BLS12-381 pairing_check on Soroban' },
   { label: 'Proving location', value: 'Browser WASM (secret never leaves device)' },
   { label: 'Proving time', value: '~15–30 s (single-thread WASM)' },
@@ -247,7 +247,7 @@ export default function StatsPage() {
             { label: 'On-chain check', value: 'Native BLS12-381 bls.pairing_check' },
             { label: 'Verifier contract', value: shortHex(VERIFIER_CONTRACT_ID), link: `${EXPLORER_BASE}/contract/${VERIFIER_CONTRACT_ID}` },
             { label: 'VK hash (SHA-256)', value: `${VK_HASH.slice(0, 12)}…${VK_HASH.slice(-8)}`, mono: true, full: VK_HASH },
-            { label: 'Constraints', value: '2516 non-linear (circom 2.1)' },
+            { label: 'Constraints', value: '2576 non-linear (circom 2.1)' },
           ].map((r) => (
             <div key={r.label} className="flex items-start justify-between gap-4">
               <span style={{ color: 'var(--muted)', flexShrink: 0 }}>{r.label}</span>

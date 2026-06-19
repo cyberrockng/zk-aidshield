@@ -13,8 +13,8 @@
 //   pi_c: X(48) || Y(48)                                             = 96 bytes
 //   Total: 384 bytes
 //
-// Public inputs (BLS12-381 Fr, big-endian 32 bytes each, 128 bytes total):
-//   disbursement_id | merkle_root | nullifier | claimant_address
+// Public inputs (BLS12-381 Fr, big-endian 32 bytes each, 192 bytes total):
+//   disbursement_id | merkle_root | nullifier | claimant_address | expires_at | issuer_key_id
 
 export interface ProverInput {
   secret: string;           // 64-char hex
@@ -23,11 +23,13 @@ export interface ProverInput {
   disbursement_id: string;  // 64-char hex
   merkle_root: string;      // 64-char hex
   claimant_address: string; // 62–64 char hex (stellarAddressToField output)
+  expires_at: number;       // unix timestamp (seconds)
+  issuer_key_id: string;    // 64-char hex
 }
 
 export interface ProverOutput {
   proof: string;        // 768-char hex = 384 bytes
-  publicInputs: string; // 256-char hex = 128 bytes (disbursement_id|merkle_root|nullifier|claimant)
+  publicInputs: string; // 384-char hex = 192 bytes (disbursement_id|merkle_root|nullifier|claimant|expires_at|issuer)
   nullifier: string;    // 64-char hex (BLS12-381 scalar)
   proofSize: number;    // 384
 }
@@ -39,7 +41,7 @@ const BLS12_381_R =
 // ── Poseidon BLS12-381 ──────────────────────────────────────────────────────
 // Optimised Poseidon sponge matching circomlib poseidon.circom compiled for
 // BLS12-381. Constants (C, S, M, P) come from poseidon_constants_opt.js; all
-// arithmetic is performed mod BLS12-381 prime instead of BN254.
+// arithmetic is performed mod the BLS12-381 scalar-field prime.
 
 const fmod = (x: bigint) => ((x % BLS12_381_R) + BLS12_381_R) % BLS12_381_R;
 const fadd = (a: bigint, b: bigint) => fmod(a + b);
@@ -174,6 +176,8 @@ export async function generateProof(
   const disbursementId = hexToFieldElement(input.disbursement_id);
   const merkleRoot = hexToFieldElement(input.merkle_root);
   const claimantAddr = hexToFieldElement(input.claimant_address.padStart(64, '0'));
+  const expiresAt = BigInt(input.expires_at);
+  const issuerKeyId = hexToFieldElement(input.issuer_key_id);
 
   log('Computing Poseidon nullifier (BLS12-381)…');
   const nullifier = await poseidonBLS12381([secret, disbursementId, claimantAddr, 1n]);
@@ -189,6 +193,8 @@ export async function generateProof(
     merkle_root: merkleRoot.toString(),
     nullifier: nullifier.toString(),
     claimant_address: claimantAddr.toString(),
+    expires_at: expiresAt.toString(),
+    issuer_key_id: issuerKeyId.toString(),
   };
 
   log('Generating Groth16 proof (BLS12-381 pairing, ~15 s)…');
@@ -207,10 +213,10 @@ export async function generateProof(
   log('Serialising proof to Soroban wire format…');
   const proofBytes = serializeProof(proof);
 
-  // Public inputs: disbursement_id | merkle_root | nullifier | claimant_address (128 bytes)
-  // publicSignals order follows the circuit declaration: [disbursement_id, merkle_root, nullifier, claimant_address]
-  const piBytes = new Uint8Array(128);
-  for (let i = 0; i < 4; i++) {
+  // Public inputs: disbursement_id | merkle_root | nullifier | claimant_address | expires_at | issuer_key_id
+  // publicSignals order follows the circuit declaration.
+  const piBytes = new Uint8Array(192);
+  for (let i = 0; i < 6; i++) {
     piBytes.set(bigintToBytes32(BigInt(publicSignals[i])), i * 32);
   }
 

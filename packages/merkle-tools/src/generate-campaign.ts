@@ -28,6 +28,8 @@ interface BeneficiaryClaim {
   leaf: string;             // hex — Poseidon(secret, disbursement_id, claimant_address_field)
   merkle_path: string[];    // hex array — Merkle witness
   path_indices: boolean[];
+  expires_at: number;       // Unix timestamp bound into the Merkle leaf
+  issuer_key_id: string;    // hex — active issuer field element bound into the leaf
   // nullifier is derived at claim time: Poseidon(secret, disbursement_id, address, 1)
   // Name/ID deliberately excluded — zero PII in output files
 }
@@ -36,6 +38,9 @@ interface CampaignOutput {
   disbursement_id: string;
   merkle_root: string;
   payout_amount_stroops: number;
+  expires_at: number;
+  issuer_public_key: string;
+  issuer_key_id: string;
   beneficiary_count: number;
   generated_at: string;
   claims: BeneficiaryClaim[];
@@ -54,6 +59,7 @@ const DEMO_BENEFICIARIES: Beneficiary[] = [
 
 const DEMO_DISBURSEMENT_ID = "0000000000000000000000000000000000000000000000000000000000000001";
 const DEMO_PAYOUT_STROOPS = 10_000_000; // 1 XLM
+const DEMO_ISSUER_PUBLIC_KEY = "GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4";
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -63,12 +69,16 @@ async function main() {
   let beneficiaries: Beneficiary[];
   let disbursementIdHex: string;
   let payoutStroops: number;
+  let expiresAt: number;
+  let issuerPublicKey: string;
 
   if (isSeed) {
     console.log("Using demo seed data (3 beneficiaries)...");
     beneficiaries = DEMO_BENEFICIARIES;
     disbursementIdHex = DEMO_DISBURSEMENT_ID;
     payoutStroops = DEMO_PAYOUT_STROOPS;
+    expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
+    issuerPublicKey = DEMO_ISSUER_PUBLIC_KEY;
   } else {
     const configPath = "beneficiaries.json";
     if (!existsSync(configPath)) {
@@ -82,16 +92,21 @@ async function main() {
     beneficiaries = config.beneficiaries;
     disbursementIdHex = config.disbursement_id;
     payoutStroops = config.payout_amount_stroops;
+    expiresAt = config.expires_at ?? Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
+    issuerPublicKey = config.issuer_public_key ?? DEMO_ISSUER_PUBLIC_KEY;
   }
 
   const disbursementId = BigInt("0x" + disbursementIdHex);
+  const issuerKeyId = stellarAddressToFieldBigint(issuerPublicKey);
 
   console.log(`\n📋 Generating campaign for ${beneficiaries.length} beneficiaries`);
   console.log(`   Disbursement ID: 0x${disbursementIdHex}`);
   console.log(`   Payout per claim: ${payoutStroops / 1_000_000} XLM\n`);
+  console.log(`   Expires at: ${new Date(expiresAt * 1000).toISOString()}`);
+  console.log(`   Issuer: ${issuerPublicKey}\n`);
 
   // Step 1: Generate secrets and compute wallet-bound leaves
-  // leaf = Poseidon(secret, disbursement_id, claimant_address_field) — matches circuit
+  // leaf = Poseidon(secret, disbursement_id, claimant_address_field, expires_at, issuer_key_id) — matches circuit
   console.log("🔑 Generating secrets and computing wallet-bound Poseidon (BLS12-381) leaves...");
   const claims: BeneficiaryClaim[] = [];
   const leaves: bigint[] = [];
@@ -99,7 +114,7 @@ async function main() {
   for (let i = 0; i < beneficiaries.length; i++) {
     const secret = randomSecret();
     const addrField = stellarAddressToFieldBigint(beneficiaries[i].wallet);
-    const leaf = await computeLeaf(secret, disbursementId, addrField);
+    const leaf = await computeLeaf(secret, disbursementId, addrField, BigInt(expiresAt), issuerKeyId);
     leaves.push(leaf);
     claims.push({
       index: i,
@@ -108,6 +123,8 @@ async function main() {
       leaf: toHex32(leaf),
       merkle_path: [], // filled after tree build
       path_indices: [],
+      expires_at: expiresAt,
+      issuer_key_id: toHex32(issuerKeyId),
     });
     console.log(`   [${i}] wallet: ${beneficiaries[i].wallet.slice(0, 10)}… leaf: ${toHexDisplay(leaf).slice(0, 18)}...`);
   }
@@ -130,6 +147,9 @@ async function main() {
     disbursement_id: disbursementIdHex,
     merkle_root: toHex32(tree.root),
     payout_amount_stroops: payoutStroops,
+    expires_at: expiresAt,
+    issuer_public_key: issuerPublicKey,
+    issuer_key_id: toHex32(issuerKeyId),
     beneficiary_count: beneficiaries.length,
     generated_at: new Date().toISOString(),
     claims,

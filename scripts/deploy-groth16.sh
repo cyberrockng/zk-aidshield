@@ -12,10 +12,9 @@
 #        cp circuits/aidshield-groth16/build/circuit.wasm       apps/web/public/circuit.wasm
 #        cp circuits/aidshield-groth16/build/circuit_final.zkey  apps/web/public/circuit_final.zkey
 #   4. Regenerate campaign (Poseidon BLS12-381 hashes):
-#        cd packages/merkle-tools && npm install && npm run generate -- --count 1
-#        # then update MERKLE_ROOT in apps/web/src/lib/constants.ts
-#        # and DEMO_CLAIM in apps/web/src/app/claim/page.tsx
-#   5. Call update_root on the disbursement contract with the new merkle root
+#        cd packages/merkle-tools && npm install && npm run generate
+#        # then update MERKLE_ROOT, ISSUER_KEY_ID, and VERIFIER_CONTRACT_ID in frontend env/constants
+#   5. Call update_root and add_issuer on the disbursement contract
 #
 # Usage:
 #   export ADMIN_SECRET_KEY=S...

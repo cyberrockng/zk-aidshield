@@ -12,12 +12,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body className="min-h-screen flex flex-col">
         <nav
           style={{
@@ -52,6 +46,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
 
             <div className="flex items-center gap-1">
+              <Link
+                href="/judges"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Judges
+              </Link>
               <Link
                 href="/stats"
                 className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"

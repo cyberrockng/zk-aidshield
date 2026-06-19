@@ -15,8 +15,8 @@
 //!   α, β, γ, δ = verification key points (stored in contract)
 //!   vk_x       = IC[0] + Σ public_input[i] * IC[i+1]  (linear combination)
 //!
-//! Public inputs (4 × 32 bytes = 128 bytes total):
-//!   disbursement_id | merkle_root | nullifier | claimant_address_field
+//! Public inputs (6 × 32 bytes = 192 bytes total):
+//!   disbursement_id | merkle_root | nullifier | claimant_address_field | expires_at | issuer_key_id
 //!
 //! Proof layout (pi_a‖pi_b‖pi_c) — Soroban uncompressed affine:
 //!   pi_a: 96 bytes  (G1: X[48] || Y[48])
@@ -39,8 +39,8 @@ const G1_SIZE: u32 = 96;
 const G2_SIZE: u32 = 192;
 const FR_SIZE: u32 = 32;
 const PROOF_SIZE: u32 = G1_SIZE + G2_SIZE + G1_SIZE; // 384
-const PI_SIZE: u32 = 4 * FR_SIZE;                    // 128
-const N_PUBLIC: u32 = 4;                              // disbursement_id, merkle_root, nullifier, claimant_address
+const PI_SIZE: u32 = 6 * FR_SIZE;                    // 192
+const N_PUBLIC: u32 = 6;                              // disbursement_id, merkle_root, nullifier, claimant_address, expires_at, issuer
 
 #[contracttype]
 pub enum DataKey {
@@ -63,7 +63,7 @@ impl Groth16Verifier {
     /// vk_beta:   192-byte uncompressed G2
     /// vk_gamma:  192-byte uncompressed G2
     /// vk_delta:  192-byte uncompressed G2
-    /// vk_ic:     (N_PUBLIC+1) × 96 = 480 bytes of concatenated uncompressed G1 points
+    /// vk_ic:     (N_PUBLIC+1) × 96 = 672 bytes of concatenated uncompressed G1 points
     pub fn initialize(
         env: Env,
         vk_alpha: BytesN<96>,
@@ -90,7 +90,7 @@ impl Groth16Verifier {
     /// Verify a Groth16 proof against the stored VK.
     ///
     /// proof:         384 bytes — pi_a(96) ‖ pi_b(192) ‖ pi_c(96)
-    /// public_inputs: 128 bytes — disbursement_id ‖ merkle_root ‖ nullifier ‖ claimant_address
+    /// public_inputs: 192 bytes — disbursement_id ‖ merkle_root ‖ nullifier ‖ claimant_address ‖ expires_at ‖ issuer_key_id
     ///
     /// Returns true iff the multi-pairing check passes.
     pub fn verify(env: Env, proof: Bytes, public_inputs: Bytes) -> bool {

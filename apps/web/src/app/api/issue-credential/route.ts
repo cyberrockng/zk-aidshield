@@ -21,12 +21,13 @@ import { join } from 'path';
 import { Keypair } from '@stellar/stellar-sdk';
 import type { BeneficiaryCredential } from '@/lib/credential';
 import { credentialSigningPayload } from '@/lib/credential';
+import { ISSUER_KEY_ID, ISSUER_PUBLIC_KEY } from '@/lib/constants';
 import { NextRequest, NextResponse } from 'next/server';
 
 // ── Issuer keypair (demo — never expose in client bundle) ──────────────────
 // In production, read from ISSUER_SECRET_KEY env var via a secret manager.
 const ISSUER_SECRET = process.env.ISSUER_SECRET_KEY ?? 'SBMF2UKOVBCU5XG24BBQMCXF4QFGNUHMBMHH6HQO4NEMF6MKTDWN5XKU';
-const ISSUER_PUBLIC = 'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4';
+const ISSUER_PUBLIC = ISSUER_PUBLIC_KEY;
 
 // ── Campaign data (server-side only) ──────────────────────────────────────
 interface CampaignClaim {
@@ -36,11 +37,15 @@ interface CampaignClaim {
   leaf: string;
   merkle_path: string[];
   path_indices: boolean[];
+  expires_at?: number;
+  issuer_key_id?: string;
 }
 
 interface Campaign {
   disbursement_id: string;
   merkle_root: string;
+  expires_at?: number;
+  issuer_key_id?: string;
   claims: CampaignClaim[];
 }
 
@@ -90,7 +95,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 
-  // Phase 3: the leaf is wallet-bound — find the slot pre-committed to this exact address
+  // Phase 4: the leaf is wallet-, expiry-, and issuer-bound — find the slot
+  // pre-committed to this exact address.
   const slot = campaign.claims.find((c) => c.claimant_address === claimant_address);
   if (!slot) {
     return NextResponse.json(
@@ -109,8 +115,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Build credential (without signature)
   const now = Math.floor(Date.now() / 1000);
+  const expires_at = slot.expires_at ?? campaign.expires_at ?? now + 30 * 24 * 3600;
+  const issuer_key_id = slot.issuer_key_id ?? campaign.issuer_key_id ?? ISSUER_KEY_ID;
   const credBase: Omit<BeneficiaryCredential, 'issuer_signature'> = {
-    version: '1',
+    version: '2',
     campaign_id: campaign.disbursement_id,
     claimant_address,
     slot_index: slot.index,
@@ -119,7 +127,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     merkle_path: slot.merkle_path,
     path_indices: slot.path_indices,
     issued_at: now,
-    expires_at: now + 30 * 24 * 3600, // 30 days
+    expires_at,
+    issuer_key_id,
     issuer_public_key: ISSUER_PUBLIC,
   };
 

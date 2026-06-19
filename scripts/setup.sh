@@ -27,6 +27,9 @@
 
 set -euo pipefail
 
+echo "scripts/setup.sh now delegates to the Phase 4 issuer/expiry-bound deployment flow."
+exec bash scripts/setup-phase4.sh
+
 FUND_AMOUNT_XLM="${FUND_AMOUNT_XLM:-50}"
 NETWORK="testnet"
 RPC="https://soroban-testnet.stellar.org"
@@ -68,7 +71,13 @@ if [ -z "$MERKLE_ROOT" ]; then
   echo "  ❌ Could not read merkle_root from campaign.json"
   exit 1
 fi
+ISSUER_KEY_ID=$(node -e "const c=require('./packages/merkle-tools/campaign.json'); console.log(c.issuer_key_id)" 2>/dev/null || echo "")
+if [ -z "$ISSUER_KEY_ID" ]; then
+  echo "  ❌ Could not read issuer_key_id from campaign.json"
+  exit 1
+fi
 echo "  Merkle root: $MERKLE_ROOT"
+echo "  Issuer key:  $ISSUER_KEY_ID"
 
 # ── Step 2: Deploy Groth16 verifier ──────────────────────────────────────────
 echo ""
@@ -91,9 +100,21 @@ stellar contract invoke \
   --new_root "$MERKLE_ROOT"
 echo "  ✓ Merkle root updated: $MERKLE_ROOT"
 
-# ── Step 4: Unpause claims ───────────────────────────────────────────────────
+# ── Step 4: Register issuer ──────────────────────────────────────────────────
 echo ""
-echo "▸ Step 4/5  Unpause claims"
+echo "▸ Step 4/6  Register active credential issuer"
+stellar contract invoke \
+  --id "$DISBURSEMENT_CONTRACT" \
+  --source "$ADMIN_SECRET_KEY" \
+  --network "$NETWORK" \
+  --rpc-url "$RPC" \
+  -- add_issuer \
+  --issuer_key_id "$ISSUER_KEY_ID"
+echo "  ✓ Issuer registered: $ISSUER_KEY_ID"
+
+# ── Step 5: Unpause claims ───────────────────────────────────────────────────
+echo ""
+echo "▸ Step 5/6  Unpause claims"
 stellar contract invoke \
   --id "$DISBURSEMENT_CONTRACT" \
   --source "$ADMIN_SECRET_KEY" \
@@ -103,9 +124,9 @@ stellar contract invoke \
   --paused false
 echo "  ✓ Claims unpaused"
 
-# ── Step 5: Fund escrow ───────────────────────────────────────────────────────
+# ── Step 6: Fund escrow ───────────────────────────────────────────────────────
 echo ""
-echo "▸ Step 5/5  Fund escrow with ${FUND_AMOUNT_XLM} XLM"
+echo "▸ Step 6/6  Fund escrow with ${FUND_AMOUNT_XLM} XLM"
 FUND_STROOPS=$(( FUND_AMOUNT_XLM * 10000000 ))
 stellar contract invoke \
   --id "$DISBURSEMENT_CONTRACT" \
