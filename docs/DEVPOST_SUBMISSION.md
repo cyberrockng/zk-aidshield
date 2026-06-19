@@ -12,12 +12,15 @@ Humanitarian aid systems often require beneficiaries to expose names, IDs, and c
 
 ZK AidShield lets an aid operator commit an approved beneficiary set as a Poseidon Merkle root. A beneficiary receives a signed credential, generates a Groth16 BLS12-381 proof locally in the browser, and submits it to Soroban. The contract verifies the proof, checks issuer status and expiry, blocks replay with a nullifier, then releases XLM from escrow.
 
+Operators can deliver credentials as JSON files, copied payloads, or QR codes for phone-first field use. QR import preserves the same signature, wallet-binding, expiry, and nullifier checks.
+
 ## What Is New In Phase 4
 
 - 6-public-input Groth16 circuit
 - wallet-, expiry-, and issuer-bound Merkle leaves
 - on-chain issuer registry with revocation
 - on-chain credential expiry enforcement by ledger timestamp
+- mobile QR credential export/import
 - fresh Stellar testnet deployment with 50 XLM escrow
 
 ## Built With
@@ -42,8 +45,8 @@ ZK AidShield lets an aid operator commit an approved beneficiary set as a Poseid
 
 1. Open `/judges` to show the short technical brief.
 2. Open `/stats` to show live 50 XLM escrow and deployed contracts.
-3. Open `/admin` and issue a beneficiary credential.
-4. Open `/claim`, load the credential, and generate the browser Groth16 proof.
+3. Open `/admin` and issue a beneficiary credential as JSON or QR.
+4. Open `/claim`, load the credential by file, QR image, or paste, and generate the browser Groth16 proof.
 5. Approve in Freighter and show the Stellar Explorer transaction.
 6. Retry the same credential to show replay protection.
 7. Switch wallets to show wrong-wallet rejection.
@@ -59,7 +62,6 @@ The hardest part was aligning the same BLS12-381 Poseidon statement across circo
 
 ## What Is Next
 
-- mobile QR credential import
 - vendor/voucher mode
 - threshold-admin issuer governance
 - Human Passport or Self/OpenPassport optional enrollment adapter

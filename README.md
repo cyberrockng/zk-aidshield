@@ -28,7 +28,8 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Wallet-bound privacy:** credentials and nullifiers are bound to the claimant wallet without revealing identity
 - **Fraud resistance:** double claims and wrong-wallet claims are blocked
 - **Auditor visibility:** contracts, campaign root, VK hash, stats, and trust boundaries are inspectable
-- **Production path:** documented next steps for issuer registry, on-chain expiry, mobile QR credentials, and vendor/voucher mode
+- **Field-ready credential delivery:** operators can export signed credentials as JSON or mobile QR codes
+- **Production path:** documented next steps for issuer governance, vendor/voucher mode, and optional identity adapters
 
 See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).
 
@@ -42,7 +43,7 @@ See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/
 2. Scroll to **Issue Beneficiary Credential**
 3. Paste the beneficiary's Stellar address (or use your second Freighter account)
 4. Click **Issue Credential**
-5. A signed JSON credential appears — click **Download** or **Copy JSON**
+5. A signed credential appears — click **Download**, **Copy JSON**, or **Download QR**
 
 > _What happened:_ The server signed a credential binding the Merkle witness (secret + path) to that specific wallet using Ed25519. The secret never left the server. The browser received a signed token.
 
@@ -50,7 +51,7 @@ See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/
 
 1. Open `http://localhost:3000/claim` in browser B
 2. Connect Freighter — make sure it is the **same wallet** as the address in step 1
-3. Click **Upload credential file** and select the downloaded JSON — or paste it directly
+3. Click **Upload credential file**, scan a credential QR image, or paste the credential directly
 4. Click **Verify & Load Credential**
 5. You should see: `✓ Credential verified — slot #0`
 

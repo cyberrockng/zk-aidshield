@@ -15,6 +15,7 @@
     "@stellar/stellar-sdk": "^12.3.0",
     "circomlibjs": "^0.1.7",
     "next": "^14.2.0",
+    "qrcode": "^1.5.4",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "snarkjs": "^0.7.6",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitest/coverage-v8": "^4.1.9",

@@ -24,6 +24,7 @@ const PROOF_POINTS = [
 
 const DIFFERENTIATORS = [
   'End-to-end flow: operator issuance, local proof, wallet signature, Soroban verification, XLM payout.',
+  'Mobile QR credential delivery: field officers can issue a signed credential QR and beneficiaries can import it on the claim page.',
   'Not an identity wallet: identity checks stay off-chain; final claim is anonymous on-chain.',
   'Not only a demo circuit: deployed contracts, test coverage, audit page, stats page, and replay/wrong-wallet demos.',
   'Stellar-native: uses Soroban and BLS12-381 pairing host functions instead of off-chain verification.',
@@ -32,7 +33,6 @@ const DIFFERENTIATORS = [
 const NEXT_STEPS = [
   ['Multi-issuer operations', 'Add threshold admin controls, per-issuer issuance limits, and a durable non-PII issuance ledger.'],
   ['Multi-issuer governance', 'Support field-officer issuer keys, revocation, and per-issuer limits for NGO operations.'],
-  ['Mobile QR credentials', 'Let field officers transfer encrypted credentials to beneficiaries by QR for phone-first deployments.'],
   ['Vendor/voucher mode', 'Support restricted relief budgets where approved vendors can redeem without exposing beneficiary identity.'],
   ['Optional identity adapters', 'Use Human Passport or Self/OpenPassport during enrollment while keeping the payout claim anonymous.'],
 ];

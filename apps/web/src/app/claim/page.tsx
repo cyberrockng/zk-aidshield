@@ -11,8 +11,13 @@ import { isFreighterInstalled, connectWallet, signTx } from '@/lib/freighter';
 import { EXPLORER_BASE, DISBURSEMENT_ID, MERKLE_ROOT, shortHex, stellarAddressToField } from '@/lib/constants';
 import { generateProof } from '@/lib/prover';
 import { verifyCredential, type BeneficiaryCredential } from '@/lib/credential';
+import { decodeCredentialQr, prettyCredentialJson } from '@/lib/credential-qr';
 
 type Step = 'wallet' | 'paste' | 'validate' | 'prove' | 'sign' | 'submit' | 'done' | 'error';
+
+type BarcodeDetectorCtor = new (options?: { formats?: string[] }) => {
+  detect(source: ImageBitmapSource): Promise<Array<{ rawValue?: string }>>;
+};
 
 const FLOW_STEPS: Step[] = ['wallet', 'paste', 'validate', 'prove', 'sign', 'submit', 'done'];
 
@@ -110,6 +115,8 @@ export default function ClaimPage() {
   const [credJson, setCredJson] = useState('');
   const [parsedCred, setParsedCred] = useState<BeneficiaryCredential | null>(null);
   const [parseError, setParseError] = useState('');
+  const [qrScanError, setQrScanError] = useState('');
+  const [qrScanBusy, setQrScanBusy] = useState(false);
 
   const [step, setStep] = useState<Step>('wallet');
   const [statusMsg, setStatusMsg] = useState('');
@@ -145,6 +152,40 @@ export default function ClaimPage() {
     reader.readAsText(file);
   }
 
+  async function handleQrImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.currentTarget.value = '';
+    if (!file) return;
+
+    setQrScanError('');
+    setParseError('');
+    setParsedCred(null);
+    setQrScanBusy(true);
+
+    try {
+      const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
+      if (!Detector) {
+        throw new Error('QR image scanning is not available in this browser. Use Chrome/Edge, or paste the QR payload text.');
+      }
+
+      const detector = new Detector({ formats: ['qr_code'] });
+      const bitmap = await createImageBitmap(file);
+      const codes = await detector.detect(bitmap);
+      bitmap.close();
+      const raw = codes.find((c) => c.rawValue)?.rawValue;
+      if (!raw) throw new Error('No QR credential found in this image.');
+
+      const credential = decodeCredentialQr(raw);
+      setCredJson(prettyCredentialJson(credential));
+      setStatusMsg('QR credential imported');
+      setStep('paste');
+    } catch (err) {
+      setQrScanError(String(err));
+    } finally {
+      setQrScanBusy(false);
+    }
+  }
+
   async function handleParse() {
     setParseError('');
     setParsedCred(null);
@@ -152,9 +193,9 @@ export default function ClaimPage() {
 
     let obj: BeneficiaryCredential;
     try {
-      obj = JSON.parse(credJson) as BeneficiaryCredential;
+      obj = decodeCredentialQr(credJson);
     } catch (e) {
-      setParseError(`JSON parse error: ${String(e)}`);
+      setParseError(`Credential parse error: ${String(e)}`);
       return;
     }
 
@@ -353,12 +394,26 @@ export default function ClaimPage() {
               Upload credential file (.json)
             </label>
 
-            <div className="text-xs text-center mb-3" style={{ color: 'var(--muted)' }}>or paste JSON directly</div>
+            <label
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-lg cursor-pointer mb-3 text-sm font-medium transition-colors"
+              style={{ background: 'rgba(63,185,80,0.06)', border: '1px dashed rgba(63,185,80,0.3)', color: 'var(--green-bright)' }}
+            >
+              <input type="file" accept="image/*" className="sr-only" onChange={handleQrImageUpload} disabled={qrScanBusy || (step !== 'paste' && step !== 'error')} />
+              {qrScanBusy ? 'Scanning QR…' : 'Scan credential QR image'}
+            </label>
+
+            {qrScanError && (
+              <div className="text-xs mb-3 p-3 rounded-lg" style={{ background: '#1a0505', color: '#f87171', border: '1px solid rgba(248,81,73,0.25)' }}>
+                {qrScanError}
+              </div>
+            )}
+
+            <div className="text-xs text-center mb-3" style={{ color: 'var(--muted)' }}>or paste JSON / QR payload directly</div>
 
             <textarea
               rows={5}
               className="mono text-xs"
-              placeholder='{ "version": "2", "claimant_address": "G…", "secret": "…", … }'
+              placeholder='aidshield:credential:v2:… or { "version": "2", "claimant_address": "G…", "secret": "…", … }'
               value={credJson}
               onChange={(e) => { setCredJson(e.target.value); setParsedCred(null); setParseError(''); }}
               disabled={step !== 'paste' && step !== 'error'}

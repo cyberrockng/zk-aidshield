@@ -17,6 +17,7 @@ import {
   ISSUER_KEY_ID,
   type BeneficiaryCredential,
 } from '../lib/credential';
+import { CREDENTIAL_QR_PREFIX, decodeCredentialQr, encodeCredentialQr, prettyCredentialJson } from '../lib/credential-qr';
 
 // ── Demo issuer keypair (matches constants in credential.ts / API route) ──────
 const ISSUER_SECRET = 'SBMF2UKOVBCU5XG24BBQMCXF4QFGNUHMBMHH6HQO4NEMF6MKTDWN5XKU';
@@ -144,5 +145,19 @@ describe('verifyCredential', () => {
     const err = await verifyCredential({ ...cred, merkle_path: cred.merkle_path.slice(0, 6) }, WALLET_A);
     expect(err).not.toBeNull();
     expect(err).toMatch(/8 element/i);
+  });
+});
+
+describe('credential QR payloads', () => {
+  it('round-trips a signed credential through the QR payload format', () => {
+    const cred = makeCred();
+    const payload = encodeCredentialQr(cred);
+    expect(payload.startsWith(CREDENTIAL_QR_PREFIX)).toBe(true);
+    expect(decodeCredentialQr(payload)).toEqual(cred);
+  });
+
+  it('also accepts raw credential JSON for backwards-compatible paste flow', () => {
+    const cred = makeCred();
+    expect(decodeCredentialQr(prettyCredentialJson(cred))).toEqual(cred);
   });
 });

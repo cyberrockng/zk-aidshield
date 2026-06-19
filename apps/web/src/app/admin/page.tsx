@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import QRCode from 'qrcode';
 import {
   fetchStats,
   fetchIsPaused,
@@ -15,6 +16,7 @@ import {
   stroopsToXlm, shortHex, DISBURSEMENT_ID, MERKLE_ROOT, ISSUER_PUBLIC_KEY, ISSUER_KEY_ID, // MERKLE_ROOT kept for existing use
 } from '@/lib/constants';
 import type { BeneficiaryCredential } from '@/lib/credential';
+import { encodeCredentialQr, prettyCredentialJson } from '@/lib/credential-qr';
 
 type FundStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 type PauseStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
@@ -75,6 +77,10 @@ export default function AdminPage() {
   const [issuedCredential, setIssuedCredential] = useState<BeneficiaryCredential | null>(null);
   const [issueError, setIssueError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [qrCopied, setQrCopied] = useState(false);
+  const [credentialQr, setCredentialQr] = useState('');
+  const [credentialQrPayload, setCredentialQrPayload] = useState('');
+  const [credentialQrError, setCredentialQrError] = useState('');
 
   const [activityLog, setActivityLog] = useState<string[]>([]);
 
@@ -100,6 +106,32 @@ export default function AdminPage() {
       })
       .catch((e) => setBeneficiariesError(String(e)));
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    setCredentialQr('');
+    setCredentialQrPayload('');
+    setCredentialQrError('');
+    setQrCopied(false);
+    if (!issuedCredential) return;
+
+    const payload = encodeCredentialQr(issuedCredential);
+    setCredentialQrPayload(payload);
+    QRCode.toDataURL(payload, {
+      errorCorrectionLevel: 'L',
+      margin: 2,
+      scale: 7,
+      color: { dark: '#0d1117', light: '#ffffff' },
+    })
+      .then((url) => {
+        if (active) setCredentialQr(url);
+      })
+      .catch((e) => {
+        if (active) setCredentialQrError(String(e));
+      });
+
+    return () => { active = false; };
+  }, [issuedCredential]);
 
   function handleCsvUpload(e: React.ChangeEvent<HTMLInputElement>) {
     setCsvError('');
@@ -154,10 +186,14 @@ export default function AdminPage() {
       });
       const data = await res.json() as { error?: string; slot_index?: number };
       if (!res.ok) throw new Error(data.error ?? 'Issue failed');
+      const credential = data as BeneficiaryCredential;
+      setIssuedCredential(credential);
+      setIssueStep('done');
+      setCopied(false);
       setIssuedBySlot((prev) => ({ ...prev, [slot.index]: true }));
       log(`Credential issued ✓ slot #${slot.index}`);
       // Trigger download
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const blob = new Blob([prettyCredentialJson(credential)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -311,9 +347,24 @@ export default function AdminPage() {
 
   async function handleCopyCredential() {
     if (!issuedCredential) return;
-    await navigator.clipboard.writeText(JSON.stringify(issuedCredential, null, 2));
+    await navigator.clipboard.writeText(prettyCredentialJson(issuedCredential));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleDownloadCredentialQr() {
+    if (!credentialQr || !issuedCredential) return;
+    const a = document.createElement('a');
+    a.href = credentialQr;
+    a.download = `aidshield-credential-slot${issuedCredential.slot_index}-qr.png`;
+    a.click();
+  }
+
+  async function handleCopyCredentialQrPayload() {
+    if (!credentialQrPayload) return;
+    await navigator.clipboard.writeText(credentialQrPayload);
+    setQrCopied(true);
+    setTimeout(() => setQrCopied(false), 2000);
   }
 
   const fundBusy = fundStep === 'building' || fundStep === 'signing' || fundStep === 'submitting';
@@ -510,10 +561,53 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="mono text-xs p-4 overflow-auto max-h-64" style={{ background: '#040d07', color: 'var(--muted)' }}>
-              <pre>{JSON.stringify(issuedCredential, null, 2)}</pre>
+              <pre>{prettyCredentialJson(issuedCredential)}</pre>
+            </div>
+            <div className="px-4 py-4" style={{ background: '#07130b', borderTop: '1px solid rgba(63,185,80,0.15)' }}>
+              <div className="flex gap-4 flex-wrap items-center">
+                <div
+                  className="rounded-lg p-2 flex items-center justify-center"
+                  style={{ width: 188, minHeight: 188, background: '#ffffff', border: '1px solid rgba(63,185,80,0.25)' }}
+                >
+                  {credentialQr ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={credentialQr} alt="Credential QR code" style={{ width: 172, height: 172 }} />
+                  ) : (
+                    <span className="text-xs" style={{ color: '#111827' }}>
+                      {credentialQrError ? 'QR unavailable' : 'Generating QR…'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1" style={{ minWidth: 220 }}>
+                  <div className="text-sm font-semibold mb-1" style={{ color: 'var(--green-bright)' }}>
+                    Mobile QR credential
+                  </div>
+                  <div className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--muted)' }}>
+                    Field officers can show this QR to the beneficiary phone. The QR contains the signed credential payload; the claim page still verifies issuer signature, wallet binding, expiry, and nullifier status.
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                      style={{ background: 'var(--green-dim)', color: 'var(--green-bright)', border: '1px solid rgba(63,185,80,0.3)' }}
+                      onClick={handleDownloadCredentialQr}
+                      disabled={!credentialQr}
+                    >
+                      Download QR
+                    </button>
+                    <button
+                      className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                      style={{ background: 'var(--surface-2)', color: 'var(--muted-2)', border: '1px solid var(--border)' }}
+                      onClick={handleCopyCredentialQrPayload}
+                      disabled={!credentialQrPayload}
+                    >
+                      {qrCopied ? 'Copied!' : 'Copy QR payload'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="px-4 py-3 text-xs" style={{ background: '#0a1f14', color: 'var(--muted)' }}>
-              Share privately with the beneficiary. They paste it into{' '}
+              Share privately with the beneficiary by file, JSON, or QR. They load it in{' '}
               <a href="/claim" className="underline" style={{ color: 'var(--green)' }}>Claim</a>{' '}
               — the secret never leaves their device.
             </div>
