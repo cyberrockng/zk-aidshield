@@ -7,6 +7,8 @@ import {
   fetchIsPaused,
   buildSetPausedTransaction,
   buildFundTransaction,
+  buildSetVendorTransaction,
+  checkVendorActive,
   submitSignedTransaction,
   type CampaignStats,
 } from '@/lib/soroban';
@@ -22,6 +24,7 @@ import type { DeliveryMode, IssuanceLedgerResponse } from '@/lib/issuance-ledger
 type FundStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 type PauseStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 type IssueStep = 'idle' | 'issuing' | 'done' | 'error';
+type VendorStep = 'idle' | 'checking' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 
 interface CsvRow { name: string; id: string; wallet: string }
 
@@ -72,6 +75,12 @@ export default function AdminPage() {
   const [pauseStep, setPauseStep] = useState<PauseStep>('idle');
   const [pauseError, setPauseError] = useState('');
   const [pauseTxHash, setPauseTxHash] = useState('');
+
+  const [vendorAddress, setVendorAddress] = useState('');
+  const [vendorStep, setVendorStep] = useState<VendorStep>('idle');
+  const [vendorError, setVendorError] = useState('');
+  const [vendorTxHash, setVendorTxHash] = useState('');
+  const [vendorActive, setVendorActive] = useState<boolean | null>(null);
 
   const [recipientAddress, setRecipientAddress] = useState('');
   const [issueStep, setIssueStep] = useState<IssueStep>('idle');
@@ -357,6 +366,57 @@ export default function AdminPage() {
     }
   }
 
+  async function handleCheckVendor() {
+    const addr = vendorAddress.trim();
+    setVendorError('');
+    setVendorActive(null);
+    if (!/^G[A-Z0-9]{55}$/.test(addr)) {
+      setVendorError('Enter a valid Stellar vendor address');
+      return;
+    }
+    try {
+      setVendorStep('checking');
+      const active = await checkVendorActive(addr);
+      setVendorActive(active);
+      setVendorStep('idle');
+      log(`Vendor ${addr.slice(0, 8)}… is ${active ? 'approved' : 'not approved'}`);
+    } catch (e) {
+      setVendorError(String(e));
+      setVendorStep('error');
+    }
+  }
+
+  async function handleSetVendor(active: boolean) {
+    const addr = vendorAddress.trim();
+    if (!walletAddress) { setVendorError('Connect your Freighter admin wallet first'); return; }
+    if (!/^G[A-Z0-9]{55}$/.test(addr)) {
+      setVendorError('Enter a valid Stellar vendor address');
+      return;
+    }
+    setVendorError('');
+    setVendorTxHash('');
+    try {
+      setVendorStep('building');
+      log(`${active ? 'Approving' : 'Revoking'} vendor ${addr.slice(0, 8)}…`);
+      const txXDR = await buildSetVendorTransaction(walletAddress, addr, active);
+      setVendorStep('signing');
+      log('Waiting for Freighter signature…');
+      const signedXDR = await signTx(txXDR, walletAddress);
+      setVendorStep('submitting');
+      log('Broadcasting vendor update…');
+      const hash = await submitSignedTransaction(signedXDR);
+      setVendorTxHash(hash);
+      setVendorActive(active);
+      setVendorStep('done');
+      log(`Vendor ${active ? 'approved' : 'revoked'} ✓ tx: ${hash.slice(0, 12)}…`);
+    } catch (e) {
+      const msg = String(e);
+      setVendorError(msg);
+      setVendorStep('error');
+      log(`Vendor update error: ${msg.slice(0, 80)}`);
+    }
+  }
+
   async function handleIssueCredential() {
     const addr = recipientAddress.trim();
     if (!addr) { setIssueError('Enter a recipient Stellar address'); return; }
@@ -464,6 +524,7 @@ export default function AdminPage() {
 
   const fundBusy = fundStep === 'building' || fundStep === 'signing' || fundStep === 'submitting';
   const pauseBusy = pauseStep === 'building' || pauseStep === 'signing' || pauseStep === 'submitting';
+  const vendorBusy = vendorStep === 'checking' || vendorStep === 'building' || vendorStep === 'signing' || vendorStep === 'submitting';
 
   const utilization =
     stats && stats.claimed_count > 0 && stats.payout_amount > 0n
@@ -593,6 +654,69 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Vendor / Voucher Mode ── */}
+      <div className="card mb-6">
+        <div className="font-semibold mb-1 flex items-center gap-2">
+          Vendor / Voucher Mode
+          <span className="badge" style={{ background: '#1f2a44', color: '#93c5fd', fontSize: '0.65rem' }}>
+            Restricted aid
+          </span>
+        </div>
+        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+          Approve vendors that can receive beneficiary-authorized voucher redemptions. The beneficiary still proves private eligibility and signs the transaction; the contract pays only approved vendors.
+        </p>
+
+        <div className="flex gap-3 items-end mb-3 flex-wrap">
+          <div className="flex-1" style={{ minWidth: 280 }}>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--muted)' }}>
+              Vendor Stellar address (G…)
+            </label>
+            <input
+              type="text"
+              placeholder="GXXXXXX…"
+              value={vendorAddress}
+              onChange={(e) => { setVendorAddress(e.target.value); setVendorError(''); setVendorActive(null); }}
+              disabled={vendorBusy}
+              className="mono text-sm"
+            />
+          </div>
+          <button className="btn-outline text-sm" onClick={handleCheckVendor} disabled={vendorBusy || !vendorAddress.trim()}>
+            {vendorStep === 'checking' ? 'Checking…' : 'Check'}
+          </button>
+          <button className="btn-primary text-sm" onClick={() => handleSetVendor(true)} disabled={vendorBusy || !walletAddress || !vendorAddress.trim()}>
+            {vendorStep === 'building' || vendorStep === 'signing' || vendorStep === 'submitting' ? 'Updating…' : 'Approve'}
+          </button>
+          <button className="btn-outline text-sm" onClick={() => handleSetVendor(false)} disabled={vendorBusy || !walletAddress || !vendorAddress.trim()}>
+            Revoke
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          {vendorActive !== null && (
+            <span className={vendorActive ? 'badge badge-green' : 'badge'} style={vendorActive ? { fontSize: '0.7rem' } : { background: '#450a0a', color: '#fca5a5', fontSize: '0.7rem' }}>
+              {vendorActive ? 'Approved vendor' : 'Not approved'}
+            </span>
+          )}
+          {vendorTxHash && (
+            <a href={`${EXPLORER_BASE}/tx/${vendorTxHash}`} target="_blank" rel="noopener noreferrer" className="text-xs underline" style={{ color: 'var(--green)' }}>
+              Vendor tx {shortHex(vendorTxHash)} ↗
+            </a>
+          )}
+        </div>
+
+        {vendorError && (
+          <div className="text-xs p-3 rounded-lg mt-3" style={{ background: '#1a0505', color: '#f87171', border: '1px solid #7f1d1d' }}>
+            {vendorError}
+          </div>
+        )}
+
+        {!walletAddress && (
+          <div className="text-xs mt-3" style={{ color: 'var(--muted)' }}>
+            Connect the admin Freighter wallet below to approve or revoke vendors on-chain.
           </div>
         )}
       </div>

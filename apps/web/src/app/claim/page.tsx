@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   checkNullifier,
   buildClaimTransaction,
+  buildVoucherClaimTransaction,
+  checkVendorActive,
   submitSignedTransaction,
   type ClaimEntry,
 } from '@/lib/soroban';
@@ -21,6 +23,7 @@ type BarcodeDetectorCtor = new (options?: { formats?: string[] }) => {
 
 interface ClaimReceipt {
   version: '1';
+  claim_type: 'cash' | 'voucher';
   tx_hash: string;
   nullifier: string;
   disbursement_id: string;
@@ -29,6 +32,7 @@ interface ClaimReceipt {
   claimed_at: string;
   slot_index: number;
   issuer_key_id: string;
+  vendor_address?: string;
 }
 
 const FLOW_STEPS: Step[] = ['wallet', 'paste', 'validate', 'prove', 'sign', 'submit', 'done'];
@@ -130,6 +134,10 @@ export default function ClaimPage() {
   const [qrScanError, setQrScanError] = useState('');
   const [qrScanBusy, setQrScanBusy] = useState(false);
   const [qrPassphrase, setQrPassphrase] = useState('');
+  const [claimMode, setClaimMode] = useState<'cash' | 'voucher'>('cash');
+  const [vendorAddress, setVendorAddress] = useState('');
+  const [vendorStatus, setVendorStatus] = useState<'idle' | 'checking' | 'approved' | 'rejected' | 'error'>('idle');
+  const [vendorError, setVendorError] = useState('');
 
   const [step, setStep] = useState<Step>('wallet');
   const [statusMsg, setStatusMsg] = useState('');
@@ -224,6 +232,25 @@ export default function ClaimPage() {
     setParsedCred(obj);
   }
 
+  async function handleCheckVendor() {
+    const addr = vendorAddress.trim();
+    setVendorError('');
+    if (!/^G[A-Z0-9]{55}$/.test(addr)) {
+      setVendorStatus('error');
+      setVendorError('Enter a valid Stellar vendor address');
+      return;
+    }
+    try {
+      setVendorStatus('checking');
+      const active = await checkVendorActive(addr);
+      setVendorStatus(active ? 'approved' : 'rejected');
+      if (!active) setVendorError('This vendor is not approved for voucher redemption.');
+    } catch (e) {
+      setVendorStatus('error');
+      setVendorError(String(e));
+    }
+  }
+
   async function handleClaim() {
     if (!parsedCred || !walletAddress) return;
     setError('');
@@ -240,6 +267,18 @@ export default function ClaimPage() {
     };
 
     try {
+      const vendor = vendorAddress.trim();
+      if (claimMode === 'voucher') {
+        if (!/^G[A-Z0-9]{55}$/.test(vendor)) {
+          throw new Error('Enter a valid approved vendor address before voucher redemption.');
+        }
+        setStep('validate');
+        setStatusMsg('Checking approved vendor…');
+        const active = await checkVendorActive(vendor);
+        if (!active) throw new Error('This vendor is not approved for voucher redemption.');
+        setVendorStatus('approved');
+      }
+
       setStep('validate');
       setStatusMsg('Verifying disbursement ID and Merkle root…');
       await delay(400);
@@ -269,14 +308,23 @@ export default function ClaimPage() {
       if (used) throw new Error('This claim has already been used — nullifier found on-chain.');
 
       setStep('sign');
-      setStatusMsg('Building Soroban transaction…');
-      const txXDR = await buildClaimTransaction(
-        walletAddress,
-        derivedNullifier,
-        proofHexFull,
-        parsedCred.expires_at,
-        parsedCred.issuer_key_id,
-      );
+      setStatusMsg(claimMode === 'voucher' ? 'Building vendor redemption transaction…' : 'Building Soroban transaction…');
+      const txXDR = claimMode === 'voucher'
+        ? await buildVoucherClaimTransaction(
+            walletAddress,
+            vendor,
+            derivedNullifier,
+            proofHexFull,
+            parsedCred.expires_at,
+            parsedCred.issuer_key_id,
+          )
+        : await buildClaimTransaction(
+            walletAddress,
+            derivedNullifier,
+            proofHexFull,
+            parsedCred.expires_at,
+            parsedCred.issuer_key_id,
+          );
       setStatusMsg('Please approve in Freighter…');
       const signedXDR = await signTx(txXDR, walletAddress);
 
@@ -286,6 +334,7 @@ export default function ClaimPage() {
       setTxHash(hash);
       setClaimReceipt({
         version: '1',
+        claim_type: claimMode,
         tx_hash: hash,
         nullifier: derivedNullifier,
         disbursement_id: DISBURSEMENT_ID,
@@ -294,6 +343,7 @@ export default function ClaimPage() {
         claimed_at: new Date().toISOString(),
         slot_index: parsedCred.slot_index,
         issuer_key_id: parsedCred.issuer_key_id,
+        ...(claimMode === 'voucher' ? { vendor_address: vendor } : {}),
       });
 
       setStep('done');
@@ -519,14 +569,82 @@ export default function ClaimPage() {
           </div>
         )}
 
+        {/* Redemption mode */}
+        {parsedCred && (step === 'paste' || step === 'error') && (
+          <div style={{ borderTop: '1px solid var(--border-dim)', paddingTop: '1.5rem' }}>
+            <div className="font-semibold text-sm mb-3">Redemption Mode</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              {[
+                ['cash', 'Direct cash', 'Release aid directly to your connected wallet.'],
+                ['voucher', 'Vendor voucher', 'Spend restricted aid at an approved vendor.'],
+              ].map(([mode, title, body]) => {
+                const active = claimMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => { setClaimMode(mode as 'cash' | 'voucher'); setVendorError(''); }}
+                    className="text-left rounded-lg p-4"
+                    style={{
+                      background: active ? 'rgba(63,185,80,0.08)' : 'var(--surface-2)',
+                      border: `1px solid ${active ? 'rgba(63,185,80,0.35)' : 'var(--border-dim)'}`,
+                      color: 'var(--text)',
+                    }}
+                  >
+                    <div className="font-semibold text-sm mb-1" style={{ color: active ? 'var(--green-bright)' : 'var(--text)' }}>
+                      {title}
+                    </div>
+                    <div className="text-xs" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
+                      {body}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {claimMode === 'voucher' && (
+              <div className="rounded-lg p-4" style={{ background: '#0a1628', border: '1px solid var(--border-dim)' }}>
+                <label className="text-xs mb-1 block" style={{ color: 'var(--muted)' }}>
+                  Approved vendor address
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  <input
+                    type="text"
+                    value={vendorAddress}
+                    onChange={(e) => { setVendorAddress(e.target.value); setVendorStatus('idle'); setVendorError(''); }}
+                    placeholder="GXXXXXX…"
+                    className="mono text-sm"
+                    style={{ flex: 1, minWidth: 260 }}
+                  />
+                  <button className="btn-outline text-sm" onClick={handleCheckVendor} disabled={!vendorAddress.trim() || vendorStatus === 'checking'}>
+                    {vendorStatus === 'checking' ? 'Checking…' : 'Check vendor'}
+                  </button>
+                </div>
+                <div className="mt-3 flex items-center gap-3 flex-wrap">
+                  {vendorStatus === 'approved' && (
+                    <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>Approved vendor</span>
+                  )}
+                  {(vendorStatus === 'rejected' || vendorStatus === 'error') && vendorError && (
+                    <span className="text-xs" style={{ color: '#f87171' }}>{vendorError}</span>
+                  )}
+                </div>
+                <p className="text-xs mt-3" style={{ color: 'var(--muted)', lineHeight: 1.55 }}>
+                  Voucher redemption still uses your private eligibility proof and wallet signature. The nullifier is consumed once, and the contract transfers the payout to the approved vendor.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* CTA */}
         {parsedCred && step === 'paste' && (
           <button
             className="btn-primary w-full text-base"
             onClick={handleClaim}
+            disabled={claimMode === 'voucher' && (!vendorAddress.trim() || vendorStatus === 'rejected' || vendorStatus === 'error')}
             style={{ padding: '0.8rem', fontSize: '0.95rem' }}
           >
-            Generate ZK Proof &amp; Claim →
+            {claimMode === 'voucher' ? 'Generate ZK Proof & Redeem Voucher →' : 'Generate ZK Proof & Claim →'}
           </button>
         )}
 
@@ -571,7 +689,9 @@ export default function ClaimPage() {
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>🎉</div>
             <div className="font-bold text-xl mb-2" style={{ color: 'var(--green-bright)' }}>Aid claimed!</div>
             <div className="text-sm mb-1" style={{ color: 'var(--muted)' }}>
-              Your XLM payment has been released from escrow.
+              {claimReceipt?.claim_type === 'voucher'
+                ? 'Your voucher was redeemed and paid to the approved vendor.'
+                : 'Your XLM payment has been released from escrow.'}
             </div>
             <div className="text-xs mb-5" style={{ color: 'var(--muted)' }}>
               Nullifier is now on-chain — this claim cannot be replayed.
@@ -592,6 +712,8 @@ export default function ClaimPage() {
                 <div className="mono text-xs space-y-1" style={{ color: 'var(--muted)' }}>
                   <div>tx: {shortHex(claimReceipt.tx_hash)}</div>
                   <div>nullifier: {shortHex(claimReceipt.nullifier)}</div>
+                  <div>type: {claimReceipt.claim_type}</div>
+                  {claimReceipt.vendor_address && <div>vendor: {shortHex(claimReceipt.vendor_address)}</div>}
                   <div>amount: {claimReceipt.amount}</div>
                   <div>claimed: {new Date(claimReceipt.claimed_at).toLocaleString()}</div>
                 </div>

@@ -30,7 +30,7 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Auditor visibility:** contracts, campaign root, VK hash, stats, non-PII issuance ledger, and trust boundaries are inspectable
 - **Field-ready credential delivery:** operators can export JSON or passphrase-protected mobile QR credentials
 - **Beneficiary receipts:** successful claims produce a local receipt with transaction hash, nullifier, amount, and campaign metadata
-- **Production path:** documented next steps for issuer governance, vendor/voucher mode, and optional identity adapters
+- **Production path:** documented next steps for issuer governance and optional identity adapters
 
 See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).
 
@@ -97,15 +97,15 @@ See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/
 
 | Contract | Address |
 |---|---|
-| AidShield Disbursement Phase 4 | `CD3FMAN3VJ6W6AHCH7CS3GIV56OO7BKBH5H2DIXT2H4TDZOUSMSSSGRC` |
+| AidShield Disbursement Phase 5 — Voucher Mode | `CDNEXDELJR5W2RDUPU6BUVFNTDDTYP2SACSSYDIUVVHTZA27PGRQ6N7N` |
 | Groth16 BLS12-381 Verifier Phase 4 | `CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ` |
 | XLM Native SAC (testnet) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-**Campaign (Phase 4 — wallet-, expiry-, and issuer-bound leaves):** disbursement\_id `000…001` · merkle\_root `6631aeab…` · 1 XLM per claim · 50 XLM escrow
+**Campaign (Phase 5 — wallet-, expiry-, issuer-, and vendor-redemption capable):** disbursement\_id `000…001` · merkle\_root `6631aeab…` · 1 XLM per claim/redemption · 50 XLM escrow
 
-> Phase 4 was deployed on Stellar testnet with the upgraded 6-public-input circuit and on-chain issuer/expiry enforcement.
+> Phase 5 reuses the audited Phase 4 six-public-input circuit and verifier, and upgrades the disbursement contract with approved-vendor voucher redemption.
 
-Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CD3FMAN3VJ6W6AHCH7CS3GIV56OO7BKBH5H2DIXT2H4TDZOUSMSSSGRC) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ)
+Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CDNEXDELJR5W2RDUPU6BUVFNTDDTYP2SACSSYDIUVVHTZA27PGRQ6N7N) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ)
 
 ---
 
@@ -255,7 +255,7 @@ cd contracts/verifier-groth16 && cargo test
 ```
 
 ```bash
-# 5. Full Phase 4 deployment to testnet (fresh verifier + fresh disbursement)
+# 5. Full Phase 4/5 deployment to testnet (fresh verifier + voucher-enabled disbursement)
 export ADMIN_SECRET_KEY=S...
 bash scripts/setup-phase4.sh
 ```

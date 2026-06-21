@@ -95,14 +95,15 @@ This is where AidShield can beat generic ZK projects in the actual niche.
 
 ### 5. Vendor and voucher mode
 
-Add a second campaign type where funds are restricted to approved vendors or categories:
+Implemented in Phase 5 as an approved-vendor redemption path:
 
-- beneficiary proves budget eligibility
-- vendor submits signed receipt/claim
-- contract pays vendor or splits between vendor and beneficiary
-- auditor sees totals by campaign/vendor without seeing recipient identity
+- admins approve or revoke vendor wallets on-chain
+- beneficiary proves budget eligibility with the same private Groth16 credential
+- contract pays the approved vendor instead of the claimant wallet
+- the same nullifier blocks using one credential for both cash and voucher redemption
+- voucher redemption events expose settlement data without exposing the private aid-list witness
 
-This borrows from privacy-preserving humanitarian wallet research and expands beyond one-time cash payouts.
+The next production step is category-scoped voucher budgets and vendor-side receipt signing, but the core restricted-redemption path is already live on testnet.
 
 ### 6. Donor/auditor transparency layer
 

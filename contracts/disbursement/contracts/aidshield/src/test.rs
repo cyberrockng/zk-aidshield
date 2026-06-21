@@ -185,6 +185,139 @@ fn test_claim_releases_tokens() {
 }
 
 #[test]
+fn test_voucher_claim_pays_approved_vendor() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let claimant = Address::generate(&env);
+    let vendor = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    sac.mint(&admin, &1_000_000_000i128);
+
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    let campaign_id = make_id(&env, 1);
+    let merkle_root = make_id(&env, 2);
+    let nullifier = make_id(&env, 3);
+    let payout = 10_000_000i128;
+
+    client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.add_issuer(&issuer_key(&env));
+    client.add_vendor(&vendor);
+    client.set_paused(&false);
+    client.fund(&admin, &100_000_000i128);
+
+    let inputs = make_inputs(&env, &claimant, campaign_id, merkle_root, nullifier.clone());
+    let token_client = soroban_sdk::token::TokenClient::new(&env, &token_id);
+    let claimant_before = token_client.balance(&claimant);
+    let vendor_before = token_client.balance(&vendor);
+
+    client.claim_to_vendor(&claimant, &vendor, &inputs, &make_real_proof(&env));
+
+    assert_eq!(token_client.balance(&claimant), claimant_before);
+    assert_eq!(token_client.balance(&vendor) - vendor_before, payout);
+    assert_eq!(client.stats().claimed_count, 1);
+    assert!(client.is_nullifier_used(&nullifier));
+    assert!(client.is_vendor_active(&vendor));
+}
+
+#[test]
+#[should_panic(expected = "Vendor is not active")]
+fn test_voucher_claim_rejects_unapproved_vendor() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let claimant = Address::generate(&env);
+    let vendor = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    sac.mint(&admin, &1_000_000_000i128);
+
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    let campaign_id = make_id(&env, 1);
+    let merkle_root = make_id(&env, 2);
+
+    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.add_issuer(&issuer_key(&env));
+    client.set_paused(&false);
+    client.fund(&admin, &100_000_000i128);
+
+    let inputs = make_inputs(&env, &claimant, campaign_id, merkle_root, make_id(&env, 3));
+    client.claim_to_vendor(&claimant, &vendor, &inputs, &make_real_proof(&env));
+}
+
+#[test]
+#[should_panic(expected = "Vendor is not active")]
+fn test_voucher_claim_rejects_revoked_vendor() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let claimant = Address::generate(&env);
+    let vendor = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    sac.mint(&admin, &1_000_000_000i128);
+
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    let campaign_id = make_id(&env, 1);
+    let merkle_root = make_id(&env, 2);
+
+    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.add_issuer(&issuer_key(&env));
+    client.add_vendor(&vendor);
+    client.revoke_vendor(&vendor);
+    client.set_paused(&false);
+    client.fund(&admin, &100_000_000i128);
+
+    let inputs = make_inputs(&env, &claimant, campaign_id, merkle_root, make_id(&env, 3));
+    client.claim_to_vendor(&claimant, &vendor, &inputs, &make_real_proof(&env));
+}
+
+#[test]
+#[should_panic(expected = "Nullifier already used")]
+fn test_cash_claim_blocks_later_voucher_replay() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let claimant = Address::generate(&env);
+    let vendor = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+    sac.mint(&admin, &1_000_000_000i128);
+
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    let campaign_id = make_id(&env, 1);
+    let merkle_root = make_id(&env, 2);
+    let nullifier = make_id(&env, 3);
+
+    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.add_issuer(&issuer_key(&env));
+    client.add_vendor(&vendor);
+    client.set_paused(&false);
+    client.fund(&admin, &100_000_000i128);
+
+    let inputs = make_inputs(&env, &claimant, campaign_id, merkle_root, nullifier);
+    client.claim(&claimant, &inputs.clone(), &make_real_proof(&env));
+    client.claim_to_vendor(&claimant, &vendor, &inputs, &make_real_proof(&env));
+}
+
+#[test]
 #[should_panic(expected = "Claims are paused")]
 fn test_paused_blocks_claim() {
     let env = Env::default();

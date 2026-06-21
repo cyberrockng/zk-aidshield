@@ -14,15 +14,18 @@ ZK AidShield lets an aid operator commit an approved beneficiary set as a Poseid
 
 Operators can deliver credentials as JSON files, copied payloads, or passphrase-protected QR codes for phone-first field use. QR import decrypts locally, then preserves the same signature, wallet-binding, expiry, and nullifier checks.
 
+AidShield now supports restricted voucher redemption: admins approve vendors on-chain, beneficiaries choose voucher mode, and the same private eligibility proof pays the approved vendor instead of the claimant wallet. The same nullifier prevents a credential from being used for both cash and voucher redemption.
+
 For operator accountability, the admin dashboard keeps an admin-protected non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
 
-## What Is New In Phase 4
+## What Is New In Phase 5
 
 - 6-public-input Groth16 circuit
 - wallet-, expiry-, and issuer-bound Merkle leaves
 - on-chain issuer registry with revocation
 - on-chain credential expiry enforcement by ledger timestamp
 - encrypted mobile QR credential export/import
+- approved-vendor voucher redemption
 - admin-protected non-PII issuance ledger
 - local beneficiary claim receipts
 - admin-protected credential issuance and beneficiary-slot APIs
@@ -41,7 +44,7 @@ For operator accountability, the admin dashboard keeps an admin-protected non-PI
 
 ## Deployed Contracts
 
-- Disbursement: `CD3FMAN3VJ6W6AHCH7CS3GIV56OO7BKBH5H2DIXT2H4TDZOUSMSSSGRC`
+- Disbursement: `CDNEXDELJR5W2RDUPU6BUVFNTDDTYP2SACSSYDIUVVHTZA27PGRQ6N7N`
 - Verifier: `CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ`
 - Merkle root: `6631aeabd22a5cbca2274005d52490c4ee556c4eb7d97927e3eb9b724a26c2a7`
 - VK hash: `c243d169dcf36311eb4d12d5f0fe3016f8d6da21e7e41ca88474c0b477d4d128`
@@ -50,8 +53,8 @@ For operator accountability, the admin dashboard keeps an admin-protected non-PI
 
 1. Open `/judges` to show the short technical brief.
 2. Open `/stats` to show live 50 XLM escrow and deployed contracts.
-3. Open `/admin` and issue a beneficiary credential as JSON or encrypted QR.
-4. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, and generate the browser Groth16 proof.
+3. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
+4. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
 5. Approve in Freighter and show the Stellar Explorer transaction.
 6. Download/copy the local claim receipt.
 7. Retry the same credential to show replay protection.
@@ -70,11 +73,10 @@ Most ZK demos prove a primitive. ZK AidShield proves a real aid workflow: privat
 
 ## Challenges
 
-The hardest part was aligning the same BLS12-381 Poseidon statement across circom, browser proving, TypeScript Merkle generation, and Soroban verification. Phase 4 also required changing the proof statement without weakening replay protection or wallet binding.
+The hardest part was aligning the same BLS12-381 Poseidon statement across circom, browser proving, TypeScript Merkle generation, and Soroban verification. Phase 5 keeps that statement stable while adding approved-vendor voucher redemption without weakening replay protection or wallet binding.
 
 ## What Is Next
 
-- vendor/voucher mode
 - threshold-admin issuer governance
 - Human Passport or Self/OpenPassport optional enrollment adapter
 - public multi-party trusted setup before production use

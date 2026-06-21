@@ -28,6 +28,7 @@ pub enum DataKey {
     VerifierAddress,
     UsedNullifier(BytesN<32>),
     ActiveIssuer(BytesN<32>),
+    ActiveVendor(Address),
     Initialized,
     Paused,
 }
@@ -50,6 +51,16 @@ pub struct ClaimEvent {
     pub disbursement_id: BytesN<32>,
     pub nullifier: BytesN<32>,
     pub claimant: Address,
+    pub amount: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct VoucherEvent {
+    pub disbursement_id: BytesN<32>,
+    pub nullifier: BytesN<32>,
+    pub claimant: Address,
+    pub vendor: Address,
     pub amount: i128,
 }
 
@@ -184,11 +195,68 @@ impl AidShieldContract {
             .unwrap_or(false)
     }
 
+    /// Add an approved vendor that can receive restricted aid redemptions.
+    pub fn add_vendor(env: Env, vendor: Address) {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+        env.storage().persistent().set(&DataKey::ActiveVendor(vendor.clone()), &true);
+        env.storage().persistent().extend_ttl(
+            &DataKey::ActiveVendor(vendor),
+            518_400,
+            518_400,
+        );
+    }
+
+    /// Revoke an approved vendor. Future voucher redemptions to this address fail.
+    pub fn revoke_vendor(env: Env, vendor: Address) {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+        env.storage().persistent().set(&DataKey::ActiveVendor(vendor), &false);
+    }
+
+    pub fn is_vendor_active(env: Env, vendor: Address) -> bool {
+        env.storage()
+            .persistent()
+            .get(&DataKey::ActiveVendor(vendor))
+            .unwrap_or(false)
+    }
+
     pub fn claim(
         env: Env,
         claimant: Address,
         public_inputs: ProofPublicInputs,
         proof: Bytes,
+    ) {
+        Self::execute_claim(env, claimant.clone(), claimant, public_inputs, proof, None);
+    }
+
+    /// Beneficiary authorizes the same private eligibility proof, but the payout
+    /// is sent to an approved vendor. This supports restricted aid budgets
+    /// without exposing the beneficiary list or credential witness.
+    pub fn claim_to_vendor(
+        env: Env,
+        claimant: Address,
+        vendor: Address,
+        public_inputs: ProofPublicInputs,
+        proof: Bytes,
+    ) {
+        let vendor_active: bool = env.storage()
+            .persistent()
+            .get(&DataKey::ActiveVendor(vendor.clone()))
+            .unwrap_or(false);
+        if !vendor_active {
+            panic!("Vendor is not active");
+        }
+        Self::execute_claim(env, claimant, vendor.clone(), public_inputs, proof, Some(vendor));
+    }
+
+    fn execute_claim(
+        env: Env,
+        claimant: Address,
+        payout_recipient: Address,
+        public_inputs: ProofPublicInputs,
+        proof: Bytes,
+        vendor: Option<Address>,
     ) {
         claimant.require_auth();
 
@@ -289,7 +357,7 @@ impl AidShieldContract {
         let token_address: Address = env.storage().instance()
             .get(&DataKey::TokenAddress).unwrap();
         token::Client::new(&env, &token_address)
-            .transfer(&env.current_contract_address(), &claimant, &payout);
+            .transfer(&env.current_contract_address(), &payout_recipient, &payout);
 
         // ── State updates ─────────────────────────────────────────────────
         env.storage().persistent().set(&nullifier_key, &true);
@@ -302,15 +370,31 @@ impl AidShieldContract {
         // Refresh instance storage TTL on every claim
         env.storage().instance().extend_ttl(518_400, 518_400);
 
-        env.events().publish(
-            (symbol_short!("claim"), symbol_short!("paid")),
-            ClaimEvent {
-                disbursement_id: public_inputs.disbursement_id,
-                nullifier: public_inputs.nullifier,
-                claimant,
-                amount: payout,
-            },
-        );
+        match vendor {
+            Some(vendor_addr) => {
+                env.events().publish(
+                    (symbol_short!("voucher"), symbol_short!("redeemed")),
+                    VoucherEvent {
+                        disbursement_id: public_inputs.disbursement_id,
+                        nullifier: public_inputs.nullifier,
+                        claimant,
+                        vendor: vendor_addr,
+                        amount: payout,
+                    },
+                );
+            }
+            None => {
+                env.events().publish(
+                    (symbol_short!("claim"), symbol_short!("paid")),
+                    ClaimEvent {
+                        disbursement_id: public_inputs.disbursement_id,
+                        nullifier: public_inputs.nullifier,
+                        claimant,
+                        amount: payout,
+                    },
+                );
+            }
+        }
     }
 
     /// Returns live campaign stats. Escrow balance is read directly from the token SAC.

@@ -20,11 +20,13 @@ const PROOF_POINTS = [
   ['Wallet-bound leaf', 'The leaf is Poseidon(secret, disbursement_id, claimant_address, expires_at, issuer_key_id), so stolen credentials cannot be reused from another wallet or extended past policy.'],
   ['Replay resistance', 'Nullifier is Poseidon(secret, disbursement_id, claimant_address, 1) and is persisted on-chain after the first claim.'],
   ['Real settlement', 'The contract transfers XLM from escrow through the Stellar Asset Contract after proof verification.'],
+  ['Voucher redemption', 'The same private proof can pay an approved vendor instead of the claimant wallet; the nullifier prevents spending both ways.'],
 ];
 
 const DIFFERENTIATORS = [
   'End-to-end flow: operator issuance, local proof, wallet signature, Soroban verification, XLM payout.',
   'Mobile QR credential delivery: field officers can issue an encrypted credential QR; beneficiaries decrypt it locally before the same signature and wallet checks run.',
+  'Restricted aid budgets: admins approve vendors on-chain, and beneficiaries can redeem privately authorized vouchers to those vendors.',
   'Operational accountability: admin can export a non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key, expiry, and delivery mode.',
   'Beneficiary receipt: successful payout creates a local receipt with transaction hash, nullifier, amount, and campaign metadata.',
   'Honest privacy boundary: eligibility data stays private, while payout wallet, timing, amount, and nullifier remain public settlement data.',
@@ -45,6 +47,7 @@ const BUILT_NOW = [
   'Wallet-, expiry-, and issuer-bound credentials',
   'Replay protection with persistent nullifiers',
   'Encrypted QR credential delivery',
+  'Approved-vendor voucher redemption',
   'Admin-protected non-PII issuance ledger and export',
   'Local beneficiary claim receipt',
   'Admin-protected credential issuance and beneficiary-slot APIs',
@@ -54,7 +57,6 @@ const BUILT_NOW = [
 const NEXT_STEPS = [
   ['Threshold issuer governance', 'Require multiple admin approvals for issuer registration, revocation, pause, and fund movement.'],
   ['Per-issuer operational limits', 'Cap issuance volume per field officer and alert on unusual credential activity.'],
-  ['Vendor/voucher mode', 'Support restricted relief budgets where approved vendors can redeem without exposing beneficiary identity.'],
   ['Optional identity adapters', 'Use Human Passport or Self/OpenPassport during enrollment while keeping eligibility proofs private.'],
 ];
 

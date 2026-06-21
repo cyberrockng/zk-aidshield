@@ -12,6 +12,7 @@ The demo shows:
 - on-chain BLS12-381 verification on Soroban
 - replay protection with persistent nullifiers
 - encrypted mobile QR credential export/import for field delivery
+- approved-vendor voucher redemption for restricted aid budgets
 - durable non-PII issuance ledger for operator accountability
 - local beneficiary claim receipts after payout
 - real XLM escrow payout through the Stellar Asset Contract
@@ -25,14 +26,14 @@ The demo shows:
 | ZK depth | Circom circuit proves Merkle membership and nullifier correctness while hiding the secret |
 | Stellar fit | Low-cost, fast settlement with native SAC payout and Soroban BLS12-381 host functions |
 | Security thinking | Wallet-bound leaves, on-chain replay blocking, pause switch, trust model, and threat model |
-| Demo completeness | Admin, encrypted QR delivery, non-PII issuance ledger, claim receipt, stats, audit, deployed testnet contracts, and automated tests |
-| Expansion path | Issuer governance, vendor/voucher mode, optional identity adapters, and public trusted setup |
+| Demo completeness | Admin, encrypted QR delivery, approved-vendor vouchers, non-PII issuance ledger, claim receipt, stats, audit, deployed testnet contracts, and automated tests |
+| Expansion path | Issuer governance, optional identity adapters, multi-vendor operations, and public trusted setup |
 
 ## Strongest Demo Path
 
-1. Show the admin page and issue a credential to a specific Freighter wallet.
+1. Show the admin page, approve/check a vendor, and issue a credential to a specific Freighter wallet.
 2. Show the encrypted credential QR and non-PII issuance ledger, then switch to the claim page and decrypt/load the credential.
-3. Generate the Groth16 proof in-browser.
+3. Choose direct cash or vendor voucher mode and generate the Groth16 proof in-browser.
 4. Approve the transaction in Freighter.
 5. Show the Stellar Explorer transaction, claim receipt, and stats page update.
 6. Try the same credential again to show replay protection.
@@ -45,7 +46,7 @@ Most ZK demos prove a primitive. AidShield proves a field-ready aid workflow: pr
 
 ## Next Build After Hackathon
 
-1. Vendor/voucher mode.
-2. Human Passport or Self/OpenPassport optional intake adapter.
-3. Threshold-admin issuer governance.
+1. Human Passport or Self/OpenPassport optional intake adapter.
+2. Threshold-admin issuer governance.
+3. Multi-vendor reporting and per-vendor redemption limits.
 4. Public multi-party trusted setup.

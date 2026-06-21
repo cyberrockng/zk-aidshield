@@ -191,6 +191,46 @@ export async function buildClaimTransaction(
   return assembled.toXDR();
 }
 
+export async function buildVoucherClaimTransaction(
+  claimantAddress: string,
+  vendorAddress: string,
+  nullifierHex: string,
+  proofHex: string,
+  expiresAt: number,
+  issuerKeyId: string,
+): Promise<string> {
+  const server = getServer();
+  const contract = getContract();
+
+  const claimantField = stellarAddressToField(claimantAddress);
+  const publicInputs = buildPublicInputsScVal(nullifierHex, claimantField, expiresAt, issuerKeyId);
+  const proofBytes = xdr.ScVal.scvBytes(Buffer.from(proofHex, 'hex'));
+
+  const op = contract.call(
+    'claim_to_vendor',
+    Address.fromString(claimantAddress).toScVal(),
+    Address.fromString(vendorAddress).toScVal(),
+    publicInputs,
+    proofBytes,
+  );
+
+  const account = await server.getAccount(claimantAddress);
+  const tx = new TransactionBuilder(account, {
+    fee: String(500_000),
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(op)
+    .setTimeout(60)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) {
+    throw new Error(`Voucher claim simulation failed: ${sim.error}`);
+  }
+
+  return SorobanRpc.assembleTransaction(tx, sim).build().toXDR();
+}
+
 export async function submitSignedTransaction(signedXDR: string): Promise<string> {
   const server = getServer();
   const { TransactionBuilder: TB } = await import('@stellar/stellar-sdk');
@@ -261,6 +301,55 @@ export async function buildSetPausedTransaction(
   if (SorobanRpc.Api.isSimulationError(sim)) {
     throw new Error(`set_paused simulation failed: ${sim.error}`);
   }
+  return SorobanRpc.assembleTransaction(tx, sim).build().toXDR();
+}
+
+export async function checkVendorActive(vendorAddress: string): Promise<boolean> {
+  const server = getServer();
+  const contract = getContract();
+  const op = contract.call('is_vendor_active', Address.fromString(vendorAddress).toScVal());
+
+  const account = await server.getAccount(ADMIN_ADDRESS);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(op)
+    .setTimeout(30)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) return false;
+  return scValToNative(sim.result!.retval) as boolean;
+}
+
+export async function buildSetVendorTransaction(
+  adminAddress: string,
+  vendorAddress: string,
+  active: boolean,
+): Promise<string> {
+  const server = getServer();
+  const contract = getContract();
+
+  const op = contract.call(
+    active ? 'add_vendor' : 'revoke_vendor',
+    Address.fromString(vendorAddress).toScVal(),
+  );
+
+  const account = await server.getAccount(adminAddress);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(op)
+    .setTimeout(60)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) {
+    throw new Error(`${active ? 'add_vendor' : 'revoke_vendor'} simulation failed: ${sim.error}`);
+  }
+
   return SorobanRpc.assembleTransaction(tx, sim).build().toXDR();
 }
 

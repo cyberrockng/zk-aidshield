@@ -51,7 +51,7 @@ AidShield protects beneficiary privacy while preserving disbursement accountabil
 | Issuer operational compromise | Compromise lets an attacker issue credentials for pre-committed campaign slots while the key remains active | Revoke issuer on-chain; add threshold admin and per-issuer limits |
 | Operator knows wallet-to-person mapping | The chain is private, but the operator can still identify recipients | Separate enrollment from payout operations; minimize retained PII |
 | Lost credential | A beneficiary can lose access before claiming | Encrypted backup and controlled reissue workflow |
-| Coercion or forced claims | A hostile actor may pressure a beneficiary to claim in front of them | Mobile privacy UX, delayed claim windows, optional vendor/voucher mode |
+| Coercion or forced claims | A hostile actor may pressure a beneficiary to claim in front of them | Mobile privacy UX, delayed claim windows, approved-vendor voucher mode, field-officer training |
 | 256-slot demo tree | Current depth is hackathon-sized | Configurable tree depth and campaign epochs |
 | Single-contributor trusted setup | Demo setup is not production-grade | Public ceremony before mainnet deployment |
 
