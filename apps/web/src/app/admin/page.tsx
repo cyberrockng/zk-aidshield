@@ -617,11 +617,16 @@ export default function AdminPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+      <div className="section-panel mb-6 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold mb-1">Operator Dashboard</h1>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className="badge badge-green">Escrow operations</span>
+            <span className="badge badge-blue">Credential issuance</span>
+            <span className="badge badge-amber">Governance controls</span>
+          </div>
+          <h1 className="text-3xl font-bold mb-2">Aid Operations Console</h1>
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
-            Issue credentials · Fund escrow · Pause/unpause · Monitor campaign
+            Issue credentials, approve vendors, manage governors, fund escrow, and monitor campaign health.
           </p>
         </div>
         <div className="flex items-center gap-3">

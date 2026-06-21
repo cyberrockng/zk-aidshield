@@ -41,16 +41,111 @@ body {
 .card {
   background: var(--surface);
   border: 1px solid var(--border-dim);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 1.5rem;
 }
 
 .card-glow {
   background: var(--surface);
   border: 1px solid var(--border-dim);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 0 0 1px rgba(63, 185, 80, 0.04), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.section-panel {
+  background: linear-gradient(180deg, rgba(28, 33, 40, 0.72), rgba(22, 27, 34, 0.96));
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.metric-card {
+  min-height: 112px;
+  background: #111820;
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.metric-label {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  color: var(--text);
+  font-size: clamp(1.25rem, 2.2vw, 1.85rem);
+  font-weight: 800;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.data-row:last-child {
+  border-bottom: 0;
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 0.75rem;
+}
+
+.pipeline-node {
+  min-height: 116px;
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  background: #111820;
+  padding: 0.9rem;
+  position: relative;
+}
+
+.pipeline-node::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -0.75rem;
+  width: 0.75rem;
+  height: 1px;
+  background: var(--border);
+}
+
+.pipeline-node:last-child::after {
+  display: none;
+}
+
+.privacy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.privacy-panel {
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 1rem;
+  background: #111820;
+}
+
+.route-card {
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 1rem;
+  background: #111820;
 }
 
 /* ── Badges ─────────────────────────────────────── */
@@ -64,6 +159,12 @@ body {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.badge-red {
+  background: #2b0b0b;
+  color: #fca5a5;
+  border: 1px solid rgba(248, 81, 73, 0.25);
 }
 
 .badge-green {
@@ -227,6 +328,17 @@ input:focus, textarea:focus {
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 720px) {
+  .data-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .pipeline-node::after {
+    display: none;
+  }
 }
 
 /* ── Step indicators ─────────────────────────────── */

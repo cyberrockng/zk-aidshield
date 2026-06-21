@@ -41,6 +41,25 @@ const DEMO_STEPS = [
   ['4', 'Settle', 'Approve Freighter, show Stellar transaction, claim receipt, then replay rejection.'],
 ];
 
+const ARCHITECTURE_FLOW = [
+  ['Operator', 'Generates private campaign and keeps beneficiary list off-chain.'],
+  ['Merkle Root', 'Commits eligibility set to Soroban without exposing identities.'],
+  ['Credential', 'Wallet-bound secret, path, expiry, issuer key, and signature.'],
+  ['Browser Proof', 'Beneficiary generates Groth16 proof locally.'],
+  ['Soroban', 'Verifier, nullifier, expiry, issuer, and vendor checks run on-chain.'],
+  ['Settlement', 'Escrow pays beneficiary wallet or approved vendor.'],
+];
+
+const PRIVACY_BOUNDARY = [
+  ['Private / off-chain', ['names and IDs', 'beneficiary list', 'credential secret', 'Merkle path', 'local issuance records']],
+  ['Public / on-chain', ['Merkle root', 'nullifier', 'contract IDs', 'payout transaction', 'claim count']],
+];
+
+const PAYOUT_ROUTES = [
+  ['Direct cash', 'Proof pays the connected beneficiary wallet after Freighter signature.'],
+  ['Vendor voucher', 'The same proof can pay an approved vendor; the nullifier blocks using both routes.'],
+];
+
 const BUILT_NOW = [
   'Groth16 BLS12-381 proof verified on Soroban',
   'Real XLM escrow payout through Stellar SAC',
@@ -69,11 +88,9 @@ const SECURITY_POSTURE = [
 
 function FactCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="card">
-      <div className="text-xs uppercase font-semibold mb-2" style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>
-        {label}
-      </div>
-      <div className="font-semibold leading-snug">{value}</div>
+    <div className="metric-card">
+      <div className="metric-label">{label}</div>
+      <div className="metric-value">{value}</div>
     </div>
   );
 }
@@ -81,19 +98,28 @@ function FactCard({ label, value }: { label: string; value: string }) {
 export default function JudgesPage() {
   return (
     <div className="max-w-5xl mx-auto">
-      <section className="mb-10">
-        <div className="flex flex-wrap gap-3 mb-6">
-          <span className="badge badge-green"><span className="live-dot" />Live testnet contracts</span>
-          <span className="badge badge-blue">Groth16 · BLS12-381</span>
-          <span className="badge badge-amber">No PII on-chain</span>
+      <section className="section-panel mb-8">
+        <div className="flex items-start justify-between gap-6 flex-wrap">
+          <div style={{ maxWidth: 760 }}>
+            <div className="flex flex-wrap gap-3 mb-6">
+              <span className="badge badge-green"><span className="live-dot" />Live testnet contracts</span>
+              <span className="badge badge-blue">Groth16 · BLS12-381</span>
+              <span className="badge badge-amber">No PII on-chain</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-extrabold mb-4" style={{ letterSpacing: '0' }}>
+              Private Aid Claims. Public Settlement Accountability.
+            </h1>
+            <p className="text-lg" style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
+              ZK AidShield lets a beneficiary prove eligibility and claim once while Stellar releases aid from escrow
+              without publishing their identity, private credential, or aid-list membership.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2" style={{ minWidth: 180 }}>
+            <Link href="/admin" className="btn-primary text-sm">Issue Credential</Link>
+            <Link href="/claim" className="btn-outline text-sm">Run Claim</Link>
+            <Link href="/auditor" className="btn-outline text-sm">Open Auditor</Link>
+          </div>
         </div>
-        <h1 className="text-4xl font-extrabold mb-4" style={{ letterSpacing: '-0.02em' }}>
-          Judge Brief
-        </h1>
-        <p className="text-lg max-w-3xl" style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
-          ZK AidShield is a privacy-preserving humanitarian payout rail. A beneficiary proves they are eligible
-          and have not claimed before, while Stellar releases aid from escrow without publishing their identity.
-        </p>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -103,10 +129,33 @@ export default function JudgesPage() {
         <FactCard label="Current capacity" value="256 slots per campaign" />
       </section>
 
-      <section className="card mb-8">
+      <section className="section-panel mb-8">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
           <div>
-            <h2 className="font-bold text-lg mb-1">Demo Control Panel</h2>
+            <h2 className="font-bold text-lg mb-1">Architecture Flow</h2>
+            <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+              One path from private enrollment to public settlement.
+            </p>
+          </div>
+          <span className="badge badge-blue">End to end</span>
+        </div>
+        <div className="pipeline">
+          {ARCHITECTURE_FLOW.map(([title, body], index) => (
+            <div key={title} className="pipeline-node">
+              <div className="mono text-xs mb-2" style={{ color: 'var(--amber)' }}>
+                {String(index + 1).padStart(2, '0')}
+              </div>
+              <div className="font-semibold mb-2">{title}</div>
+              <p className="text-xs" style={{ color: 'var(--muted)', lineHeight: 1.55 }}>{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-panel mb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+          <div>
+            <h2 className="font-bold text-lg mb-1">Submission Demo Path</h2>
             <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
               Follow this path to verify the product end to end in under three minutes.
             </p>
@@ -174,6 +223,41 @@ export default function JudgesPage() {
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      <section className="section-panel mb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+          <div>
+            <h2 className="font-bold text-lg mb-1">Privacy Boundary</h2>
+            <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+              The product is honest about what stays private and what remains public settlement data.
+            </p>
+          </div>
+          <span className="badge badge-amber">Threat-aware</span>
+        </div>
+        <div className="privacy-grid mb-5">
+          {PRIVACY_BOUNDARY.map(([title, items]) => (
+            <div key={title as string} className="privacy-panel">
+              <div className="font-semibold mb-3">{title as string}</div>
+              <div className="space-y-2">
+                {(items as string[]).map((item) => (
+                  <div key={item} className="text-sm flex gap-2" style={{ color: 'var(--muted)' }}>
+                    <span style={{ color: (title as string).startsWith('Private') ? 'var(--amber)' : 'var(--green-bright)' }}>•</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {PAYOUT_ROUTES.map(([title, body]) => (
+            <div key={title} className="route-card">
+              <div className="font-semibold mb-2">{title}</div>
+              <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>{body}</p>
+            </div>
+          ))}
         </div>
       </section>
 

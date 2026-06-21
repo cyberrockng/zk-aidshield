@@ -375,20 +375,37 @@ export default function ClaimPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-5xl mx-auto">
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1.5" style={{ letterSpacing: '-0.02em' }}>
-          Claim Your Aid Payment
-        </h1>
-        <p className="text-sm" style={{ color: 'var(--muted)' }}>
-          Present your operator-issued credential. A Groth16 BLS12-381 proof is generated in your
-          browser — no identity revealed, no replay possible.
-        </p>
+      <div className="section-panel mb-6">
+        <div className="flex items-start justify-between gap-5 flex-wrap">
+          <div style={{ maxWidth: 720 }}>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className="badge badge-green">Private eligibility</span>
+              <span className="badge badge-blue">Browser proof</span>
+              <span className="badge badge-amber">One-time nullifier</span>
+            </div>
+            <h1 className="text-3xl font-bold mb-2" style={{ letterSpacing: '0' }}>
+              Claim Aid Without Revealing Aid-List Membership
+            </h1>
+            <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
+              Load your operator-issued credential, generate a Groth16 BLS12-381 proof locally,
+              then settle as cash or as an approved-vendor voucher.
+            </p>
+          </div>
+          <div className="privacy-panel" style={{ minWidth: 220 }}>
+            <div className="font-semibold text-sm mb-2">Claim routes</div>
+            <div className="space-y-2 text-xs" style={{ color: 'var(--muted)' }}>
+              <div><span style={{ color: 'var(--green-bright)' }}>Cash:</span> beneficiary wallet</div>
+              <div><span style={{ color: 'var(--blue)' }}>Voucher:</span> approved vendor</div>
+              <div><span style={{ color: 'var(--amber)' }}>Replay:</span> blocked on-chain</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── Step tracker ── */}
-      <div className="mb-6 px-5 py-4 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border-dim)' }}>
+      <div className="section-panel mb-6">
         <div className="flex items-center">
           {FLOW_STEPS.map((s, i) => {
             const done = i < currentStepIdx || step === 'done';
@@ -435,7 +452,7 @@ export default function ClaimPage() {
       </div>
 
       {/* ── Main panel ── */}
-      <div className="rounded-xl p-6 space-y-6" style={{ background: 'var(--surface)', border: '1px solid var(--border-dim)' }}>
+      <div className="section-panel space-y-6">
 
         {/* Wallet */}
         <div>
@@ -472,12 +489,19 @@ export default function ClaimPage() {
               <span className="font-semibold text-sm">Beneficiary Credential</span>
             </div>
 
-            <div
-              className="text-xs px-4 py-3 rounded-lg mb-3 leading-relaxed"
-              style={{ background: 'rgba(63,185,80,0.04)', border: '1px solid var(--border-dim)', color: 'var(--muted)' }}
-            >
-              Your credential was issued by the aid operator. It is signed and bound to this wallet
-              address — it cannot be used by anyone else, and the secret inside never leaves your device.
+            <div className="privacy-grid mb-3">
+              <div className="privacy-panel">
+                <div className="font-semibold text-sm mb-2">Private inputs</div>
+                <div className="text-xs" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+                  Secret, Merkle path, leaf index, and QR passphrase remain local to this browser.
+                </div>
+              </div>
+              <div className="privacy-panel">
+                <div className="font-semibold text-sm mb-2">Public claim data</div>
+                <div className="text-xs" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+                  Contract ID, nullifier, payout transaction, and settlement route are public.
+                </div>
+              </div>
             </div>
 
             <label className="text-xs mb-1 block" style={{ color: 'var(--muted)' }}>
@@ -584,7 +608,7 @@ export default function ClaimPage() {
                     key={mode}
                     type="button"
                     onClick={() => { setClaimMode(mode as 'cash' | 'voucher'); setVendorError(''); }}
-                    className="text-left rounded-lg p-4"
+                    className="route-card text-left"
                     style={{
                       background: active ? 'rgba(63,185,80,0.08)' : 'var(--surface-2)',
                       border: `1px solid ${active ? 'rgba(63,185,80,0.35)' : 'var(--border-dim)'}`,
@@ -603,7 +627,7 @@ export default function ClaimPage() {
             </div>
 
             {claimMode === 'voucher' && (
-              <div className="rounded-lg p-4" style={{ background: '#0a1628', border: '1px solid var(--border-dim)' }}>
+              <div className="route-card" style={{ background: '#0a1628' }}>
                 <label className="text-xs mb-1 block" style={{ color: 'var(--muted)' }}>
                   Approved vendor address
                 </label>
@@ -683,7 +707,7 @@ export default function ClaimPage() {
         {/* Success */}
         {step === 'done' && (
           <div
-            className="rounded-xl text-center py-10 px-6"
+            className="text-center py-10 px-6"
             style={{ background: 'linear-gradient(135deg, var(--green-subtle) 0%, #0c1726 100%)', border: '1px solid rgba(63,185,80,0.25)' }}
           >
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>🎉</div>
@@ -755,7 +779,7 @@ export default function ClaimPage() {
       </div>
 
       {/* Privacy note */}
-      <div className="mt-5 px-5 py-4 rounded-xl text-sm leading-relaxed" style={{ background: 'var(--surface)', border: '1px solid var(--border-dim)', color: 'var(--muted)' }}>
+      <div className="mt-5 section-panel text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
         <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>Your secret never leaves this device.</span>{' '}
         Groth16 proof generation runs entirely in your browser via WebAssembly. No server sees your
         claim secret or can link you to a beneficiary. The proof reveals only that you belong to the

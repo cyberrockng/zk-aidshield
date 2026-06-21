@@ -126,13 +126,13 @@ export default function StatsPage() {
     : 0;
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-8 flex items-start justify-between flex-wrap gap-4">
+    <div className="max-w-5xl mx-auto">
+      <div className="section-panel mb-8 flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="badge badge-blue mb-3">Public auditor dashboard</div>
-          <h1 className="text-2xl font-bold mb-1">Campaign Audit Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-2">Campaign Audit Dashboard</h1>
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
-            Live on-chain settlement data, proof anchors, and privacy boundaries. Refreshes every 15 s.
+            Live escrow health, proof anchors, privacy boundaries, and settlement events for public review.
           </p>
         </div>
         <div className="flex gap-2 items-center">
@@ -167,16 +167,9 @@ export default function StatsPage() {
               { label: 'Per claim', value: `${stroopsToXlm(stats.payout_amount)} XLM`, green: false },
               { label: 'Can still claim', value: String(remainingClaims), green: remainingClaims > 0 },
             ].map((s) => (
-              <div key={s.label} className="card text-center">
-                <div style={{ color: 'var(--muted)', fontSize: '0.7rem', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  {s.label}
-                </div>
-                <div
-                  className="text-2xl font-bold"
-                  style={{ color: s.green ? 'var(--green)' : 'var(--text)' }}
-                >
-                  {s.value}
-                </div>
+              <div key={s.label} className="metric-card">
+                <div className="metric-label">{s.label}</div>
+                <div className="metric-value" style={{ color: s.green ? 'var(--green-bright)' : 'var(--text)' }}>{s.value}</div>
               </div>
             ))}
           </div>
@@ -214,14 +207,14 @@ export default function StatsPage() {
           {/* Campaign details */}
           <div className="card mb-6">
             <div className="font-semibold mb-4">Campaign Details</div>
-            <div className="space-y-3 text-sm">
+            <div className="text-sm">
               {[
                 { label: 'Disbursement ID', value: DISBURSEMENT_ID },
                 { label: 'Merkle root', value: MERKLE_ROOT },
                 { label: 'Verifier key hash', value: VK_HASH },
                 { label: 'Network', value: 'Stellar Testnet · Protocol 22' },
               ].map((r) => (
-                <div key={r.label} className="flex items-start justify-between gap-4">
+                <div key={r.label} className="data-row">
                   <span style={{ color: 'var(--muted)', flexShrink: 0 }}>{r.label}</span>
                   <span className="mono text-xs text-right" style={{ wordBreak: 'break-all' }}>{r.value}</span>
                 </div>
@@ -238,9 +231,9 @@ export default function StatsPage() {
       {/* Contracts */}
       <div className="card mb-6">
         <div className="font-semibold mb-4">Deployed Contracts</div>
-        <div className="space-y-3">
+        <div>
           {CONTRACTS.map((c) => (
-            <div key={c.id} className="flex items-center justify-between gap-4 text-sm flex-wrap">
+            <div key={c.id} className="data-row text-sm">
               <span style={{ color: 'var(--muted)' }}>{c.label}</span>
               <a
                 href={`${EXPLORER_BASE}/${c.path}/${c.id}`}
@@ -306,14 +299,14 @@ export default function StatsPage() {
             on-chain · full pairing
           </span>
         </div>
-        <div className="space-y-3 text-sm">
+        <div className="text-sm">
           {[
             { label: 'On-chain check', value: 'Native BLS12-381 bls.pairing_check' },
             { label: 'Verifier contract', value: shortHex(VERIFIER_CONTRACT_ID), link: `${EXPLORER_BASE}/contract/${VERIFIER_CONTRACT_ID}` },
             { label: 'VK hash (SHA-256)', value: `${VK_HASH.slice(0, 12)}…${VK_HASH.slice(-8)}`, mono: true, full: VK_HASH },
             { label: 'Constraints', value: '2576 non-linear (circom 2.1)' },
           ].map((r) => (
-            <div key={r.label} className="flex items-start justify-between gap-4">
+            <div key={r.label} className="data-row">
               <span style={{ color: 'var(--muted)', flexShrink: 0 }}>{r.label}</span>
               {r.link ? (
                 <a href={r.link} target="_blank" rel="noopener noreferrer" className="mono text-xs underline text-right" style={{ color: 'var(--green)', wordBreak: 'break-all' }}>
