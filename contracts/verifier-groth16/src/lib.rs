@@ -40,8 +40,8 @@ const G1_SIZE: u32 = 96;
 const G2_SIZE: u32 = 192;
 const FR_SIZE: u32 = 32;
 const PROOF_SIZE: u32 = G1_SIZE + G2_SIZE + G1_SIZE; // 384
-const PI_SIZE: u32 = 6 * FR_SIZE;                    // 192
-const N_PUBLIC: u32 = 6;                              // disbursement_id, merkle_root, nullifier, claimant_address, expires_at, issuer
+const PI_SIZE: u32 = 6 * FR_SIZE; // 192
+const N_PUBLIC: u32 = 6; // disbursement_id, merkle_root, nullifier, claimant_address, expires_at, issuer
 
 #[contracttype]
 pub enum DataKey {
@@ -68,10 +68,10 @@ impl Groth16Verifier {
     pub fn initialize(
         env: Env,
         vk_alpha: BytesN<96>,
-        vk_beta:  BytesN<192>,
+        vk_beta: BytesN<192>,
         vk_gamma: BytesN<192>,
         vk_delta: BytesN<192>,
-        vk_ic:    Bytes,
+        vk_ic: Bytes,
     ) {
         if env.storage().instance().has(&DataKey::Initialized) {
             panic!("Already initialized");
@@ -80,10 +80,10 @@ impl Groth16Verifier {
             panic!("vk_ic must be (N_PUBLIC+1) * 96 bytes");
         }
         env.storage().instance().set(&DataKey::VkAlpha, &vk_alpha);
-        env.storage().instance().set(&DataKey::VkBeta,  &vk_beta);
+        env.storage().instance().set(&DataKey::VkBeta, &vk_beta);
         env.storage().instance().set(&DataKey::VkGamma, &vk_gamma);
         env.storage().instance().set(&DataKey::VkDelta, &vk_delta);
-        env.storage().instance().set(&DataKey::VkIc,    &vk_ic);
+        env.storage().instance().set(&DataKey::VkIc, &vk_ic);
         env.storage().instance().set(&DataKey::Initialized, &true);
         env.storage().instance().extend_ttl(518_400, 518_400);
     }
@@ -107,14 +107,14 @@ impl Groth16Verifier {
         let pi_c = extract_g1(&env, &proof, G1_SIZE + G2_SIZE);
 
         // ── Load verification key ─────────────────────────────────────────
-        let vk_alpha: BytesN<96>  = env.storage().instance().get(&DataKey::VkAlpha).unwrap();
-        let vk_beta:  BytesN<192> = env.storage().instance().get(&DataKey::VkBeta).unwrap();
+        let vk_alpha: BytesN<96> = env.storage().instance().get(&DataKey::VkAlpha).unwrap();
+        let vk_beta: BytesN<192> = env.storage().instance().get(&DataKey::VkBeta).unwrap();
         let vk_gamma: BytesN<192> = env.storage().instance().get(&DataKey::VkGamma).unwrap();
         let vk_delta: BytesN<192> = env.storage().instance().get(&DataKey::VkDelta).unwrap();
-        let vk_ic_raw: Bytes      = env.storage().instance().get(&DataKey::VkIc).unwrap();
+        let vk_ic_raw: Bytes = env.storage().instance().get(&DataKey::VkIc).unwrap();
 
         let alpha = Bls12381G1Affine::from_bytes(vk_alpha);
-        let beta  = Bls12381G2Affine::from_bytes(vk_beta);
+        let beta = Bls12381G2Affine::from_bytes(vk_beta);
         let gamma = Bls12381G2Affine::from_bytes(vk_gamma);
         let delta = Bls12381G2Affine::from_bytes(vk_delta);
 
@@ -144,7 +144,7 @@ impl Groth16Verifier {
         let g1s: Vec<Bls12381G1Affine> = {
             let mut v = Vec::new(&env);
             v.push_back(pi_a);
-            v.push_back(-alpha);   // Neg::neg negates Y coordinate mod p (uncompressed)
+            v.push_back(-alpha); // Neg::neg negates Y coordinate mod p (uncompressed)
             v.push_back(-vk_x);
             v.push_back(-pi_c);
             v

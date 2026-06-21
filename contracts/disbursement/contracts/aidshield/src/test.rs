@@ -1,7 +1,12 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{testutils::{Address as _, Ledger}, vec, xdr::ToXdr, Address, Bytes, BytesN, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger},
+    vec,
+    xdr::ToXdr,
+    Address, Bytes, BytesN, Env,
+};
 
 // ── Mock verifier contracts ──────────────────────────────────────────────────
 
@@ -59,8 +64,8 @@ fn make_real_proof(env: &Env) -> Bytes {
     // 384-byte Groth16 proof-shaped payload. The mock verifier accepts it; the
     // real verifier contract tests proof length and pairing behavior separately.
     let mut data = [0u8; 384];
-    for i in 0..64 {
-        data[i] = (i as u8).wrapping_add(1);
+    for (i, item) in data.iter_mut().enumerate().take(64) {
+        *item = (i as u8).wrapping_add(1);
     }
     Bytes::from_slice(env, &data)
 }
@@ -102,7 +107,9 @@ fn test_initialize_and_stats() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
     let contract_id = env.register(AidShieldContract, ());
     let client = AidShieldContractClient::new(&env, &contract_id);
@@ -111,7 +118,14 @@ fn test_initialize_and_stats() {
     let merkle_root = make_id(&env, 2);
     let payout = 10_000_000i128;
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &payout,
+        &token_id,
+        &verifier_id,
+    );
 
     let s = client.stats();
     assert_eq!(s.escrow_balance, 0);
@@ -126,7 +140,9 @@ fn test_fund_moves_real_tokens() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -135,8 +151,12 @@ fn test_fund_moves_real_tokens() {
     let client = AidShieldContractClient::new(&env, &contract_id);
 
     client.initialize(
-        &admin, &make_id(&env, 1), &make_id(&env, 2),
-        &10_000_000i128, &token_id, &verifier_id,
+        &admin,
+        &make_id(&env, 1),
+        &make_id(&env, 2),
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
     );
     client.fund(&admin, &100_000_000i128);
 
@@ -150,14 +170,20 @@ fn test_governance_threshold_defaults_to_one() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
     let contract_id = env.register(AidShieldContract, ());
     let client = AidShieldContractClient::new(&env, &contract_id);
 
     client.initialize(
-        &admin, &make_id(&env, 1), &make_id(&env, 2),
-        &10_000_000i128, &token_id, &verifier_id,
+        &admin,
+        &make_id(&env, 1),
+        &make_id(&env, 2),
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
     );
 
     assert_eq!(client.governance_threshold(), 1);
@@ -171,14 +197,20 @@ fn test_threshold_governance_allows_active_governor_cosign() {
     let admin = Address::generate(&env);
     let governor = Address::generate(&env);
     let vendor = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
     let contract_id = env.register(AidShieldContract, ());
     let client = AidShieldContractClient::new(&env, &contract_id);
 
     client.initialize(
-        &admin, &make_id(&env, 1), &make_id(&env, 2),
-        &10_000_000i128, &token_id, &verifier_id,
+        &admin,
+        &make_id(&env, 1),
+        &make_id(&env, 2),
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
     );
 
     client.set_governance(&governor, &true, &2u32, &no_cosigners(&env));
@@ -198,14 +230,20 @@ fn test_threshold_governance_rejects_single_admin_sensitive_change() {
     let admin = Address::generate(&env);
     let governor = Address::generate(&env);
     let vendor = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
     let contract_id = env.register(AidShieldContract, ());
     let client = AidShieldContractClient::new(&env, &contract_id);
 
     client.initialize(
-        &admin, &make_id(&env, 1), &make_id(&env, 2),
-        &10_000_000i128, &token_id, &verifier_id,
+        &admin,
+        &make_id(&env, 1),
+        &make_id(&env, 2),
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
     );
 
     client.set_governance(&governor, &true, &2u32, &no_cosigners(&env));
@@ -219,7 +257,9 @@ fn test_claim_releases_tokens() {
 
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -232,7 +272,14 @@ fn test_claim_releases_tokens() {
     let nullifier = make_id(&env, 3);
     let payout = 10_000_000i128;
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &payout,
+        &token_id,
+        &verifier_id,
+    );
     client.set_paused(&false); // unpause for integration test
     client.fund(&admin, &100_000_000i128);
 
@@ -264,7 +311,9 @@ fn test_voucher_claim_pays_approved_vendor() {
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
     let vendor = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -277,7 +326,14 @@ fn test_voucher_claim_pays_approved_vendor() {
     let nullifier = make_id(&env, 3);
     let payout = 10_000_000i128;
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &payout,
+        &token_id,
+        &verifier_id,
+    );
     client.add_issuer(&issuer_key(&env));
     client.add_vendor(&vendor);
     client.set_paused(&false);
@@ -306,7 +362,9 @@ fn test_voucher_claim_rejects_unapproved_vendor() {
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
     let vendor = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -317,7 +375,14 @@ fn test_voucher_claim_rejects_unapproved_vendor() {
     let campaign_id = make_id(&env, 1);
     let merkle_root = make_id(&env, 2);
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
+    );
     client.add_issuer(&issuer_key(&env));
     client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
@@ -335,7 +400,9 @@ fn test_voucher_claim_rejects_revoked_vendor() {
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
     let vendor = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -346,7 +413,14 @@ fn test_voucher_claim_rejects_revoked_vendor() {
     let campaign_id = make_id(&env, 1);
     let merkle_root = make_id(&env, 2);
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
+    );
     client.add_issuer(&issuer_key(&env));
     client.add_vendor(&vendor);
     client.revoke_vendor(&vendor);
@@ -366,7 +440,9 @@ fn test_cash_claim_blocks_later_voucher_replay() {
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
     let vendor = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -378,7 +454,14 @@ fn test_cash_claim_blocks_later_voucher_replay() {
     let merkle_root = make_id(&env, 2);
     let nullifier = make_id(&env, 3);
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
+    );
     client.add_issuer(&issuer_key(&env));
     client.add_vendor(&vendor);
     client.set_paused(&false);
@@ -397,7 +480,9 @@ fn test_paused_blocks_claim() {
 
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -409,7 +494,14 @@ fn test_paused_blocks_claim() {
     let merkle_root = make_id(&env, 2);
     let payout = 10_000_000i128;
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &payout,
+        &token_id,
+        &verifier_id,
+    );
     // DO NOT set_paused — contract starts paused; claim must panic
     client.fund(&admin, &100_000_000i128);
 
@@ -432,7 +524,9 @@ fn test_replay_attack_blocked() {
 
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -445,7 +539,14 @@ fn test_replay_attack_blocked() {
     let nullifier = make_id(&env, 3);
     let payout = 10_000_000i128;
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &payout,
+        &token_id,
+        &verifier_id,
+    );
     client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
 
@@ -464,7 +565,9 @@ fn test_invalid_proof_rejected() {
 
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -477,7 +580,14 @@ fn test_invalid_proof_rejected() {
     let merkle_root = make_id(&env, 2);
     let payout = 10_000_000i128;
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &payout, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &payout,
+        &token_id,
+        &verifier_id,
+    );
     client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
 
@@ -502,7 +612,9 @@ fn test_wrong_merkle_root_rejected() {
 
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -515,7 +627,14 @@ fn test_wrong_merkle_root_rejected() {
     let fake_root = make_id(&env, 99);
     let payout = 10_000_000i128;
 
-    client.initialize(&admin, &campaign_id, &real_root, &payout, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &real_root,
+        &payout,
+        &token_id,
+        &verifier_id,
+    );
     client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
 
@@ -540,7 +659,9 @@ fn test_address_mismatch_blocked() {
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
     let other = Address::generate(&env); // proof was for "other", not "claimant"
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -551,7 +672,14 @@ fn test_address_mismatch_blocked() {
     let campaign_id = make_id(&env, 1);
     let merkle_root = make_id(&env, 2);
 
-    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
+    );
     client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
 
@@ -575,7 +703,9 @@ fn test_inactive_issuer_rejected() {
 
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -585,7 +715,14 @@ fn test_inactive_issuer_rejected() {
 
     let campaign_id = make_id(&env, 1);
     let merkle_root = make_id(&env, 2);
-    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
+    );
     client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
 
@@ -601,7 +738,9 @@ fn test_revoked_issuer_rejected() {
 
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -611,7 +750,14 @@ fn test_revoked_issuer_rejected() {
 
     let campaign_id = make_id(&env, 1);
     let merkle_root = make_id(&env, 2);
-    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
+    );
     client.add_issuer(&issuer_key(&env));
     client.revoke_issuer(&issuer_key(&env));
     client.set_paused(&false);
@@ -630,7 +776,9 @@ fn test_expired_credential_rejected() {
 
     let admin = Address::generate(&env);
     let claimant = Address::generate(&env);
-    let token_id = env.register_stellar_asset_contract_v2(admin.clone()).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let sac = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     sac.mint(&admin, &1_000_000_000i128);
 
@@ -640,7 +788,14 @@ fn test_expired_credential_rejected() {
 
     let campaign_id = make_id(&env, 1);
     let merkle_root = make_id(&env, 2);
-    client.initialize(&admin, &campaign_id, &merkle_root, &10_000_000i128, &token_id, &verifier_id);
+    client.initialize(
+        &admin,
+        &campaign_id,
+        &merkle_root,
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
+    );
     client.add_issuer(&issuer_key(&env));
     client.set_paused(&false);
     client.fund(&admin, &100_000_000i128);
