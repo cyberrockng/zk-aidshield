@@ -9,8 +9,8 @@ import {
 
 interface ClaimEvent {
   txHash: string;
-  nullifier: string;
   ledger: number;
+  topicCount: number;
 }
 
 async function fetchRecentClaims(): Promise<ClaimEvent[]> {
@@ -45,8 +45,8 @@ async function fetchRecentClaims(): Promise<ClaimEvent[]> {
     .filter((e) => e.topic?.length >= 2)
     .map((e) => ({
       txHash: e.txHash,
-      nullifier: shortHex(e.value ?? ''),
       ledger: e.ledger,
+      topicCount: e.topic.length,
     }));
 }
 
@@ -68,6 +68,26 @@ const ZK_FACTS = [
 const CONTRACTS = [
   { label: 'Disbursement contract', id: CONTRACT_ID, path: 'contract' },
   { label: 'Verifier contract', id: VERIFIER_CONTRACT_ID, path: 'contract' },
+];
+
+const PUBLIC_AUDIT_FIELDS = [
+  ['Escrow balance', 'Public', 'Read from the XLM SAC balance held by the disbursement contract.'],
+  ['Claims paid', 'Public', 'Stored by the disbursement contract as aggregate claim count.'],
+  ['Nullifiers', 'Public', 'Prevent replay without exposing the credential secret or Merkle path.'],
+  ['Vendor redemptions', 'Public settlement', 'Approved-vendor voucher claims emit settlement events and pay the vendor wallet.'],
+  ['Beneficiary list', 'Private', 'Only the Merkle root is public; the eligible wallet set stays off-chain.'],
+  ['Credential witness', 'Private', 'Secret, leaf index, and Merkle path stay in the beneficiary credential/browser.'],
+];
+
+const CONTROL_CHECKS = [
+  ['Proof verification', 'Soroban calls the Groth16 verifier contract before any transfer.'],
+  ['Wallet binding', 'The public claimant field must match the connected wallet address.'],
+  ['Replay protection', 'A consumed nullifier blocks cash and voucher reuse.'],
+  ['Expiry enforcement', 'Expired credentials fail against ledger timestamp.'],
+  ['Issuer controls', 'Only active issuer key IDs are accepted by the contract.'],
+  ['Vendor controls', 'Voucher claims can pay only active vendor addresses approved by admin.'],
+  ['Emergency pause', 'Admin can pause payout execution without changing the public audit state.'],
+  ['Escrow accounting', 'Remaining capacity is derived from live contract balance and payout size.'],
 ];
 
 export default function StatsPage() {
@@ -109,9 +129,10 @@ export default function StatsPage() {
     <div className="max-w-3xl mx-auto">
       <div className="mb-8 flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold mb-1">Campaign Stats</h1>
+          <div className="badge badge-blue mb-3">Public auditor dashboard</div>
+          <h1 className="text-2xl font-bold mb-1">Campaign Audit Dashboard</h1>
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
-            Live on-chain data · Stellar Testnet · refreshes every 15 s
+            Live on-chain settlement data, proof anchors, and privacy boundaries. Refreshes every 15 s.
           </p>
         </div>
         <div className="flex gap-2 items-center">
@@ -127,7 +148,7 @@ export default function StatsPage() {
             className="btn-outline text-sm"
             style={{ padding: '5px 12px' }}
           >
-            Explorer ↗
+            Explorer
           </a>
         </div>
       </div>
@@ -197,6 +218,7 @@ export default function StatsPage() {
               {[
                 { label: 'Disbursement ID', value: DISBURSEMENT_ID },
                 { label: 'Merkle root', value: MERKLE_ROOT },
+                { label: 'Verifier key hash', value: VK_HASH },
                 { label: 'Network', value: 'Stellar Testnet · Protocol 22' },
               ].map((r) => (
                 <div key={r.label} className="flex items-start justify-between gap-4">
@@ -227,10 +249,52 @@ export default function StatsPage() {
                 className="mono text-xs underline"
                 style={{ color: 'var(--green)', wordBreak: 'break-all' }}
               >
-                {shortHex(c.id)} ↗
+                {shortHex(c.id)}
               </a>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Audit interpretation */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="card">
+          <div className="font-semibold mb-4">What Auditors Can Verify</div>
+          <div className="space-y-3">
+            {PUBLIC_AUDIT_FIELDS.map(([field, visibility, detail]) => (
+              <div key={field} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <span className="text-sm font-semibold">{field}</span>
+                  <span
+                    className="badge"
+                    style={{
+                      fontSize: '0.65rem',
+                      background: visibility === 'Private' ? '#1c1507' : '#0d1f12',
+                      color: visibility === 'Private' ? 'var(--amber)' : 'var(--green-bright)',
+                      border: `1px solid ${visibility === 'Private' ? 'rgba(227,179,65,0.25)' : 'rgba(86,211,100,0.22)'}`,
+                    }}
+                  >
+                    {visibility}
+                  </span>
+                </div>
+                <div className="text-xs" style={{ color: 'var(--muted)', lineHeight: 1.5 }}>
+                  {detail}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="font-semibold mb-4">Controls Covered In Demo</div>
+          <div className="grid grid-cols-1 gap-2">
+            {CONTROL_CHECKS.map(([label, detail]) => (
+              <div key={label} className="rounded-lg p-3" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-dim)' }}>
+                <div className="text-sm font-semibold mb-1" style={{ color: 'var(--green-bright)' }}>{label}</div>
+                <div className="text-xs" style={{ color: 'var(--muted)', lineHeight: 1.45 }}>{detail}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -253,7 +317,7 @@ export default function StatsPage() {
               <span style={{ color: 'var(--muted)', flexShrink: 0 }}>{r.label}</span>
               {r.link ? (
                 <a href={r.link} target="_blank" rel="noopener noreferrer" className="mono text-xs underline text-right" style={{ color: 'var(--green)', wordBreak: 'break-all' }}>
-                  {r.value} ↗
+                  {r.value}
                 </a>
               ) : (
                 <span className={r.mono ? 'mono text-xs text-right' : 'text-right'} style={{ wordBreak: 'break-all' }} title={r.full}>
@@ -281,12 +345,12 @@ export default function StatsPage() {
       {/* Recent events */}
       <div className="card">
         <div className="font-semibold mb-4">
-          Recent On-Chain Events
+          Recent Settlement Events
           <span className="text-xs font-normal ml-2" style={{ color: 'var(--muted)' }}>last ~2 hours</span>
         </div>
         {events.length === 0 ? (
           <div className="text-sm py-4 text-center" style={{ color: 'var(--muted)' }}>
-            No events in this window — claims appear here in real time.
+            No recent claim or voucher events in this window.
           </div>
         ) : (
           <div className="space-y-2">
@@ -296,8 +360,9 @@ export default function StatsPage() {
                 className="flex items-center justify-between gap-4 text-xs mono py-2"
                 style={{ borderBottom: '1px solid var(--border)', color: 'var(--muted)' }}
               >
-                <span style={{ color: 'var(--green)' }}>claim.paid</span>
+                <span style={{ color: 'var(--green)' }}>settlement event</span>
                 <span>ledger {e.ledger.toLocaleString()}</span>
+                <span>{e.topicCount} topics</span>
                 <a
                   href={`${EXPLORER_BASE}/tx/${e.txHash}`}
                   target="_blank"
@@ -305,7 +370,7 @@ export default function StatsPage() {
                   className="underline"
                   style={{ color: 'var(--text)' }}
                 >
-                  {shortHex(e.txHash)} ↗
+                  {shortHex(e.txHash)}
                 </a>
               </div>
             ))}

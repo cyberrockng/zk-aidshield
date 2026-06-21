@@ -54,11 +54,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 Judges
               </Link>
               <Link
-                href="/stats"
+                href="/auditor"
                 className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
                 style={{ color: 'var(--muted)' }}
               >
-                Stats
+                Auditor
               </Link>
               <Link
                 href="/audit"

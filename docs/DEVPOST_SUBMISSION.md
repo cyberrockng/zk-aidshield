@@ -52,7 +52,7 @@ For operator accountability, the admin dashboard keeps an admin-protected non-PI
 ## Demo Flow
 
 1. Open `/judges` to show the short technical brief.
-2. Open `/stats` to show live 50 XLM escrow and deployed contracts.
+2. Open `/auditor` to show live 50 XLM escrow, deployed contracts, proof anchors, and privacy boundaries.
 3. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
 4. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
 5. Approve in Freighter and show the Stellar Explorer transaction.

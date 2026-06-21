@@ -113,7 +113,7 @@ export default function JudgesPage() {
           <div className="flex flex-wrap gap-2">
             <Link href="/admin" className="btn-primary text-sm">Admin</Link>
             <Link href="/claim" className="btn-outline text-sm">Claim</Link>
-            <Link href="/stats" className="btn-outline text-sm">Stats</Link>
+            <Link href="/auditor" className="btn-outline text-sm">Auditor</Link>
             <Link href="/audit" className="btn-outline text-sm">Audit</Link>
           </div>
         </div>
@@ -248,7 +248,7 @@ export default function JudgesPage() {
       <section className="flex flex-wrap gap-3">
         <Link href="/claim" className="btn-primary">Run Claim Demo</Link>
         <Link href="/admin" className="btn-outline">Issue Credential</Link>
-        <Link href="/stats" className="btn-outline">View Stats</Link>
+        <Link href="/auditor" className="btn-outline">Open Auditor Dashboard</Link>
         <Link href="/audit" className="btn-outline">Open Audit</Link>
       </section>
     </div>

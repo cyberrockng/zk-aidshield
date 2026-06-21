@@ -35,7 +35,7 @@ The demo shows:
 2. Show the encrypted credential QR and non-PII issuance ledger, then switch to the claim page and decrypt/load the credential.
 3. Choose direct cash or vendor voucher mode and generate the Groth16 proof in-browser.
 4. Approve the transaction in Freighter.
-5. Show the Stellar Explorer transaction, claim receipt, and stats page update.
+5. Show the Stellar Explorer transaction, claim receipt, and auditor dashboard update.
 6. Try the same credential again to show replay protection.
 7. Switch wallets and show credential binding rejection.
 8. Open the audit/judge page to explain trust boundaries and production roadmap.

@@ -14,7 +14,7 @@ Target length: 2-3 minutes.
 ## Script
 
 1. Show `/judges`: "This is privacy-preserving aid payout infrastructure on Stellar."
-2. Show `/stats`: "50 XLM is funded in escrow; each valid proof releases 1 XLM."
+2. Show `/auditor`: "50 XLM is funded in escrow; each valid proof releases 1 XLM, and auditors can inspect settlement without seeing the private beneficiary list."
 3. Show `/admin`: enter the admin secret off-camera, issue a credential to the connected testnet wallet, set a QR passphrase, and display the encrypted QR.
 4. Show `/admin`: approve/check a vendor address in Vendor / Voucher Mode.
 5. Show `/admin`: open the non-PII issuance ledger and point out keyed wallet identifiers, credential hashes, issuer key, expiry, and delivery mode.
@@ -22,7 +22,7 @@ Target length: 2-3 minutes.
 7. Generate proof: "The secret stays in-browser; the proof is 384 bytes."
 7. Approve Freighter transaction.
 8. Show success, Explorer transaction, and download/copy claim receipt.
-9. Return to `/stats`: claimed count and escrow changed.
+9. Return to `/auditor`: claimed count and escrow changed.
 10. Retry claim: show nullifier replay rejection.
 11. Open `/audit`: "Expiry, issuer registry, replay protection, and approved-vendor voucher controls are enforced on-chain."
 
