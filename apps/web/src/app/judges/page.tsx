@@ -48,6 +48,7 @@ const BUILT_NOW = [
   'Replay protection with persistent nullifiers',
   'Encrypted QR credential delivery',
   'Approved-vendor voucher redemption',
+  'Threshold governor controls for sensitive admin operations',
   'Admin-protected non-PII issuance ledger and export',
   'Local beneficiary claim receipt',
   'Admin-protected credential issuance and beneficiary-slot APIs',
@@ -55,8 +56,8 @@ const BUILT_NOW = [
 ];
 
 const NEXT_STEPS = [
-  ['Threshold issuer governance', 'Require multiple admin approvals for issuer registration, revocation, pause, and fund movement.'],
   ['Per-issuer operational limits', 'Cap issuance volume per field officer and alert on unusual credential activity.'],
+  ['Governor signing UX', 'Add a guided multi-party Soroban signing flow for threshold-2 operations in the browser.'],
   ['Optional identity adapters', 'Use Human Passport or Self/OpenPassport during enrollment while keeping eligibility proofs private.'],
 ];
 

@@ -47,6 +47,6 @@ Most ZK demos prove a primitive. AidShield proves a field-ready aid workflow: pr
 ## Next Build After Hackathon
 
 1. Human Passport or Self/OpenPassport optional intake adapter.
-2. Threshold-admin issuer governance.
+2. Browser-guided multi-governor signing UX for threshold-2 operations.
 3. Multi-vendor reporting and per-vendor redemption limits.
 4. Public multi-party trusted setup.

@@ -30,7 +30,8 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Auditor visibility:** contracts, campaign root, VK hash, stats, non-PII issuance ledger, and trust boundaries are inspectable
 - **Field-ready credential delivery:** operators can export JSON or passphrase-protected mobile QR credentials
 - **Beneficiary receipts:** successful claims produce a local receipt with transaction hash, nullifier, amount, and campaign metadata
-- **Production path:** documented next steps for issuer governance and optional identity adapters
+- **Threshold governance:** sensitive admin controls can require active governor co-signers
+- **Production path:** documented next steps for issuer limits and optional identity adapters
 
 See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).
 

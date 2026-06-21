@@ -9,6 +9,9 @@ import {
   buildFundTransaction,
   buildSetVendorTransaction,
   checkVendorActive,
+  buildSetGovernanceTransaction,
+  fetchGovernanceThreshold,
+  checkGovernorActive,
   submitSignedTransaction,
   type CampaignStats,
 } from '@/lib/soroban';
@@ -25,6 +28,7 @@ type FundStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error
 type PauseStep = 'idle' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 type IssueStep = 'idle' | 'issuing' | 'done' | 'error';
 type VendorStep = 'idle' | 'checking' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
+type GovernanceStep = 'idle' | 'checking' | 'building' | 'signing' | 'submitting' | 'done' | 'error';
 
 interface CsvRow { name: string; id: string; wallet: string }
 
@@ -81,6 +85,14 @@ export default function AdminPage() {
   const [vendorError, setVendorError] = useState('');
   const [vendorTxHash, setVendorTxHash] = useState('');
   const [vendorActive, setVendorActive] = useState<boolean | null>(null);
+
+  const [governorAddress, setGovernorAddress] = useState('');
+  const [governanceThreshold, setGovernanceThreshold] = useState(1);
+  const [newGovernanceThreshold, setNewGovernanceThreshold] = useState('2');
+  const [governorActive, setGovernorActive] = useState<boolean | null>(null);
+  const [governanceStep, setGovernanceStep] = useState<GovernanceStep>('idle');
+  const [governanceError, setGovernanceError] = useState('');
+  const [governanceTxHash, setGovernanceTxHash] = useState('');
 
   const [recipientAddress, setRecipientAddress] = useState('');
   const [issueStep, setIssueStep] = useState<IssueStep>('idle');
@@ -287,11 +299,20 @@ export default function AdminPage() {
     }
   }, []);
 
+  const loadGovernanceThreshold = useCallback(async () => {
+    try {
+      setGovernanceThreshold(await fetchGovernanceThreshold());
+    } catch {
+      setGovernanceThreshold(1);
+    }
+  }, []);
+
   useEffect(() => {
     loadStats();
+    loadGovernanceThreshold();
     const id = setInterval(loadStats, 15_000);
     return () => clearInterval(id);
-  }, [loadStats]);
+  }, [loadStats, loadGovernanceThreshold]);
 
   useEffect(() => {
     isFreighterInstalled().then(setWalletInstalled);
@@ -417,6 +438,67 @@ export default function AdminPage() {
     }
   }
 
+  async function handleCheckGovernor() {
+    const addr = governorAddress.trim();
+    setGovernanceError('');
+    setGovernorActive(null);
+    if (!/^G[A-Z0-9]{55}$/.test(addr)) {
+      setGovernanceError('Enter a valid Stellar governor address');
+      return;
+    }
+    try {
+      setGovernanceStep('checking');
+      const [active, threshold] = await Promise.all([
+        checkGovernorActive(addr),
+        fetchGovernanceThreshold(),
+      ]);
+      setGovernorActive(active);
+      setGovernanceThreshold(threshold);
+      setGovernanceStep('idle');
+      log(`Governor ${addr.slice(0, 8)}… is ${active ? 'active' : 'not active'}; threshold ${threshold}`);
+    } catch (e) {
+      setGovernanceError(String(e));
+      setGovernanceStep('error');
+    }
+  }
+
+  async function handleSetGovernance(active: boolean) {
+    const addr = governorAddress.trim();
+    const threshold = Number(newGovernanceThreshold);
+    if (!walletAddress) { setGovernanceError('Connect your Freighter admin wallet first'); return; }
+    if (!/^G[A-Z0-9]{55}$/.test(addr)) {
+      setGovernanceError('Enter a valid Stellar governor address');
+      return;
+    }
+    if (!Number.isInteger(threshold) || threshold < 1) {
+      setGovernanceError('Threshold must be a whole number of at least 1');
+      return;
+    }
+    setGovernanceError('');
+    setGovernanceTxHash('');
+    try {
+      setGovernanceStep('building');
+      log(`${active ? 'Activating' : 'Revoking'} governor ${addr.slice(0, 8)}… threshold ${threshold}`);
+      const txXDR = await buildSetGovernanceTransaction(walletAddress, addr, active, threshold);
+      setGovernanceStep('signing');
+      log('Waiting for Freighter signature…');
+      const signedXDR = await signTx(txXDR, walletAddress);
+      setGovernanceStep('submitting');
+      log('Broadcasting governance update…');
+      const hash = await submitSignedTransaction(signedXDR);
+      setGovernanceTxHash(hash);
+      setGovernorActive(active);
+      setGovernanceThreshold(threshold);
+      setGovernanceStep('done');
+      log(`Governance updated ✓ tx: ${hash.slice(0, 12)}…`);
+    } catch (e) {
+      const msg = String(e);
+      setGovernanceError(msg);
+      setGovernanceStep('error');
+      log(`Governance error: ${msg.slice(0, 80)}`);
+    }
+  }
+
   async function handleIssueCredential() {
     const addr = recipientAddress.trim();
     if (!addr) { setIssueError('Enter a recipient Stellar address'); return; }
@@ -525,6 +607,7 @@ export default function AdminPage() {
   const fundBusy = fundStep === 'building' || fundStep === 'signing' || fundStep === 'submitting';
   const pauseBusy = pauseStep === 'building' || pauseStep === 'signing' || pauseStep === 'submitting';
   const vendorBusy = vendorStep === 'checking' || vendorStep === 'building' || vendorStep === 'signing' || vendorStep === 'submitting';
+  const governanceBusy = governanceStep === 'checking' || governanceStep === 'building' || governanceStep === 'signing' || governanceStep === 'submitting';
 
   const utilization =
     stats && stats.claimed_count > 0 && stats.payout_amount > 0n
@@ -656,6 +739,81 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ── Governance ── */}
+      <div className="card mb-6">
+        <div className="font-semibold mb-1 flex items-center gap-2">
+          Multi-Admin Governance
+          <span className="badge badge-amber" style={{ fontSize: '0.65rem' }}>
+            Threshold {governanceThreshold}
+          </span>
+        </div>
+        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
+          Add field-office governors and raise the approval threshold for sensitive controls such as pause, issuer, root, verifier, and vendor updates.
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_120px] gap-3 mb-3">
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--muted)' }}>
+              Governor Stellar address (G…)
+            </label>
+            <input
+              type="text"
+              placeholder="GXXXXXX…"
+              value={governorAddress}
+              onChange={(e) => { setGovernorAddress(e.target.value); setGovernanceError(''); setGovernorActive(null); }}
+              disabled={governanceBusy}
+              className="mono text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--muted)' }}>
+              Threshold
+            </label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={newGovernanceThreshold}
+              onChange={(e) => setNewGovernanceThreshold(e.target.value)}
+              disabled={governanceBusy}
+              className="mono text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap mb-3">
+          <button className="btn-outline text-sm" onClick={handleCheckGovernor} disabled={governanceBusy || !governorAddress.trim()}>
+            {governanceStep === 'checking' ? 'Checking…' : 'Check governor'}
+          </button>
+          <button className="btn-primary text-sm" onClick={() => handleSetGovernance(true)} disabled={governanceBusy || !walletAddress || !governorAddress.trim()}>
+            {governanceStep === 'building' || governanceStep === 'signing' || governanceStep === 'submitting' ? 'Updating…' : 'Activate'}
+          </button>
+          <button className="btn-outline text-sm" onClick={() => handleSetGovernance(false)} disabled={governanceBusy || !walletAddress || !governorAddress.trim()}>
+            Revoke
+          </button>
+          {governorActive !== null && (
+            <span className={governorActive ? 'badge badge-green' : 'badge'} style={governorActive ? { fontSize: '0.7rem' } : { background: '#450a0a', color: '#fca5a5', fontSize: '0.7rem' }}>
+              {governorActive ? 'Active governor' : 'Not active'}
+            </span>
+          )}
+          {governanceTxHash && (
+            <a href={`${EXPLORER_BASE}/tx/${governanceTxHash}`} target="_blank" rel="noopener noreferrer" className="text-xs underline" style={{ color: 'var(--green)' }}>
+              Governance tx {shortHex(governanceTxHash)} ↗
+            </a>
+          )}
+        </div>
+
+        {governanceError && (
+          <div className="text-xs p-3 rounded-lg" style={{ background: '#1a0505', color: '#f87171', border: '1px solid #7f1d1d' }}>
+            {governanceError}
+          </div>
+        )}
+
+        <div className="text-xs" style={{ color: 'var(--muted)', lineHeight: 1.55 }}>
+          Threshold 1 preserves fast testnet operation. Threshold 2+ requires the admin plus active governor co-signers through the governed contract methods.
+        </div>
       </div>
 
       {/* ── Vendor / Voucher Mode ── */}

@@ -461,6 +461,18 @@
                       "key": {
                         "vec": [
                           {
+                            "symbol": "GovernanceThreshold"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "u32": 1
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
                             "symbol": "Initialized"
                           }
                         ]

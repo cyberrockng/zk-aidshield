@@ -55,6 +55,10 @@ function getContract(): Contract {
   return new Contract(CONTRACT_ID);
 }
 
+function governanceCoSignersScVal(coSigners: string[] = []): xdr.ScVal {
+  return xdr.ScVal.scvVec(coSigners.map((addr) => Address.fromString(addr).toScVal()));
+}
+
 export async function fetchStats(): Promise<CampaignStats> {
   const server = getServer();
   const contract = getContract();
@@ -321,6 +325,79 @@ export async function checkVendorActive(vendorAddress: string): Promise<boolean>
   const sim = await server.simulateTransaction(tx);
   if (SorobanRpc.Api.isSimulationError(sim)) return false;
   return scValToNative(sim.result!.retval) as boolean;
+}
+
+export async function fetchGovernanceThreshold(): Promise<number> {
+  const server = getServer();
+  const contract = getContract();
+  const op = contract.call('governance_threshold');
+
+  const account = await server.getAccount(ADMIN_ADDRESS);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(op)
+    .setTimeout(30)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) return 1;
+  return Number(scValToNative(sim.result!.retval));
+}
+
+export async function checkGovernorActive(governorAddress: string): Promise<boolean> {
+  const server = getServer();
+  const contract = getContract();
+  const op = contract.call('is_governor_active', Address.fromString(governorAddress).toScVal());
+
+  const account = await server.getAccount(ADMIN_ADDRESS);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(op)
+    .setTimeout(30)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) return false;
+  return scValToNative(sim.result!.retval) as boolean;
+}
+
+export async function buildSetGovernanceTransaction(
+  adminAddress: string,
+  governorAddress: string,
+  active: boolean,
+  threshold: number,
+  coSigners: string[] = [],
+): Promise<string> {
+  const server = getServer();
+  const contract = getContract();
+
+  const op = contract.call(
+    'set_governance',
+    Address.fromString(governorAddress).toScVal(),
+    nativeToScVal(active, { type: 'bool' }),
+    nativeToScVal(threshold, { type: 'u32' }),
+    governanceCoSignersScVal(coSigners),
+  );
+
+  const account = await server.getAccount(adminAddress);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(op)
+    .setTimeout(60)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) {
+    throw new Error(`set_governance simulation failed: ${sim.error}`);
+  }
+
+  return SorobanRpc.assembleTransaction(tx, sim).build().toXDR();
 }
 
 export async function buildSetVendorTransaction(

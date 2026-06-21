@@ -77,6 +77,6 @@ The hardest part was aligning the same BLS12-381 Poseidon statement across circo
 
 ## What Is Next
 
-- threshold-admin issuer governance
 - Human Passport or Self/OpenPassport optional enrollment adapter
+- per-issuer operational limits and alerting
 - public multi-party trusted setup before production use

@@ -59,11 +59,11 @@ AidShield protects beneficiary privacy while preserving disbursement accountabil
 
 Before real humanitarian deployment, AidShield should add:
 
-1. Threshold-admin issuer governance.
+1. Browser-guided multi-governor signing UX for threshold-2 operations.
 2. Per-issuer issuance limits.
-3. Durable issuance audit log without beneficiary PII.
-4. Mobile credential import/export by QR.
-5. Encrypted credential backup and recovery.
+3. Encrypted credential backup and recovery.
+4. Category-scoped vendor voucher limits.
+5. Public multi-party trusted setup.
 6. Larger configurable Merkle trees.
 7. Independent circuit and contract audit.
 8. Public trusted setup ceremony.

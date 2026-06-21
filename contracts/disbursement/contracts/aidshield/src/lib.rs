@@ -3,7 +3,7 @@
 
 use soroban_sdk::{
     contract, contractclient, contractimpl, contracttype, symbol_short,
-    token, xdr::ToXdr, Address, Bytes, BytesN, Env,
+    token, xdr::ToXdr, Address, Bytes, BytesN, Env, Vec,
 };
 
 mod test;
@@ -29,6 +29,8 @@ pub enum DataKey {
     UsedNullifier(BytesN<32>),
     ActiveIssuer(BytesN<32>),
     ActiveVendor(Address),
+    ActiveGovernor(Address),
+    GovernanceThreshold,
     Initialized,
     Paused,
 }
@@ -89,6 +91,50 @@ pub struct AidShieldContract;
 
 #[contractimpl]
 impl AidShieldContract {
+    fn empty_cosigners(env: &Env) -> Vec<Address> {
+        Vec::<Address>::new(env)
+    }
+
+    fn require_governance(env: &Env, co_signers: Vec<Address>) {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        let threshold: u32 = env.storage()
+            .instance()
+            .get(&DataKey::GovernanceThreshold)
+            .unwrap_or(1);
+        if threshold <= 1 {
+            return;
+        }
+
+        let mut approvals = 1u32;
+        let mut seen = Vec::<Address>::new(env);
+
+        for signer in co_signers.iter() {
+            if signer == admin {
+                panic!("Admin already counted");
+            }
+            for existing in seen.iter() {
+                if existing == signer {
+                    panic!("Duplicate governor signer");
+                }
+            }
+            let active: bool = env.storage()
+                .persistent()
+                .get(&DataKey::ActiveGovernor(signer.clone()))
+                .unwrap_or(false);
+            if !active {
+                panic!("Governor signer is not active");
+            }
+            signer.require_auth();
+            seen.push_back(signer);
+            approvals += 1;
+        }
+
+        if approvals < threshold {
+            panic!("Governance threshold not met");
+        }
+    }
 
     /// Initialise a disbursement campaign.
     ///
@@ -116,6 +162,7 @@ impl AidShieldContract {
         env.storage().instance().set(&DataKey::ClaimedCount, &0u32);
         env.storage().instance().set(&DataKey::Initialized, &true);
         env.storage().instance().set(&DataKey::Paused, &true);
+        env.storage().instance().set(&DataKey::GovernanceThreshold, &1u32);
 
         // Keep instance storage alive for ~30 days (30d × 24h × 720 ledgers/h = 518 400)
         env.storage().instance().extend_ttl(518_400, 518_400);
@@ -149,8 +196,12 @@ impl AidShieldContract {
     ///                    claimant_address_field, expires_at, issuer_key_id) matching the circuit's pub inputs
     /// Admin kill-switch: set paused=true to halt claims, false to re-enable.
     pub fn set_paused(env: Env, paused: bool) {
-        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        Self::require_governance(&env, Self::empty_cosigners(&env));
+        env.storage().instance().set(&DataKey::Paused, &paused);
+    }
+
+    pub fn set_paused_gov(env: Env, paused: bool, co_signers: Vec<Address>) {
+        Self::require_governance(&env, co_signers);
         env.storage().instance().set(&DataKey::Paused, &paused);
     }
 
@@ -161,8 +212,12 @@ impl AidShieldContract {
     /// Update the verifier contract address (admin only). Allows hot-swapping
     /// the verifier without redeploying the disbursement contract.
     pub fn set_verifier(env: Env, verifier_address: Address) {
-        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        Self::require_governance(&env, Self::empty_cosigners(&env));
+        env.storage().instance().set(&DataKey::VerifierAddress, &verifier_address);
+    }
+
+    pub fn set_verifier_gov(env: Env, verifier_address: Address, co_signers: Vec<Address>) {
+        Self::require_governance(&env, co_signers);
         env.storage().instance().set(&DataKey::VerifierAddress, &verifier_address);
     }
 
@@ -170,8 +225,17 @@ impl AidShieldContract {
     /// The key id is a 32-byte BLS12-381 field element, normally derived from
     /// the issuer's Stellar public key using stellarAddressToField().
     pub fn add_issuer(env: Env, issuer_key_id: BytesN<32>) {
-        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        Self::require_governance(&env, Self::empty_cosigners(&env));
+        env.storage().persistent().set(&DataKey::ActiveIssuer(issuer_key_id.clone()), &true);
+        env.storage().persistent().extend_ttl(
+            &DataKey::ActiveIssuer(issuer_key_id),
+            518_400,
+            518_400,
+        );
+    }
+
+    pub fn add_issuer_gov(env: Env, issuer_key_id: BytesN<32>, co_signers: Vec<Address>) {
+        Self::require_governance(&env, co_signers);
         env.storage().persistent().set(&DataKey::ActiveIssuer(issuer_key_id.clone()), &true);
         env.storage().persistent().extend_ttl(
             &DataKey::ActiveIssuer(issuer_key_id),
@@ -183,8 +247,12 @@ impl AidShieldContract {
     /// Revoke an issuer key id. New claims bound to that issuer will fail even
     /// if the ZK proof and Merkle path are otherwise valid.
     pub fn revoke_issuer(env: Env, issuer_key_id: BytesN<32>) {
-        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        Self::require_governance(&env, Self::empty_cosigners(&env));
+        env.storage().persistent().set(&DataKey::ActiveIssuer(issuer_key_id), &false);
+    }
+
+    pub fn revoke_issuer_gov(env: Env, issuer_key_id: BytesN<32>, co_signers: Vec<Address>) {
+        Self::require_governance(&env, co_signers);
         env.storage().persistent().set(&DataKey::ActiveIssuer(issuer_key_id), &false);
     }
 
@@ -197,8 +265,17 @@ impl AidShieldContract {
 
     /// Add an approved vendor that can receive restricted aid redemptions.
     pub fn add_vendor(env: Env, vendor: Address) {
-        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        Self::require_governance(&env, Self::empty_cosigners(&env));
+        env.storage().persistent().set(&DataKey::ActiveVendor(vendor.clone()), &true);
+        env.storage().persistent().extend_ttl(
+            &DataKey::ActiveVendor(vendor),
+            518_400,
+            518_400,
+        );
+    }
+
+    pub fn add_vendor_gov(env: Env, vendor: Address, co_signers: Vec<Address>) {
+        Self::require_governance(&env, co_signers);
         env.storage().persistent().set(&DataKey::ActiveVendor(vendor.clone()), &true);
         env.storage().persistent().extend_ttl(
             &DataKey::ActiveVendor(vendor),
@@ -209,8 +286,12 @@ impl AidShieldContract {
 
     /// Revoke an approved vendor. Future voucher redemptions to this address fail.
     pub fn revoke_vendor(env: Env, vendor: Address) {
-        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        Self::require_governance(&env, Self::empty_cosigners(&env));
+        env.storage().persistent().set(&DataKey::ActiveVendor(vendor), &false);
+    }
+
+    pub fn revoke_vendor_gov(env: Env, vendor: Address, co_signers: Vec<Address>) {
+        Self::require_governance(&env, co_signers);
         env.storage().persistent().set(&DataKey::ActiveVendor(vendor), &false);
     }
 
@@ -421,8 +502,16 @@ impl AidShieldContract {
     /// Admin can rotate the Merkle root for a new beneficiary list.
     /// Emits a `root.updated` event containing the new root for auditor visibility.
     pub fn update_root(env: Env, new_root: BytesN<32>) {
-        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
+        Self::require_governance(&env, Self::empty_cosigners(&env));
+        Self::write_root_update(&env, new_root);
+    }
+
+    pub fn update_root_gov(env: Env, new_root: BytesN<32>, co_signers: Vec<Address>) {
+        Self::require_governance(&env, co_signers);
+        Self::write_root_update(&env, new_root);
+    }
+
+    fn write_root_update(env: &Env, new_root: BytesN<32>) {
         let old_root: BytesN<32> = env.storage().instance()
             .get(&DataKey::MerkleRoot).unwrap();
         env.storage().instance().set(&DataKey::MerkleRoot, &new_root);
@@ -430,5 +519,41 @@ impl AidShieldContract {
             (symbol_short!("root"), symbol_short!("updated")),
             (old_root, new_root),
         );
+    }
+
+    /// Add or revoke a governor and set the signature threshold required for
+    /// sensitive admin operations. The admin signature always counts as one.
+    pub fn set_governance(env: Env, governor: Address, active: bool, threshold: u32, co_signers: Vec<Address>) {
+        if threshold < 1 {
+            panic!("Governance threshold must be at least 1");
+        }
+        Self::require_governance(&env, co_signers);
+        env.storage().persistent().set(&DataKey::ActiveGovernor(governor.clone()), &active);
+        if active {
+            env.storage().persistent().extend_ttl(
+                &DataKey::ActiveGovernor(governor),
+                518_400,
+                518_400,
+            );
+        }
+        env.storage().instance().set(&DataKey::GovernanceThreshold, &threshold);
+        env.events().publish(
+            (symbol_short!("governor"), symbol_short!("updated")),
+            threshold,
+        );
+    }
+
+    pub fn is_governor_active(env: Env, governor: Address) -> bool {
+        env.storage()
+            .persistent()
+            .get(&DataKey::ActiveGovernor(governor))
+            .unwrap_or(false)
+    }
+
+    pub fn governance_threshold(env: Env) -> u32 {
+        env.storage()
+            .instance()
+            .get(&DataKey::GovernanceThreshold)
+            .unwrap_or(1)
     }
 }

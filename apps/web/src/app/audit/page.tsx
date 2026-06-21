@@ -208,7 +208,7 @@ export default function AuditPage() {
           </li>
           <li>
             <strong style={{ color: 'var(--text)' }}>Issuer governance:</strong> The upgraded contract supports
-            issuer add/revoke. Production should add threshold admin controls and per-issuer limits.
+            issuer add/revoke plus threshold governor co-signers for sensitive admin operations. Production should add per-issuer limits and a guided multi-party signing UX.
           </li>
           <li>
             <strong style={{ color: 'var(--text)' }}>Trusted setup (Groth16):</strong> The proving key was generated
