@@ -5,10 +5,10 @@ Target length: 2-3 minutes.
 ## Browser Setup
 
 - Freighter installed and set to Stellar Testnet.
-- Use the deployed Phase 5 frontend or local `http://localhost:3000`.
+- Use the deployed Phase 6 frontend or local `http://localhost:3000`.
 - Keep the operator `ADMIN_API_SECRET` ready for `/admin`; do not show it in the recording.
 - Keep Stellar Explorer tabs ready for:
-  - Disbursement: `https://stellar.expert/explorer/testnet/contract/CDNEXDELJR5W2RDUPU6BUVFNTDDTYP2SACSSYDIUVVHTZA27PGRQ6N7N`
+  - Disbursement: `https://stellar.expert/explorer/testnet/contract/CDCT4TCFKSIBOCFV6OATUJB2Y3GOF72KIG7NLOAK7Z4HMGYF4PE3V5NC`
   - Verifier: `https://stellar.expert/explorer/testnet/contract/CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ`
 
 ## Script

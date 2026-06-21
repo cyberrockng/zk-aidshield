@@ -98,15 +98,15 @@ See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/
 
 | Contract | Address |
 |---|---|
-| AidShield Disbursement Phase 5 — Voucher Mode | `CDNEXDELJR5W2RDUPU6BUVFNTDDTYP2SACSSYDIUVVHTZA27PGRQ6N7N` |
+| AidShield Disbursement Phase 6 — Governance + Voucher Mode | `CDCT4TCFKSIBOCFV6OATUJB2Y3GOF72KIG7NLOAK7Z4HMGYF4PE3V5NC` |
 | Groth16 BLS12-381 Verifier Phase 4 | `CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ` |
 | XLM Native SAC (testnet) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-**Campaign (Phase 5 — wallet-, expiry-, issuer-, and vendor-redemption capable):** disbursement\_id `000…001` · merkle\_root `6631aeab…` · 1 XLM per claim/redemption · 50 XLM escrow
+**Campaign (Phase 6 — wallet-, expiry-, issuer-, governance-, and vendor-redemption capable):** disbursement\_id `000…001` · merkle\_root `6631aeab…` · 1 XLM per claim/redemption · 50 XLM escrow
 
-> Phase 5 reuses the audited Phase 4 six-public-input circuit and verifier, and upgrades the disbursement contract with approved-vendor voucher redemption.
+> Phase 6 reuses the audited Phase 4 six-public-input circuit and verifier, and upgrades the disbursement contract with approved-vendor voucher redemption plus threshold governor controls.
 
-Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CDNEXDELJR5W2RDUPU6BUVFNTDDTYP2SACSSYDIUVVHTZA27PGRQ6N7N) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ)
+Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CDCT4TCFKSIBOCFV6OATUJB2Y3GOF72KIG7NLOAK7Z4HMGYF4PE3V5NC) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ)
 
 ---
 
