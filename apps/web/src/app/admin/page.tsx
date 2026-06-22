@@ -106,9 +106,7 @@ export default function AdminPage() {
   const [qrPassphrase, setQrPassphrase] = useState('');
 
   const [activityLog, setActivityLog] = useState<string[]>([]);
-  const [adminSecret, setAdminSecret] = useState(() =>
-    typeof window === 'undefined' ? '' : window.localStorage.getItem('aidshield_admin_secret') ?? '',
-  );
+  const [adminSecret, setAdminSecret] = useState('');
 
   const [beneficiaries, setBeneficiaries] = useState<BeneficiaryList | null>(null);
   const [beneficiariesError, setBeneficiariesError] = useState<string | null>(null);
@@ -130,10 +128,6 @@ export default function AdminPage() {
     if (contentType) headers['Content-Type'] = 'application/json';
     if (adminSecret.trim()) headers['x-admin-secret'] = adminSecret.trim();
     return headers;
-  }, [adminSecret]);
-
-  useEffect(() => {
-    window.localStorage.setItem('aidshield_admin_secret', adminSecret);
   }, [adminSecret]);
 
   useEffect(() => {

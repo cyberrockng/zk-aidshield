@@ -154,6 +154,9 @@ impl AidShieldContract {
         if env.storage().instance().has(&DataKey::Initialized) {
             panic!("Already initialized");
         }
+        if payout_amount <= 0 {
+            panic!("Payout amount must be positive");
+        }
         admin.require_auth();
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage()
@@ -189,6 +192,9 @@ impl AidShieldContract {
         funder.require_auth();
         if !env.storage().instance().has(&DataKey::Initialized) {
             panic!("Not initialized");
+        }
+        if amount <= 0 {
+            panic!("Funding amount must be positive");
         }
         let token_address: Address = env
             .storage()

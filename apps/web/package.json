@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -14,25 +14,29 @@
     "@stellar/freighter-api": "^3.0.0",
     "@stellar/stellar-sdk": "^12.3.0",
     "circomlibjs": "^0.1.7",
-    "next": "^14.2.0",
+    "next": "^16.2.9",
     "qrcode": "^1.5.4",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "snarkjs": "^0.7.6",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/qrcode": "^1.5.6",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "@vitest/coverage-v8": "^4.1.9",
     "autoprefixer": "^10.4.0",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.0",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.9",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.4.0",
     "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "underscore": "1.13.8",
+    "ws": "8.21.0"
   }
 }

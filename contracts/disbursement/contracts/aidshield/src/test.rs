@@ -135,6 +135,30 @@ fn test_initialize_and_stats() {
 }
 
 #[test]
+#[should_panic(expected = "Payout amount must be positive")]
+fn test_initialize_rejects_non_positive_payout() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    client.initialize(
+        &admin,
+        &make_id(&env, 1),
+        &make_id(&env, 2),
+        &0i128,
+        &token_id,
+        &verifier_id,
+    );
+}
+
+#[test]
 fn test_fund_moves_real_tokens() {
     let env = Env::default();
     env.mock_all_auths();
@@ -162,6 +186,31 @@ fn test_fund_moves_real_tokens() {
 
     // Escrow balance reported from real SAC balance query
     assert_eq!(client.stats().escrow_balance, 100_000_000);
+}
+
+#[test]
+#[should_panic(expected = "Funding amount must be positive")]
+fn test_fund_rejects_non_positive_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let token_id = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
+    let verifier_id = env.register(mock_verifier_ok::MockVerifierOk, ());
+    let contract_id = env.register(AidShieldContract, ());
+    let client = AidShieldContractClient::new(&env, &contract_id);
+
+    client.initialize(
+        &admin,
+        &make_id(&env, 1),
+        &make_id(&env, 2),
+        &10_000_000i128,
+        &token_id,
+        &verifier_id,
+    );
+    client.fund(&admin, &0i128);
 }
 
 #[test]
