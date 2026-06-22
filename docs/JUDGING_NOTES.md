@@ -15,6 +15,8 @@ The demo shows:
 - approved-vendor voucher redemption for restricted aid budgets
 - durable non-PII issuance ledger for operator accountability
 - local beneficiary claim receipts after payout
+- live threat-resistance dashboard showing issuer, vendor, replay, escrow, pause, and governance posture
+- competitive edge board showing proof outcomes, selective disclosure, telemetry, no-wallet judge path, attack simulator, and readiness growth
 - real XLM escrow payout through the Stellar Asset Contract
 - auditor-facing stats and trust model
 
@@ -25,8 +27,8 @@ The demo shows:
 | Real-world relevance | Humanitarian aid systems expose sensitive beneficiary data; AidShield removes PII from settlement |
 | ZK depth | Circom circuit proves Merkle membership and nullifier correctness while hiding the secret |
 | Stellar fit | Low-cost, fast settlement with native SAC payout and Soroban BLS12-381 host functions |
-| Security thinking | Wallet-bound leaves, on-chain replay blocking, pause switch, trust model, and threat model |
-| Demo completeness | Admin, encrypted QR delivery, approved-vendor vouchers, non-PII issuance ledger, claim receipt, stats, audit, deployed testnet contracts, and automated tests |
+| Security thinking | Wallet-bound leaves, on-chain replay blocking, issuer/vendor controls, pause switch, trust model, threat dashboard, and incident playbook |
+| Demo completeness | Admin, encrypted QR delivery, approved-vendor vouchers, non-PII issuance ledger, claim receipt, stats, audit, threats, edge board, deployed testnet contracts, and automated tests |
 | Expansion path | Issuer governance, optional identity adapters, multi-vendor operations, and public trusted setup |
 
 ## Strongest Demo Path
@@ -36,13 +38,15 @@ The demo shows:
 3. Choose direct cash or vendor voucher mode and generate the Groth16 proof in-browser.
 4. Approve the transaction in Freighter.
 5. Show the Stellar Explorer transaction, claim receipt, and auditor dashboard update.
-6. Try the same credential again to show replay protection.
-7. Switch wallets and show credential binding rejection.
-8. Open the audit/judge page to explain trust boundaries and production roadmap.
+6. Open `/threats` and show that the product blocks or monitors forged proofs, replay, revoked issuers, unauthorized vendors, underfunded escrow, and governance risk.
+7. Open `/edge` and show the proof board, selective disclosure table, proof telemetry, no-wallet judge path, and competitive readiness growth.
+8. Try the same credential again to show replay protection.
+9. Switch wallets and show credential binding rejection.
+10. Open the audit/judge page to explain trust boundaries and production roadmap.
 
 ## Winning Angle
 
-Most ZK demos prove a primitive. AidShield proves a field-ready aid workflow: privacy for recipients, fraud resistance for operators, and public accountability for donors.
+Most ZK demos prove a primitive. AidShield proves a field-ready aid workflow: privacy for recipients, fraud resistance for operators, threat-aware controls for field operations, and public accountability for donors.
 
 ## Next Build After Hackathon
 

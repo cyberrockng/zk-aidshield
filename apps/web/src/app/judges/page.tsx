@@ -83,7 +83,7 @@ const NEXT_STEPS = [
 const SECURITY_POSTURE = [
   ['Kept private', 'Names, IDs, beneficiary-list membership, credential secrets, Merkle witnesses, and local issuance records.'],
   ['Public by design', 'Payout wallet, timing, amount, contract IDs, Merkle root, verifier key hash, and nullifier.'],
-  ['Abuse resistance', 'Operator APIs require an admin secret, ledger wallet identifiers use keyed HMACs, and replay is blocked on-chain.'],
+  ['Abuse resistance', 'Operator APIs require an admin secret, issuer and vendor controls are enforced on-chain, ledger wallet identifiers use keyed HMACs, and replay is blocked on-chain.'],
 ];
 
 function FactCard({ label, value }: { label: string; value: string }) {
@@ -118,6 +118,8 @@ export default function JudgesPage() {
             <Link href="/admin" className="btn-primary text-sm">Issue Credential</Link>
             <Link href="/claim" className="btn-outline text-sm">Run Claim</Link>
             <Link href="/auditor" className="btn-outline text-sm">Open Auditor</Link>
+            <Link href="/threats" className="btn-outline text-sm">Threat Controls</Link>
+            <Link href="/edge" className="btn-outline text-sm">Competitive Edge</Link>
           </div>
         </div>
       </section>
@@ -165,6 +167,7 @@ export default function JudgesPage() {
             <Link href="/claim" className="btn-outline text-sm">Claim</Link>
             <Link href="/auditor" className="btn-outline text-sm">Auditor</Link>
             <Link href="/audit" className="btn-outline text-sm">Audit</Link>
+            <Link href="/threats" className="btn-outline text-sm">Threats</Link>
           </div>
         </div>
 
@@ -335,6 +338,7 @@ export default function JudgesPage() {
         <Link href="/admin" className="btn-outline">Issue Credential</Link>
         <Link href="/auditor" className="btn-outline">Open Auditor Dashboard</Link>
         <Link href="/audit" className="btn-outline">Open Audit</Link>
+        <Link href="/edge" className="btn-outline">Open Competitive Edge</Link>
       </section>
     </div>
   );

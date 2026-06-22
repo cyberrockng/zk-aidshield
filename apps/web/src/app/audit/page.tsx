@@ -102,6 +102,21 @@ const ATTACKS: { attack: string; stopped: string; how: string }[] = [
     stopped: 'Off-chain',
     how: 'ISSUER_PUBLIC_KEY is hardcoded in the claim frontend. Ed25519 signature verified before proof generation begins.',
   },
+  {
+    attack: 'Revoked issuer credential',
+    stopped: 'On-chain',
+    how: 'The issuer key id is a public proof input and must be active in the contract registry when the claim is submitted.',
+  },
+  {
+    attack: 'Unauthorized vendor payout',
+    stopped: 'On-chain',
+    how: 'Voucher redemption checks the vendor allowlist before proof execution and payout transfer.',
+  },
+  {
+    attack: 'Privacy pool abuse',
+    stopped: 'Operator policy',
+    how: 'AidShield is not an open mixer. Eligibility is campaign-scoped, issuer-bound, expiry-bound, wallet-bound, and funded from a controlled escrow.',
+  },
 ];
 
 function StatusBadge({ status }: { status: TrustRow['status'] }) {

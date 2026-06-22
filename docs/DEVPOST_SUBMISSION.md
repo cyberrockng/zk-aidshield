@@ -18,7 +18,7 @@ AidShield now supports restricted voucher redemption: admins approve vendors on-
 
 For operator accountability, the admin dashboard keeps an admin-protected non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
 
-## What Is New In Phase 6
+## What Is New In Phase 7
 
 - 6-public-input Groth16 circuit
 - wallet-, expiry-, and issuer-bound Merkle leaves
@@ -26,6 +26,9 @@ For operator accountability, the admin dashboard keeps an admin-protected non-PI
 - on-chain credential expiry enforcement by ledger timestamp
 - encrypted mobile QR credential export/import
 - approved-vendor voucher redemption
+- live threat-resistance dashboard for policy, issuer, vendor, replay, escrow, and governance posture
+- competitive edge board with judge proof outcomes, selective disclosure, proof telemetry, no-wallet demo guidance, attack simulator, and readiness growth table
+- incident playbook for compromised issuers, vendors, credential leaks, and replay attempts
 - admin-protected non-PII issuance ledger
 - local beneficiary claim receipts
 - admin-protected credential issuance and beneficiary-slot APIs
@@ -53,17 +56,19 @@ For operator accountability, the admin dashboard keeps an admin-protected non-PI
 
 1. Open `/judges` to show the short technical brief.
 2. Open `/auditor` to show live 50 XLM escrow, deployed contracts, proof anchors, and privacy boundaries.
-3. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
-4. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
-5. Approve in Freighter and show the Stellar Explorer transaction.
-6. Download/copy the local claim receipt.
-7. Retry the same credential to show replay protection.
-8. Switch wallets to show wrong-wallet rejection.
-9. Open `/audit` to show trust boundaries and known limitations.
+3. Open `/threats` to show that AidShield is not an unrestricted anonymous pool: issuer, vendor, replay, escrow, and governance controls are visible.
+4. Open `/edge` to show the judge proof board, selective disclosure, proof telemetry, no-wallet path, attack simulator, and competitive readiness growth.
+5. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
+6. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
+7. Approve in Freighter and show the Stellar Explorer transaction.
+8. Download/copy the local claim receipt.
+9. Retry the same credential to show replay protection.
+10. Switch wallets to show wrong-wallet rejection.
+11. Open `/audit` to show trust boundaries and known limitations.
 
 ## Security Posture
 
-AidShield keeps names, IDs, beneficiary-list membership, credential secrets, Merkle witnesses, and issuance records off-chain. Operator APIs are protected by an admin secret, and ledger wallet identifiers use keyed HMACs instead of raw addresses.
+AidShield keeps names, IDs, beneficiary-list membership, credential secrets, Merkle witnesses, and issuance records off-chain. Operator APIs are protected by an admin secret, ledger wallet identifiers use keyed HMACs instead of raw addresses, and the threat dashboard makes the issuer, vendor, replay, escrow, pause, and governance posture visible.
 
 The Stellar payout itself remains public settlement data: observers can see payout wallet, timing, amount, contract IDs, Merkle root, verifier key hash, and nullifier. That is the accountability layer, not a claim that the final token transfer is anonymous.
 
@@ -73,7 +78,7 @@ Most ZK demos prove a primitive. ZK AidShield proves a real aid workflow: privat
 
 ## Challenges
 
-The hardest part was aligning the same BLS12-381 Poseidon statement across circom, browser proving, TypeScript Merkle generation, and Soroban verification. Phase 6 keeps that statement stable while adding approved-vendor voucher redemption and threshold governor controls without weakening replay protection or wallet binding.
+The hardest part was aligning the same BLS12-381 Poseidon statement across circom, browser proving, TypeScript Merkle generation, and Soroban verification. Phase 7 keeps that statement stable while adding approved-vendor voucher redemption, threshold governor controls, and a threat-resistance dashboard without weakening replay protection or wallet binding.
 
 ## What Is Next
 

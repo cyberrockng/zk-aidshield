@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             zIndex: 50,
           }}
         >
-          <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
             <Link href="/" className="flex items-center gap-2.5 font-bold text-base">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                 <path
@@ -45,7 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </Link>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap justify-end">
               <Link
                 href="/judges"
                 className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
@@ -66,6 +66,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 style={{ color: 'var(--muted)' }}
               >
                 Audit
+              </Link>
+              <Link
+                href="/threats"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Threats
+              </Link>
+              <Link
+                href="/edge"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Edge
               </Link>
               <Link
                 href="/admin"

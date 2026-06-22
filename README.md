@@ -31,6 +31,8 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Field-ready credential delivery:** operators can export JSON or passphrase-protected mobile QR credentials
 - **Beneficiary receipts:** successful claims produce a local receipt with transaction hash, nullifier, amount, and campaign metadata
 - **Threshold governance:** sensitive admin controls can require active governor co-signers
+- **Threat-aware controls:** a live policy dashboard shows issuer, vendor, replay, escrow, pause, and governance posture
+- **Competitive edge board:** `/edge` packages the judge proof board, selective disclosure panel, proof telemetry, no-wallet demo path, threat simulator, and readiness growth table
 - **Production path:** documented next steps for issuer limits and optional identity adapters
 
 See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).
@@ -102,9 +104,9 @@ See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/
 | Groth16 BLS12-381 Verifier Phase 4 | `CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ` |
 | XLM Native SAC (testnet) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 
-**Campaign (Phase 6 — wallet-, expiry-, issuer-, governance-, and vendor-redemption capable):** disbursement\_id `000…001` · merkle\_root `6631aeab…` · 1 XLM per claim/redemption · 50 XLM escrow
+**Campaign (Phase 7 product layer — wallet-, expiry-, issuer-, governance-, vendor-redemption-, threat-dashboard-, and competitive-edge-board capable):** disbursement\_id `000…001` · merkle\_root `6631aeab…` · 1 XLM per claim/redemption · 50 XLM escrow
 
-> Phase 6 reuses the audited Phase 4 six-public-input circuit and verifier, and upgrades the disbursement contract with approved-vendor voucher redemption plus threshold governor controls.
+> Phase 7 reuses the audited Phase 4 six-public-input circuit and Phase 6 governance/voucher contract, and adds a live threat-resistance dashboard plus `/edge` competitive proof board so judges can inspect issuer, vendor, replay, escrow, pause, disclosure, telemetry, and governance posture.
 
 Verify: [Disbursement](https://stellar.expert/explorer/testnet/contract/CDCT4TCFKSIBOCFV6OATUJB2Y3GOF72KIG7NLOAK7Z4HMGYF4PE3V5NC) · [Verifier](https://stellar.expert/explorer/testnet/contract/CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ)
 
@@ -200,6 +202,8 @@ zk-aidshield/
 │     ├─ src/app/claim/                # Beneficiary claim flow (client-side proving)
 │     ├─ src/app/admin/                # Operator dashboard + credential issuance
 │     ├─ src/app/audit/                # Trust model & limitations
+│     ├─ src/app/edge/                 # Judge proof board + competitive readiness package
+│     ├─ src/app/threats/              # Live policy controls and incident playbook
 │     ├─ src/app/api/issue-credential/ # POST API — signs credentials (server-side)
 │     ├─ src/lib/prover.ts             # generateProof() — Groth16 in WASM
 │     ├─ src/lib/credential.ts         # Credential types + signature verification

@@ -327,6 +327,25 @@ export async function checkVendorActive(vendorAddress: string): Promise<boolean>
   return scValToNative(sim.result!.retval) as boolean;
 }
 
+export async function checkIssuerActive(issuerKeyId: string): Promise<boolean> {
+  const server = getServer();
+  const contract = getContract();
+  const op = contract.call('is_issuer_active', xdr.ScVal.scvBytes(Buffer.from(issuerKeyId, 'hex')));
+
+  const account = await server.getAccount(ADMIN_ADDRESS);
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(op)
+    .setTimeout(30)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (SorobanRpc.Api.isSimulationError(sim)) return false;
+  return scValToNative(sim.result!.retval) as boolean;
+}
+
 export async function fetchGovernanceThreshold(): Promise<number> {
   const server = getServer();
   const contract = getContract();

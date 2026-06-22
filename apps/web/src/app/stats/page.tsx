@@ -142,6 +142,13 @@ export default function StatsPage() {
             </span>
           )}
           <a
+            href="/threats"
+            className="btn-outline text-sm"
+            style={{ padding: '5px 12px' }}
+          >
+            Threats
+          </a>
+          <a
             href={`${EXPLORER_BASE}/contract/${CONTRACT_ID}`}
             target="_blank"
             rel="noopener noreferrer"
@@ -219,6 +226,21 @@ export default function StatsPage() {
                   <span className="mono text-xs text-right" style={{ wordBreak: 'break-all' }}>{r.value}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="section-panel mb-6">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div style={{ maxWidth: 720 }}>
+                <div className="badge badge-amber mb-3">Threat-aware privacy</div>
+                <h2 className="font-bold text-lg mb-2">Privacy With Operational Controls</h2>
+                <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.65 }}>
+                  AidShield does not behave like an unrestricted anonymous pool. Claims require a valid ZK membership proof,
+                  active issuer key, fresh nullifier, unexpired credential, claimant wallet signature, and approved vendor
+                  status for voucher redemptions.
+                </p>
+              </div>
+              <a href="/threats" className="btn-primary text-sm">Open Threat Dashboard</a>
             </div>
           </div>
         </>
