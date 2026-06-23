@@ -634,11 +634,12 @@ export default function AdminPage() {
       </div>
 
       <div className="card mb-6">
-        <div className="font-semibold mb-2">Operator Authorization</div>
+        <label htmlFor="admin-api-secret" className="font-semibold mb-2 block">Operator Authorization</label>
         <p className="text-sm mb-3" style={{ color: 'var(--muted)' }}>
           Protected routes require the server-side admin secret before beneficiary slots, credential issuance, or ledger records can load.
         </p>
         <input
+          id="admin-api-secret"
           type="password"
           value={adminSecret}
           onChange={(e) => setAdminSecret(e.target.value)}

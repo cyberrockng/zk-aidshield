@@ -29,6 +29,26 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  transform: translateY(-160%);
+  background: var(--green);
+  color: #04080e;
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  font-weight: 800;
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 3px solid rgba(88, 166, 255, 0.7);
+  outline-offset: 3px;
+}
+
 /* ── Gradient headline text ─────────────────────── */
 .gradient-text {
   background: linear-gradient(135deg, var(--green-bright) 0%, #a3e635 50%, var(--blue) 100%);

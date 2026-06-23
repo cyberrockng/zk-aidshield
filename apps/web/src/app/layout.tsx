@@ -3,17 +3,59 @@ import Link from 'next/link';
 import './globals.css';
 import { CONTRACT_ID, EXPLORER_BASE } from '@/lib/constants';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zk-aidshield.vercel.app';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'ZK AidShield — Privacy-Preserving Aid Distribution',
   description:
     'Groth16 BLS12-381 zero-knowledge proof system for anonymous humanitarian aid disbursement on Stellar Soroban.',
+  applicationName: 'ZK AidShield',
+  keywords: [
+    'Stellar',
+    'Soroban',
+    'zero knowledge',
+    'Groth16',
+    'humanitarian aid',
+    'privacy',
+    'DoraHacks',
+    'Stellar Hacks',
+  ],
+  authors: [{ name: 'ZK AidShield' }],
+  creator: 'ZK AidShield',
+  publisher: 'ZK AidShield',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    url: '/',
+    siteName: 'ZK AidShield',
+    title: 'ZK AidShield — Privacy-Preserving Aid Distribution',
+    description:
+      'Private humanitarian aid claims on Stellar with Groth16 BLS12-381 verification, replay protection, and accountable settlement.',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'ZK AidShield — Privacy-Preserving Aid Distribution',
+    description:
+      'Private humanitarian aid claims on Stellar with Groth16 BLS12-381 verification and accountable settlement.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col">
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <nav
+          aria-label="Primary navigation"
           style={{
             borderBottom: '1px solid var(--border-dim)',
             background: 'rgba(13, 17, 23, 0.85)',
@@ -24,8 +66,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         >
           <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
-            <Link href="/" className="flex items-center gap-2.5 font-bold text-base">
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <Link href="/" className="flex items-center gap-2.5 font-bold text-base" aria-label="ZK AidShield home">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
                 <path
                   d="M11 1L20 6V16L11 21L2 16V6L11 1Z"
                   stroke="var(--green)"
@@ -99,7 +141,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </nav>
 
-        <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-10">{children}</main>
+        <main id="main-content" className="flex-1 max-w-6xl mx-auto w-full px-6 py-10">{children}</main>
 
         <footer
           style={{
