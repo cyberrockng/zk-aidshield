@@ -13,23 +13,26 @@ Target length: 2-3 minutes.
 
 ## Script
 
-1. Show `/judges`: "This is privacy-preserving aid payout infrastructure on Stellar."
-2. Show `/auditor`: "50 XLM is funded in escrow; each valid proof releases 1 XLM, and auditors can inspect settlement without seeing the private beneficiary list."
-3. Show `/threats`: "AidShield protects beneficiaries without becoming an unrestricted anonymous payout pool."
-4. Show `/admin`: enter the admin secret off-camera, issue a credential to the connected testnet wallet, set a QR passphrase, and display the encrypted QR.
-5. Show `/admin`: approve/check a vendor address in Vendor / Voucher Mode.
-6. Show `/admin`: open the non-PII issuance ledger and point out keyed wallet identifiers, credential hashes, issuer key, expiry, and delivery mode.
-7. Show `/claim`: enter the passphrase, import the credential by QR image, file, or paste, verify it, and choose cash or vendor voucher.
-8. Generate proof: "The secret stays in-browser; the proof is 384 bytes."
-9. Approve Freighter transaction.
-10. Show success, Explorer transaction, and download/copy claim receipt.
-11. Return to `/auditor`: claimed count and escrow changed.
-12. Retry claim: show nullifier replay rejection.
-13. Open `/audit`: "Expiry, issuer registry, replay protection, and approved-vendor voucher controls are enforced on-chain."
+1. Show `/mission`: "This is a synthetic flood-relief testnet mission. The actors are simulated, but the ZK proof, Stellar contracts, escrow, QR credential, vendor control, and replay rejection are real demo mechanics."
+2. Show `/judges`: "This is privacy-preserving aid payout infrastructure on Stellar."
+3. Show `/auditor`: "50 XLM is funded in escrow; each valid proof releases 1 XLM, and auditors can inspect settlement without seeing the private beneficiary list."
+4. Show `/threats`: "AidShield protects beneficiaries without becoming an unrestricted anonymous payout pool."
+5. Show `/edge`: "The judge proof board shows the valid path and the attacks that must fail."
+6. Show `/admin`: enter the admin secret off-camera, issue a credential to the connected testnet wallet, set a QR passphrase, and display the encrypted QR.
+7. Show `/admin`: approve/check a vendor address in Vendor / Voucher Mode.
+8. Show `/admin`: open the non-PII issuance ledger and point out keyed wallet identifiers, credential hashes, issuer key, expiry, and delivery mode.
+9. Show `/claim`: enter the passphrase, import the credential by QR image, file, or paste, verify it, and choose cash or vendor voucher.
+10. Generate proof: "The secret stays in-browser; the proof is 384 bytes."
+11. Approve Freighter transaction.
+12. Show success, Explorer transaction, and download/copy claim receipt.
+13. Return to `/auditor`: claimed count and escrow changed.
+14. Retry claim: show nullifier replay rejection.
+15. Open `/audit`: "Expiry, issuer registry, replay protection, and approved-vendor voucher controls are enforced on-chain."
 
 ## Lines To Say
 
 - "No name, ID, or beneficiary list is stored on-chain."
+- "This mission is synthetic testnet data, not a claim of a real NGO deployment."
 - "The Merkle leaf binds wallet, expiry, and issuer key."
 - "Field officers can deliver an encrypted credential QR without changing the private eligibility proof path."
 - "Operators get an admin-protected non-PII issuance ledger: keyed identifiers and counts, not beneficiary identities."

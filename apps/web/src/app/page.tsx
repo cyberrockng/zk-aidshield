@@ -277,12 +277,15 @@ export default function LandingPage() {
           className="flex gap-3 flex-wrap"
           style={{ animation: 'fade-in-up 0.5s ease 0.15s both' }}
         >
-          <Link href="/claim" className="btn-primary text-base" style={{ padding: '0.75rem 2rem' }}>
-            Try the Demo →
-          </Link>
-          <a
-            href={`${EXPLORER_BASE}/contract/${CONTRACT_ID}`}
-            target="_blank"
+            <Link href="/claim" className="btn-primary text-base" style={{ padding: '0.75rem 2rem' }}>
+              Try the Demo →
+            </Link>
+            <Link href="/mission" className="btn-outline text-base" style={{ padding: '0.75rem 2rem' }}>
+              Crisis Mission
+            </Link>
+            <a
+              href={`${EXPLORER_BASE}/contract/${CONTRACT_ID}`}
+              target="_blank"
             rel="noopener noreferrer"
             className="btn-outline text-base"
             style={{ padding: '0.75rem 2rem' }}

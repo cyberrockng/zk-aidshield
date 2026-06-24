@@ -9,6 +9,7 @@ const ROUTES = [
   '/audit',
   '/threats',
   '/edge',
+  '/mission',
   '/claim',
   '/admin',
   '/stats',

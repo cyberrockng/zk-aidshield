@@ -18,6 +18,12 @@ AidShield now supports restricted voucher redemption: admins approve vendors on-
 
 For operator accountability, the admin dashboard keeps an admin-protected non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
 
+## Crisis Aid Mission Demo
+
+The submission includes a clearly labeled synthetic testnet mission at `/mission`: a flood-relief NGO operator issues an encrypted QR credential, an approved household claims privately, an approved medical vendor can receive voucher payment, replay fails, and donors inspect aggregate settlement without seeing beneficiary PII.
+
+This scenario uses simulated actors and demo labels only. It does not claim a real NGO deployment or real-world aid distribution. The underlying mechanics are real: deployed Stellar testnet contracts, Groth16 proof verification, escrow accounting, vendor controls, encrypted QR credentials, and nullifier replay protection.
+
 ## What Is New In Phase 7
 
 - 6-public-input Groth16 circuit
@@ -28,6 +34,7 @@ For operator accountability, the admin dashboard keeps an admin-protected non-PI
 - approved-vendor voucher redemption
 - live threat-resistance dashboard for policy, issuer, vendor, replay, escrow, and governance posture
 - competitive edge board with judge proof outcomes, selective disclosure, proof telemetry, no-wallet demo guidance, attack simulator, and readiness growth table
+- synthetic crisis mission page showing NGO, beneficiary, vendor, replay, and donor-audit flow without false real-world claims
 - incident playbook for compromised issuers, vendors, credential leaks, and replay attempts
 - admin-protected non-PII issuance ledger
 - local beneficiary claim receipts
@@ -54,17 +61,18 @@ For operator accountability, the admin dashboard keeps an admin-protected non-PI
 
 ## Demo Flow
 
-1. Open `/judges` to show the short technical brief.
-2. Open `/auditor` to show live 50 XLM escrow, deployed contracts, proof anchors, and privacy boundaries.
-3. Open `/threats` to show that AidShield is not an unrestricted anonymous pool: issuer, vendor, replay, escrow, and governance controls are visible.
-4. Open `/edge` to show the judge proof board, selective disclosure, proof telemetry, no-wallet path, attack simulator, and competitive readiness growth.
-5. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
-6. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
-7. Approve in Freighter and show the Stellar Explorer transaction.
-8. Download/copy the local claim receipt.
-9. Retry the same credential to show replay protection.
-10. Switch wallets to show wrong-wallet rejection.
-11. Open `/audit` to show trust boundaries and known limitations.
+1. Open `/mission` and state clearly that this is a synthetic flood-relief testnet mission, not a real NGO deployment.
+2. Open `/judges` to show the short technical brief.
+3. Open `/auditor` to show live 50 XLM escrow, deployed contracts, proof anchors, and privacy boundaries.
+4. Open `/threats` to show that AidShield is not an unrestricted anonymous pool: issuer, vendor, replay, escrow, and governance controls are visible.
+5. Open `/edge` to show the judge proof board, selective disclosure, proof telemetry, no-wallet path, attack simulator, and competitive readiness growth.
+6. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
+7. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
+8. Approve in Freighter and show the Stellar Explorer transaction.
+9. Download/copy the local claim receipt.
+10. Retry the same credential to show replay protection.
+11. Switch wallets to show wrong-wallet rejection.
+12. Open `/audit` to show trust boundaries and known limitations.
 
 ## Security Posture
 

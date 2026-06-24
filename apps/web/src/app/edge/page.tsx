@@ -101,6 +101,7 @@ export default function CompetitiveEdgePage() {
           </div>
           <div className="flex flex-col gap-2" style={{ minWidth: 190 }}>
             <Link href="/judges" className="btn-primary text-sm">Judge Brief</Link>
+            <Link href="/mission" className="btn-outline text-sm">Mission Demo</Link>
             <Link href="/threats" className="btn-outline text-sm">Threat Controls</Link>
             <Link href="/claim" className="btn-outline text-sm">Run Claim</Link>
           </div>
@@ -112,6 +113,21 @@ export default function CompetitiveEdgePage() {
         <ScoreCard label="AidShield after" value={`${AIDSHIELD_AFTER_SCORE}%`} tone="var(--green-bright)" />
         <ScoreCard label="Readiness growth" value={`+${delta}%`} tone="var(--green-bright)" />
         <ScoreCard label="Current lead range" value="+5% to +14%" tone="var(--blue)" />
+      </section>
+
+      <section className="card mb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div style={{ maxWidth: 780 }}>
+            <div className="badge badge-green mb-4">New judge story layer</div>
+            <h2 className="font-bold text-lg mb-2">Crisis Aid Mission Demo</h2>
+            <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
+              AidShield now has a clearly labeled synthetic flood-relief mission: NGO operator issues an encrypted QR,
+              beneficiary claims privately, approved vendor can receive voucher payment, replay fails, and donors audit
+              aggregate settlement without seeing PII. This keeps the demo honest while making the real-world use case concrete.
+            </p>
+          </div>
+          <Link href="/mission" className="btn-primary text-sm">Open Mission</Link>
+        </div>
       </section>
 
       <section className="card mb-8">
@@ -290,6 +306,7 @@ export default function CompetitiveEdgePage() {
 
       <section className="flex flex-wrap gap-3">
         <Link href="/judges" className="btn-primary">Open Judge Brief</Link>
+        <Link href="/mission" className="btn-outline">Open Mission Demo</Link>
         <Link href="/threats" className="btn-outline">Open Threat Dashboard</Link>
         <Link href="/audit" className="btn-outline">Open Audit Evidence</Link>
       </section>
