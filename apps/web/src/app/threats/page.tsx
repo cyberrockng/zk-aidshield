@@ -54,6 +54,15 @@ const INCIDENT_PLAYBOOK = [
   ['Field officer anomaly', 'Use the non-PII ledger to compare keyed wallet identifiers, credential hashes, expiry windows, and delivery mode.'],
 ];
 
+const ATTACK_THEATER = [
+  ['Replay Attack', 'Attempt to submit the same credential after a successful claim.', 'Soroban nullifier set rejects the second claim.', 'Soroban'],
+  ['Wrong Wallet', 'Switch Freighter and load a credential issued to another wallet.', 'Credential verification and claimant binding reject it.', 'Frontend + ZK public input'],
+  ['Unauthorized Vendor', 'Try voucher redemption to a vendor that is not approved.', 'Vendor registry blocks the payout route.', 'Soroban'],
+  ['Revoked Issuer', 'Use a credential signed under an inactive issuer key.', 'Issuer registry prevents settlement.', 'Soroban'],
+  ['Expired Credential', 'Submit a proof carrying an expired timestamp.', 'Ledger-time expiry check rejects it.', 'Soroban'],
+  ['Emergency Incident', 'Pause claims during key or vendor compromise.', 'Pause control blocks payout execution.', 'Governance'],
+];
+
 function statusTone(status: ControlStatus): string {
   if (status === 'blocked') return 'var(--green-bright)';
   if (status === 'monitored') return 'var(--blue)';
@@ -118,6 +127,7 @@ export default function ThreatDashboardPage() {
             <Link href="/edge" className="btn-outline text-sm">Edge</Link>
             <Link href="/auditor" className="btn-outline text-sm">Auditor</Link>
             <Link href="/admin" className="btn-outline text-sm">Admin</Link>
+            <Link href="/judge-mode" className="btn-outline text-sm">Judge Mode</Link>
           </div>
         </div>
       </section>
@@ -213,6 +223,40 @@ export default function ThreatDashboardPage() {
                   </div>
                 );
               })}
+            </div>
+          </section>
+
+          <section className="card mb-6">
+            <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+              <div>
+                <div className="font-semibold text-lg mb-1">Attack Replay Theater</div>
+                <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+                  Use these beats in the video or live judging session to show that privacy does not become uncontrolled payout access.
+                </p>
+              </div>
+              <Link href="/evidence" className="btn-outline text-sm">Evidence Matrix</Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="edge-table">
+                <thead>
+                  <tr>
+                    <th>Scenario</th>
+                    <th>Attempt</th>
+                    <th>Expected Result</th>
+                    <th>Enforced By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ATTACK_THEATER.map(([scenario, attempt, result, layer]) => (
+                    <tr key={scenario}>
+                      <td>{scenario}</td>
+                      <td>{attempt}</td>
+                      <td>{result}</td>
+                      <td className="mono">{layer}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
 

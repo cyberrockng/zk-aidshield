@@ -305,6 +305,9 @@ export default function LandingPage() {
             <Link href="/evidence" className="btn-outline text-base" style={{ padding: '0.75rem 2rem' }}>
               Evidence Dossier
             </Link>
+            <Link href="/protocol" className="btn-outline text-base" style={{ padding: '0.75rem 2rem' }}>
+              Stellar ZK Fit
+            </Link>
             <a
               href={`${EXPLORER_BASE}/contract/${CONTRACT_ID}`}
               target="_blank"
@@ -488,6 +491,10 @@ export default function LandingPage() {
         <Link href="/claim" className="btn-primary text-base" style={{ padding: '0.875rem 2.5rem', fontSize: '1rem' }}>
           Open Claim Demo →
         </Link>
+        <div className="flex justify-center gap-3 flex-wrap mt-4">
+          <Link href="/judge-mode" className="btn-outline text-sm">Judge Mode</Link>
+          <Link href="/pilot" className="btn-outline text-sm">Field Pilot Plan</Link>
+        </div>
       </section>
 
     </div>

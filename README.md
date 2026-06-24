@@ -35,6 +35,9 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Competitive edge board:** `/edge` packages the judge proof board, selective disclosure panel, proof telemetry, no-wallet demo path, threat simulator, and readiness growth table
 - **Crisis mission demo:** `/mission` packages the product as a synthetic flood-relief workflow with NGO operator, beneficiary, approved vendor, replay failure, and donor audit view
 - **Evidence dossier:** `/evidence` maps hackathon requirements to deployed contracts, proof claims, threat tests, and a concise video verification path
+- **Protocol fit page:** `/protocol` maps AidShield directly to the Stellar Hacks Real-World ZK brief: off-chain Circom proof, on-chain Soroban verification, and XLM settlement
+- **Judge mode:** `/judge-mode` lets reviewers understand the proof payload and anchors before connecting Freighter
+- **Field pilot readiness:** `/pilot` explains the operator, field officer, beneficiary, vendor, and auditor path plus production gaps
 - **Production path:** documented next steps for issuer limits and optional identity adapters
 
 See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).
@@ -46,6 +49,8 @@ Open `/mission` for the judge-ready story layer. It uses synthetic testnet data:
 The scenario is intentionally labeled as a demo. It does not claim a live NGO partnership, real beneficiary identities, or real-world aid distribution. The deployed contracts, proof verification, escrow accounting, QR credential flow, vendor controls, and nullifier replay protection are real testnet mechanics.
 
 Open `/evidence` for the final judge proof package. It maps the Stellar Hacks requirements to exact project evidence, lists the deployed contract anchors, gives the strongest 2-3 minute walkthrough, and includes a red-team matrix for replay, wrong-wallet, expired credential, revoked issuer, unauthorized vendor, and emergency pause checks.
+
+Open `/protocol` to show why AidShield fits the hackathon thesis: proofs are generated off-chain in Circom/snarkjs, verified by Soroban, and used to settle XLM from escrow. Open `/judge-mode` when a reviewer wants a no-wallet explanation before running the live claim. Open `/pilot` to show how the demo can mature into a real field pilot without pretending that the current testnet mission is a live NGO deployment.
 
 ## Judge Demo Script
 

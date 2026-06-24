@@ -108,6 +108,7 @@ export default function EvidencePage() {
             <Link href="/claim" className="btn-outline text-sm">Run Claim</Link>
             <Link href="/auditor" className="btn-outline text-sm">Audit Anchors</Link>
             <Link href="/threats" className="btn-outline text-sm">Threat Controls</Link>
+            <Link href="/protocol" className="btn-outline text-sm">Protocol Fit</Link>
           </div>
         </div>
       </section>
@@ -241,6 +242,7 @@ export default function EvidencePage() {
         <Link href="/judges" className="btn-outline">Judge Brief</Link>
         <Link href="/edge" className="btn-outline">Competitive Edge</Link>
         <Link href="/auditor" className="btn-outline">Auditor View</Link>
+        <Link href="/pilot" className="btn-outline">Pilot Readiness</Link>
       </section>
     </div>
   );

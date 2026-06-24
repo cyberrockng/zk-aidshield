@@ -11,6 +11,7 @@ import {
 } from '@/lib/soroban';
 import { isFreighterInstalled, connectWallet, signTx } from '@/lib/freighter';
 import { EXPLORER_BASE, DISBURSEMENT_ID, MERKLE_ROOT, shortHex, stellarAddressToField } from '@/lib/constants';
+import { CONTRACT_ID, VERIFIER_CONTRACT_ID, VK_HASH } from '@/lib/constants';
 import { generateProof } from '@/lib/prover';
 import { verifyCredential, type BeneficiaryCredential } from '@/lib/credential';
 import { decodeCredentialQr, prettyCredentialJson } from '@/lib/credential-qr';
@@ -32,6 +33,11 @@ interface ClaimReceipt {
   claimed_at: string;
   slot_index: number;
   issuer_key_id: string;
+  disbursement_contract: string;
+  verifier_contract: string;
+  verifier_key_hash: string;
+  public_settlement_fields: string[];
+  hidden_private_fields: string[];
   vendor_address?: string;
 }
 
@@ -343,6 +349,11 @@ export default function ClaimPage() {
         claimed_at: new Date().toISOString(),
         slot_index: parsedCred.slot_index,
         issuer_key_id: parsedCred.issuer_key_id,
+        disbursement_contract: CONTRACT_ID,
+        verifier_contract: VERIFIER_CONTRACT_ID,
+        verifier_key_hash: VK_HASH,
+        public_settlement_fields: ['transaction hash', 'contract id', 'nullifier', 'amount', 'claim route', 'ledger time'],
+        hidden_private_fields: ['beneficiary name', 'beneficiary ID', 'credential secret', 'Merkle path', 'aid-list position'],
         ...(claimMode === 'voucher' ? { vendor_address: vendor } : {}),
       });
 
@@ -736,10 +747,23 @@ export default function ClaimPage() {
                 <div className="mono text-xs space-y-1" style={{ color: 'var(--muted)' }}>
                   <div>tx: {shortHex(claimReceipt.tx_hash)}</div>
                   <div>nullifier: {shortHex(claimReceipt.nullifier)}</div>
+                  <div>contract: {shortHex(claimReceipt.disbursement_contract)}</div>
+                  <div>verifier: {shortHex(claimReceipt.verifier_contract)}</div>
+                  <div>root: {shortHex(claimReceipt.merkle_root)}</div>
                   <div>type: {claimReceipt.claim_type}</div>
                   {claimReceipt.vendor_address && <div>vendor: {shortHex(claimReceipt.vendor_address)}</div>}
                   <div>amount: {claimReceipt.amount}</div>
                   <div>claimed: {new Date(claimReceipt.claimed_at).toLocaleString()}</div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                  <div className="text-xs p-3 rounded-lg" style={{ background: '#0d1117', border: '1px solid var(--border-dim)', color: 'var(--muted)', lineHeight: 1.5 }}>
+                    <div className="font-semibold mb-1" style={{ color: 'var(--green-bright)' }}>Public receipt proves</div>
+                    Transaction, nullifier, amount, route, contract, verifier, and Merkle root.
+                  </div>
+                  <div className="text-xs p-3 rounded-lg" style={{ background: '#0d1117', border: '1px solid var(--border-dim)', color: 'var(--muted)', lineHeight: 1.5 }}>
+                    <div className="font-semibold mb-1" style={{ color: 'var(--amber)' }}>Still hidden</div>
+                    Name, ID, secret, Merkle path, and aid-list position.
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-3">
                   <button

@@ -70,6 +70,15 @@ const RECORDING_BEATS = [
   'Open Auditor, Threats, and Edge to show aggregate accountability without beneficiary exposure.',
 ];
 
+const IMPACT_METRICS = [
+  ['Escrow funded', '50 XLM'],
+  ['Payout size', '1 XLM'],
+  ['Eligible slots', '256'],
+  ['PII exposed', '0'],
+  ['Claim routes', 'Cash + voucher'],
+  ['Replay design', 'Single-use nullifier'],
+];
+
 function MissionCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="metric-card">
@@ -104,6 +113,7 @@ export default function MissionPage() {
             <Link href="/claim" className="btn-outline text-sm">Run Claim</Link>
             <Link href="/auditor" className="btn-outline text-sm">Audit View</Link>
             <Link href="/evidence" className="btn-outline text-sm">Evidence Dossier</Link>
+            <Link href="/protocol" className="btn-outline text-sm">Protocol Fit</Link>
           </div>
         </div>
       </section>
@@ -122,6 +132,23 @@ export default function MissionPage() {
           The proof system, Stellar testnet contracts, escrow accounting, QR credential flow, vendor controls, and replay
           rejection are real demo mechanics. The scenario is not a claim of a live NGO deployment.
         </p>
+      </section>
+
+      <section className="section-panel mb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+          <div>
+            <h2 className="font-bold text-lg mb-1">Crisis Mission Impact Dashboard</h2>
+            <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+              Demo-facing impact numbers that keep the story concrete without claiming a real deployment.
+            </p>
+          </div>
+          <span className="badge badge-green">Judge visible</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {IMPACT_METRICS.map(([label, value]) => (
+            <MissionCard key={label} label={label} value={value} />
+          ))}
+        </div>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
@@ -237,6 +264,7 @@ export default function MissionPage() {
         <Link href="/auditor" className="btn-outline">Show Donor Audit</Link>
         <Link href="/threats" className="btn-outline">Show Failed Attacks</Link>
         <Link href="/evidence" className="btn-outline">Show Evidence Dossier</Link>
+        <Link href="/judge-mode" className="btn-outline">Judge Mode</Link>
       </section>
     </div>
   );
