@@ -1,5 +1,5 @@
-import { computeLeaf, computeNullifier, stellarAddressToFieldBigint } from './hash.ts';
-import { buildMerkleTree, getMerkleWitness } from './merkle.ts';
+import { computeLeaf, computeNullifier, stellarAddressToFieldBigint } from './hash.js';
+import { buildMerkleTree, getMerkleWitness } from './merkle.js';
 
 let passed = 0;
 let failed = 0;

@@ -18,7 +18,7 @@
 #   - campaign.json: generated in step 1 (gitignored — never commit)
 #
 # Usage:
-#   export ADMIN_SECRET_KEY=S...          # funded testnet admin wallet
+#   export ADMIN_SECRET_KEY=<admin-secret-key>          # funded testnet admin wallet
 #   export FUND_AMOUNT_XLM=50             # XLM to seed into escrow (optional, default 50)
 #   bash scripts/setup.sh
 #
@@ -38,7 +38,7 @@ DISBURSEMENT_CONTRACT="CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2"
 if [ -z "${ADMIN_SECRET_KEY:-}" ]; then
   echo "❌  ADMIN_SECRET_KEY is not set."
   echo "    Export it before running this script:"
-  echo "    export ADMIN_SECRET_KEY=S..."
+  echo "    export ADMIN_SECRET_KEY=<admin-secret-key>"
   exit 1
 fi
 

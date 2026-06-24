@@ -236,13 +236,14 @@ zk-aidshield/
 │  └─ merkle-tools/                   # Poseidon Merkle tree + campaign generator
 │     ├─ src/generate-campaign.ts     # Generates secrets + paths → campaign.json
 │     ├─ src/hash.test.ts             # 22-test suite: Poseidon leaf/nullifier/Merkle
+│     ├─ beneficiaries.sample.json    # Synthetic local template
 │     ├─ demo-claim.sample.json       # Safe structural sample for judges/docs
 │     └─ campaign.json                # ⚠ GITIGNORED — contains private secrets
 └─ scripts/
    └─ deploy-groth16.sh               # Deploy + initialize verifier + disbursement
 ```
 
-> **Security note:** `campaign.json` contains private claim secrets. It is `.gitignore`d and must **never** be committed or shared publicly.
+> **Security note:** `beneficiaries.json` and `campaign.json` contain private operational data. They are `.gitignore`d and must **never** be committed or shared publicly. Use `beneficiaries.sample.json` only as a synthetic template.
 
 ## Running Locally
 
@@ -265,6 +266,7 @@ npm test
 ```bash
 # 3. Generate a new campaign (creates campaign.json — keep private)
 cd packages/merkle-tools
+cp beneficiaries.sample.json beneficiaries.json  # optional synthetic template
 npm run generate
 ```
 
@@ -276,13 +278,13 @@ cd contracts/verifier-groth16 && cargo test
 
 ```bash
 # 5. Full Phase 4/5 deployment to testnet (fresh verifier + voucher-enabled disbursement)
-export ADMIN_SECRET_KEY=S...
+export ADMIN_SECRET_KEY=<admin-secret-key>
 bash scripts/setup-phase4.sh
 ```
 
 ```bash
 # 6. Deploy only the Groth16 verifier (after circuit rebuild)
-export ADMIN_SECRET_KEY=S...
+export ADMIN_SECRET_KEY=<admin-secret-key>
 bash scripts/deploy-groth16.sh
 ```
 

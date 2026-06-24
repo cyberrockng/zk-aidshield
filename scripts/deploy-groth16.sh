@@ -17,7 +17,7 @@
 #   5. Call update_root and add_issuer on the disbursement contract
 #
 # Usage:
-#   export ADMIN_SECRET_KEY=S...
+#   export ADMIN_SECRET_KEY=<admin-secret-key>
 #   bash scripts/deploy-groth16.sh
 set -euo pipefail
 
@@ -28,7 +28,7 @@ VK_JSON="circuits/aidshield-groth16/build/verification_key.json"
 WASM="contracts/verifier-groth16/target/wasm32v1-none/release/aidshield_verifier_groth16.wasm"
 
 if [ -z "${ADMIN_SECRET_KEY:-}" ]; then
-  echo "❌  Set ADMIN_SECRET_KEY=S... before running this script"
+  echo "Set ADMIN_SECRET_KEY=<admin-secret-key> before running this script"
   exit 1
 fi
 

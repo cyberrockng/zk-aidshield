@@ -6,7 +6,10 @@
  *
  * Usage:
  *   node --import tsx/esm src/generate-campaign.ts [--seed]
- *   --seed  uses a hardcoded demo list instead of reading beneficiaries.json
+ *   --seed  uses a hardcoded demo list instead of reading local beneficiaries.json
+ *
+ * Real beneficiary lists are intentionally local-only. Copy
+ * beneficiaries.sample.json to beneficiaries.json when you need a template.
  */
 
 import { writeFileSync, readFileSync, existsSync } from "fs";
@@ -86,6 +89,7 @@ async function main() {
       console.error(`    beneficiaries.json must contain:`);
       console.error(`    { "disbursement_id": "...", "payout_amount_stroops": 10000000,`);
       console.error(`      "beneficiaries": [{ "name": "...", "id": "...", "wallet": "G..." }] }`);
+      console.error(`    You can copy beneficiaries.sample.json to beneficiaries.json for a synthetic template.`);
       process.exit(1);
     }
     const config = JSON.parse(readFileSync(configPath, "utf-8"));

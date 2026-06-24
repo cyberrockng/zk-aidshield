@@ -1,0 +1,22 @@
+{
+  "description": "Synthetic sample only. Copy this file to beneficiaries.json for local campaign generation. Do not commit real beneficiary lists.",
+  "disbursement_id": "0000000000000000000000000000000000000000000000000000000000000001",
+  "payout_amount_stroops": 10000000,
+  "beneficiaries": [
+    {
+      "name": "Synthetic Household A",
+      "id": "SAMPLE-AID-001",
+      "wallet": "GC7HI64WEJDEOFOD7Q65SUCVPJ2JR5ZVVVBN2Q545ZQN6NFCDQ2OVYVJ"
+    },
+    {
+      "name": "Synthetic Household B",
+      "id": "SAMPLE-AID-002",
+      "wallet": "GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4"
+    },
+    {
+      "name": "Synthetic Household C",
+      "id": "SAMPLE-AID-003",
+      "wallet": "GD7KEWXME3KNSEUZIZZZEHTXC5AQCQOZLL2TTKQGR2OBXA2YJBXM7WQS"
+    }
+  ]
+}

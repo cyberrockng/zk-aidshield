@@ -11,6 +11,7 @@ proof.json
 witness/
 proofs/
 campaign.json
+packages/merkle-tools/beneficiaries.json
 __pycache__/
 .DS_Store
 

@@ -6,7 +6,7 @@
 # those fields changed the contract interface and Groth16 public inputs.
 #
 # Prerequisites:
-#   export ADMIN_SECRET_KEY=S...
+#   export ADMIN_SECRET_KEY=<admin-secret-key>
 #   bash circuits/aidshield-groth16/setup.sh
 #   cd packages/merkle-tools && npm run generate
 #
@@ -26,7 +26,7 @@ DISBURSEMENT_WASM="contracts/disbursement/target/wasm32v1-none/release/aidshield
 CAMPAIGN_JSON="packages/merkle-tools/campaign.json"
 
 if [ -z "${ADMIN_SECRET_KEY:-}" ]; then
-  echo "Set ADMIN_SECRET_KEY=S... before running this script"
+  echo "Set ADMIN_SECRET_KEY=<admin-secret-key> before running this script"
   exit 1
 fi
 
