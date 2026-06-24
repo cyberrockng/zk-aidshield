@@ -238,6 +238,25 @@ const TECH = [
   },
 ];
 
+const WIN_SIGNALS = [
+  {
+    label: 'ZK does real work',
+    body: 'The proof gates settlement. Without a valid Groth16 proof, the disbursement contract cannot release funds.',
+  },
+  {
+    label: 'Stellar is the settlement layer',
+    body: 'Soroban verifies the proof path and releases XLM from escrow through the Stellar Asset Contract.',
+  },
+  {
+    label: 'Privacy is bounded honestly',
+    body: 'Aid-list membership, credential secrets, and witnesses stay private; payout wallet, timing, amount, and nullifier stay public for accountability.',
+  },
+  {
+    label: 'Threat paths are demoable',
+    body: 'Replay, wrong wallet, revoked issuer, unauthorized vendor, underfunded escrow, and emergency pause are visible failure paths.',
+  },
+];
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
@@ -257,20 +276,20 @@ export default function LandingPage() {
 
         <h1
           className="text-5xl font-extrabold leading-tight mb-5"
-          style={{ letterSpacing: '-0.03em', animation: 'fade-in-up 0.5s ease both' }}
+          style={{ letterSpacing: '0', animation: 'fade-in-up 0.5s ease both' }}
         >
-          Humanitarian aid with
+          Private aid eligibility.
           <br />
-          <span className="gradient-text">zero-knowledge privacy</span>
+          <span className="gradient-text">Public settlement accountability.</span>
         </h1>
 
         <p
           className="text-lg max-w-2xl mb-8 leading-relaxed"
           style={{ color: 'var(--muted-2)', animation: 'fade-in-up 0.5s ease 0.1s both' }}
         >
-          ZK AidShield disburses XLM on Stellar using Groth16 BLS12-381 proofs.
-          Beneficiaries prove they belong to the approved set — without revealing
-          who they are, and without trusting any server with their secret.
+          ZK AidShield lets crisis-aid beneficiaries prove they are approved, claim once, and receive
+          Stellar testnet aid without exposing their aid-list membership. Donors still get public escrow,
+          settlement, nullifier, and aggregate audit evidence.
         </p>
 
         <div
@@ -282,6 +301,9 @@ export default function LandingPage() {
             </Link>
             <Link href="/mission" className="btn-outline text-base" style={{ padding: '0.75rem 2rem' }}>
               Crisis Mission
+            </Link>
+            <Link href="/evidence" className="btn-outline text-base" style={{ padding: '0.75rem 2rem' }}>
+              Evidence Dossier
             </Link>
             <a
               href={`${EXPLORER_BASE}/contract/${CONTRACT_ID}`}
@@ -300,6 +322,29 @@ export default function LandingPage() {
       {/* ── ZK flow diagram ── */}
       <section className="mb-16">
         <ZkFlowDiagram />
+      </section>
+
+      <section className="mb-16">
+        <div className="section-panel">
+          <div className="flex items-start justify-between gap-6 flex-wrap mb-6">
+            <div style={{ maxWidth: 720 }}>
+              <h2 className="text-2xl font-bold mb-2">Why this is stronger than a normal ZK demo</h2>
+              <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
+                The submission is packaged as a crisis-aid mission, but the winning claim is technical:
+                private eligibility proof is directly connected to Stellar settlement and public donor accountability.
+              </p>
+            </div>
+            <Link href="/evidence" className="btn-outline text-sm">Verify Evidence</Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {WIN_SIGNALS.map((signal) => (
+              <div key={signal.label} className="route-card">
+                <div className="font-semibold mb-2">{signal.label}</div>
+                <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>{signal.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ── Problem / Solution ── */}

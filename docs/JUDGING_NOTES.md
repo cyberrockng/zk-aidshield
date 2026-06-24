@@ -2,7 +2,11 @@
 
 ## Why This Can Win
 
-ZK AidShield is a complete privacy-preserving aid disbursement workflow, not only a proof-of-concept circuit.
+ZK AidShield is a complete privacy-preserving aid disbursement workflow, not only a proof-of-concept circuit. The strongest thesis is:
+
+> Private aid eligibility. Public settlement accountability.
+
+The project uses ZK where it matters: a beneficiary cannot unlock settlement unless a Groth16 proof verifies eligibility and nullifier correctness. Stellar is not decorative; Soroban verifies the proof path, enforces issuer/vendor/replay controls, and settles XLM from escrow.
 
 The demo shows:
 
@@ -29,26 +33,29 @@ The demo shows:
 | ZK depth | Circom circuit proves Merkle membership and nullifier correctness while hiding the secret |
 | Stellar fit | Low-cost, fast settlement with native SAC payout and Soroban BLS12-381 host functions |
 | Security thinking | Wallet-bound leaves, on-chain replay blocking, issuer/vendor controls, pause switch, trust model, threat dashboard, and incident playbook |
-| Demo completeness | Mission, Admin, encrypted QR delivery, approved-vendor vouchers, non-PII issuance ledger, claim receipt, stats, audit, threats, edge board, deployed testnet contracts, and automated tests |
+| Demo completeness | Mission, Evidence, Admin, encrypted QR delivery, approved-vendor vouchers, non-PII issuance ledger, claim receipt, stats, audit, threats, edge board, deployed testnet contracts, and automated tests |
 | Expansion path | Issuer governance, optional identity adapters, multi-vendor operations, and public trusted setup |
 
 ## Strongest Demo Path
 
 1. Open `/mission` and state that the flood-relief campaign uses synthetic testnet actors, while the ZK proof and Stellar mechanics are real.
-2. Show the admin page, approve/check a vendor, and issue a credential to a specific Freighter wallet.
-3. Show the encrypted credential QR and non-PII issuance ledger, then switch to the claim page and decrypt/load the credential.
-4. Choose direct cash or vendor voucher mode and generate the Groth16 proof in-browser.
-5. Approve the transaction in Freighter.
-6. Show the Stellar Explorer transaction, claim receipt, and auditor dashboard update.
-7. Open `/threats` and show that the product blocks or monitors forged proofs, replay, revoked issuers, unauthorized vendors, underfunded escrow, and governance risk.
-8. Open `/edge` and show the proof board, selective disclosure table, proof telemetry, no-wallet judge path, and competitive readiness growth.
-9. Try the same credential again to show replay protection.
-10. Switch wallets and show credential binding rejection.
-11. Open the audit/judge page to explain trust boundaries and production roadmap.
+2. Open `/evidence` and show the requirement match, contract anchors, red-team matrix, and honest synthetic/testnet boundary.
+3. Show the admin page, approve/check a vendor, and issue a credential to a specific Freighter wallet.
+4. Show the encrypted credential QR and non-PII issuance ledger, then switch to the claim page and decrypt/load the credential.
+5. Choose direct cash or vendor voucher mode and generate the Groth16 proof in-browser.
+6. Approve the transaction in Freighter.
+7. Show the Stellar Explorer transaction, claim receipt, and auditor dashboard update.
+8. Open `/threats` and show that the product blocks or monitors forged proofs, replay, revoked issuers, unauthorized vendors, underfunded escrow, and governance risk.
+9. Open `/edge` and show the proof board, selective disclosure table, proof telemetry, no-wallet judge path, and competitive readiness growth.
+10. Try the same credential again to show replay protection.
+11. Switch wallets and show credential binding rejection.
+12. Open the audit/judge page to explain trust boundaries and production roadmap.
 
 ## Winning Angle
 
 Most ZK demos prove a primitive. AidShield proves a field-ready aid workflow: privacy for recipients, fraud resistance for operators, threat-aware controls for field operations, and public accountability for donors.
+
+The key distinction is that AidShield does not ask judges to imagine the final product. It already demonstrates the full loop: issue a wallet-bound QR credential, generate a private proof in the browser, verify on Soroban, settle XLM, reject replay, and audit aggregate outcomes without exposing beneficiary PII.
 
 ## Next Build After Hackathon
 
