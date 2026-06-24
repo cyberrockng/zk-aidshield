@@ -24,6 +24,8 @@ The submission includes a clearly labeled synthetic testnet mission at `/mission
 
 This scenario uses simulated actors and demo labels only. It does not claim a real NGO deployment or real-world aid distribution. The underlying mechanics are real: deployed Stellar testnet contracts, Groth16 proof verification, escrow accounting, vendor controls, encrypted QR credentials, and nullifier replay protection.
 
+The `/evidence` page is the judge-facing proof dossier: it maps each hackathon requirement to concrete evidence, links the deployed contract anchors, summarizes verifiable privacy and replay claims, and gives a red-team demo matrix for failure paths.
+
 ## What Is New In Phase 7
 
 - 6-public-input Groth16 circuit
@@ -35,6 +37,7 @@ This scenario uses simulated actors and demo labels only. It does not claim a re
 - live threat-resistance dashboard for policy, issuer, vendor, replay, escrow, and governance posture
 - competitive edge board with judge proof outcomes, selective disclosure, proof telemetry, no-wallet demo guidance, attack simulator, and readiness growth table
 - synthetic crisis mission page showing NGO, beneficiary, vendor, replay, and donor-audit flow without false real-world claims
+- evidence dossier page mapping requirements, contract anchors, threat tests, and video beats to judge-verifiable proof
 - incident playbook for compromised issuers, vendors, credential leaks, and replay attempts
 - admin-protected non-PII issuance ledger
 - local beneficiary claim receipts
@@ -62,17 +65,18 @@ This scenario uses simulated actors and demo labels only. It does not claim a re
 ## Demo Flow
 
 1. Open `/mission` and state clearly that this is a synthetic flood-relief testnet mission, not a real NGO deployment.
-2. Open `/judges` to show the short technical brief.
-3. Open `/auditor` to show live 50 XLM escrow, deployed contracts, proof anchors, and privacy boundaries.
-4. Open `/threats` to show that AidShield is not an unrestricted anonymous pool: issuer, vendor, replay, escrow, and governance controls are visible.
-5. Open `/edge` to show the judge proof board, selective disclosure, proof telemetry, no-wallet path, attack simulator, and competitive readiness growth.
-6. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
-7. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
-8. Approve in Freighter and show the Stellar Explorer transaction.
-9. Download/copy the local claim receipt.
-10. Retry the same credential to show replay protection.
-11. Switch wallets to show wrong-wallet rejection.
-12. Open `/audit` to show trust boundaries and known limitations.
+2. Open `/evidence` to show the requirement match, verification anchors, and failure-path matrix.
+3. Open `/judges` to show the short technical brief.
+4. Open `/auditor` to show live 50 XLM escrow, deployed contracts, proof anchors, and privacy boundaries.
+5. Open `/threats` to show that AidShield is not an unrestricted anonymous pool: issuer, vendor, replay, escrow, and governance controls are visible.
+6. Open `/edge` to show the judge proof board, selective disclosure, proof telemetry, no-wallet path, attack simulator, and competitive readiness growth.
+7. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
+8. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
+9. Approve in Freighter and show the Stellar Explorer transaction.
+10. Download/copy the local claim receipt.
+11. Retry the same credential to show replay protection.
+12. Switch wallets to show wrong-wallet rejection.
+13. Open `/audit` to show trust boundaries and known limitations.
 
 ## Security Posture
 

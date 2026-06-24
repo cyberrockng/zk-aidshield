@@ -121,6 +121,7 @@ export default function JudgesPage() {
             <Link href="/threats" className="btn-outline text-sm">Threat Controls</Link>
             <Link href="/edge" className="btn-outline text-sm">Competitive Edge</Link>
             <Link href="/mission" className="btn-outline text-sm">Mission Demo</Link>
+            <Link href="/evidence" className="btn-outline text-sm">Evidence Dossier</Link>
           </div>
         </div>
       </section>
@@ -170,6 +171,7 @@ export default function JudgesPage() {
             <Link href="/audit" className="btn-outline text-sm">Audit</Link>
             <Link href="/threats" className="btn-outline text-sm">Threats</Link>
             <Link href="/mission" className="btn-outline text-sm">Mission</Link>
+            <Link href="/evidence" className="btn-outline text-sm">Evidence</Link>
           </div>
         </div>
 
@@ -342,6 +344,7 @@ export default function JudgesPage() {
         <Link href="/audit" className="btn-outline">Open Audit</Link>
         <Link href="/edge" className="btn-outline">Open Competitive Edge</Link>
         <Link href="/mission" className="btn-outline">Open Mission Demo</Link>
+        <Link href="/evidence" className="btn-outline">Open Evidence Dossier</Link>
       </section>
     </div>
   );

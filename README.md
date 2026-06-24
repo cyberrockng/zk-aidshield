@@ -34,6 +34,7 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Threat-aware controls:** a live policy dashboard shows issuer, vendor, replay, escrow, pause, and governance posture
 - **Competitive edge board:** `/edge` packages the judge proof board, selective disclosure panel, proof telemetry, no-wallet demo path, threat simulator, and readiness growth table
 - **Crisis mission demo:** `/mission` packages the product as a synthetic flood-relief workflow with NGO operator, beneficiary, approved vendor, replay failure, and donor audit view
+- **Evidence dossier:** `/evidence` maps hackathon requirements to deployed contracts, proof claims, threat tests, and a concise video verification path
 - **Production path:** documented next steps for issuer limits and optional identity adapters
 
 See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).
@@ -43,6 +44,8 @@ See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/
 Open `/mission` for the judge-ready story layer. It uses synthetic testnet data: a simulated flood-relief NGO operator issues an encrypted QR credential, an approved household claims privately, an approved medical vendor can receive voucher payout, replay fails, and donors inspect aggregate settlement without seeing beneficiary PII.
 
 The scenario is intentionally labeled as a demo. It does not claim a live NGO partnership, real beneficiary identities, or real-world aid distribution. The deployed contracts, proof verification, escrow accounting, QR credential flow, vendor controls, and nullifier replay protection are real testnet mechanics.
+
+Open `/evidence` for the final judge proof package. It maps the Stellar Hacks requirements to exact project evidence, lists the deployed contract anchors, gives the strongest 2-3 minute walkthrough, and includes a red-team matrix for replay, wrong-wallet, expired credential, revoked issuer, unauthorized vendor, and emergency pause checks.
 
 ## Judge Demo Script
 

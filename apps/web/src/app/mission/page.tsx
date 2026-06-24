@@ -103,6 +103,7 @@ export default function MissionPage() {
             <Link href="/admin" className="btn-primary text-sm">Start At Admin</Link>
             <Link href="/claim" className="btn-outline text-sm">Run Claim</Link>
             <Link href="/auditor" className="btn-outline text-sm">Audit View</Link>
+            <Link href="/evidence" className="btn-outline text-sm">Evidence Dossier</Link>
           </div>
         </div>
       </section>
@@ -194,6 +195,7 @@ export default function MissionPage() {
             </p>
           </div>
           <Link href="/edge" className="btn-outline text-sm">Open Edge Board</Link>
+          <Link href="/evidence" className="btn-outline text-sm">Open Evidence</Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 text-sm">
           {[
@@ -234,6 +236,7 @@ export default function MissionPage() {
         <Link href="/claim" className="btn-outline">Claim Privately</Link>
         <Link href="/auditor" className="btn-outline">Show Donor Audit</Link>
         <Link href="/threats" className="btn-outline">Show Failed Attacks</Link>
+        <Link href="/evidence" className="btn-outline">Show Evidence Dossier</Link>
       </section>
     </div>
   );

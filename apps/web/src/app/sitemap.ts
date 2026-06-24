@@ -10,6 +10,7 @@ const ROUTES = [
   '/threats',
   '/edge',
   '/mission',
+  '/evidence',
   '/claim',
   '/admin',
   '/stats',
