@@ -70,22 +70,18 @@ const nextConfig = {
         'sodium-native': false,
       };
 
-      // Required by snarkjs and circomlibjs for async WASM (circuit.wasm)
+      // Required by snarkjs for async WASM (circuit.wasm)
       config.experiments = { ...config.experiments, asyncWebAssembly: true };
 
-      // circomlibjs's exports field doesn't expose its src/ directory.
-      // An absolute-path alias bypasses webpack 5's exports-field check entirely.
       config.resolve.alias = {
         ...(config.resolve.alias || {}),
         '@stellar/stellar-sdk': path.join(__dirname, 'node_modules', '@stellar', 'stellar-sdk', 'lib', 'browser.js'),
-        'circomlibjs/src/poseidon_constants_opt.js':
-          path.join(__dirname, 'node_modules', 'circomlibjs', 'src', 'poseidon_constants_opt.js'),
       };
     }
 
     if (isServer) {
       // Keep ZK libs client-side only (they depend on WASM / browser APIs)
-      const zkExternals = [/^snarkjs/, /^circomlibjs/];
+      const zkExternals = [/^snarkjs/];
       const prev = config.externals || [];
       config.externals = Array.isArray(prev)
         ? [...prev, ...zkExternals]

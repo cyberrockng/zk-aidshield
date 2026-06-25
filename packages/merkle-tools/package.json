@@ -10,8 +10,7 @@
     "seed": "node --import tsx/esm src/generate-campaign.ts --seed"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^12.3.0",
-    "circomlibjs": "^0.1.7"
+    "@stellar/stellar-sdk": "^12.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
