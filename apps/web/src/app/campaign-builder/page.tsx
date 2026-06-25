@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { DISBURSEMENT_ID, ISSUER_PUBLIC_KEY, MERKLE_ROOT, stellarAddressToField } from '@/lib/constants';
+import { DISBURSEMENT_ID, ISSUER_PUBLIC_KEY, MERKLE_ROOT } from '@/lib/constants';
 
 interface DraftBeneficiary {
   name: string;
@@ -19,13 +19,7 @@ function parseCsv(csv: string): DraftBeneficiary[] {
   return rows
     .map((row) => {
       const [name = '', id = '', wallet = ''] = row.split(',').map((part) => part.trim());
-      let valid = false;
-      try {
-        stellarAddressToField(wallet);
-        valid = true;
-      } catch {
-        valid = false;
-      }
+      const valid = /^G[A-Z2-7]{55}$/.test(wallet);
       return { name, id, wallet, valid };
     })
     .filter((row) => row.name || row.id || row.wallet);
