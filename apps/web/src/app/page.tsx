@@ -441,7 +441,7 @@ export default function LandingPage() {
                 <span className="text-2xl">{s.icon}</span>
                 <span
                   className="text-3xl font-black mono"
-                  style={{ color: 'var(--border)', lineHeight: 1 }}
+                  style={{ color: 'var(--muted)', lineHeight: 1 }}
                 >
                   {s.n}
                 </span>
