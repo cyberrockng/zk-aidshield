@@ -40,8 +40,10 @@ const quickLinks = [
   ['/claim-pass', 'Claim Pass', 'Generate beneficiary delivery card'],
   ['/claim', 'Claim Flow', 'Prove and settle on Stellar'],
   ['/receipt', 'Proof Receipt', 'Inspect claim receipt JSON'],
+  ['/verification-lab', 'Verification Lab', 'Inspect proof anchors and receipt checks'],
   ['/auditor', 'Auditor Portal', 'Live public campaign state'],
   ['/impact', 'Impact Dashboard', 'Privacy and payout metrics'],
+  ['/readiness', 'Readiness Board', 'Review production credibility layers'],
   ['/threats', 'Threat Board', 'Show blocked abuse paths'],
 ];
 

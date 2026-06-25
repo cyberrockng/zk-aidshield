@@ -42,17 +42,23 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Proof Receipt:** `/receipt` validates downloaded claim receipts without exposing credential witnesses
 - **Receipt transaction verification:** `/receipt` can verify a receipt transaction hash against Stellar testnet RPC
 - **Impact Dashboard:** `/impact` shows escrow, paid claims, remaining capacity, and privacy counters in one judge-ready view
+- **100%+ Readiness Board:** `/readiness` maps independent audit scope, trusted setup, pilot ops, production issuance, threat response, privacy disclosure, and live proof evidence
+- **Verification Lab:** `/verification-lab` gives judges a compact path to inspect proof inputs, verifier anchors, receipt checks, and replay evidence
 - **Evidence dossier:** `/evidence` maps hackathon requirements to deployed contracts, proof claims, threat tests, and a concise video verification path
 - **Protocol fit page:** `/protocol` maps AidShield directly to the Stellar Hacks Real-World ZK brief: off-chain Circom proof, on-chain Soroban verification, and XLM settlement
 - **Judge mode:** `/judge-mode` lets reviewers understand the proof payload and anchors before connecting Freighter
 - **Field pilot readiness:** `/pilot` explains the operator, field officer, beneficiary, vendor, and auditor path plus production gaps
 - **Production path:** documented next steps for issuer limits and optional identity adapters
 
-See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).
+See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md), [docs/INDEPENDENT_AUDIT_SCOPE.md](docs/INDEPENDENT_AUDIT_SCOPE.md), and [docs/PRIVACY_DISCLOSURE.md](docs/PRIVACY_DISCLOSURE.md).
 
 ## Crisis Aid Mission Demo
 
 Open `/demo-path` first for the tight 2-3 minute judge route. It links the donor escrow flow, command center, operator credential issuance, private claim, replay check, receipt verification, and impact audit in the order the demo should be reviewed.
+
+Open `/readiness` when a reviewer asks whether this can become real infrastructure. It packages the external audit scope, trusted setup posture, pilot runbook, production issuance backend, incident response, privacy disclosure, and verification lab into one board.
+
+Open `/verification-lab` when a technical judge wants to inspect the proof statement, contract anchors, receipt verification path, and replay evidence.
 
 Open `/command-center` for the upgraded product loop. It gives judges a single hub for donor escrow funding, the campaign builder, operator console, claim pass, live claim flow, proof receipt, auditor portal, impact dashboard, and threat board.
 

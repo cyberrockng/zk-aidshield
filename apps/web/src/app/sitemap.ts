@@ -14,6 +14,8 @@ const ROUTES = [
   '/judges',
   '/auditor',
   '/audit',
+  '/readiness',
+  '/verification-lab',
   '/threats',
   '/edge',
   '/mission',
