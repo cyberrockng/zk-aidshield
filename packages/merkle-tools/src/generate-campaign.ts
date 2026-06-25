@@ -62,7 +62,11 @@ const DEMO_BENEFICIARIES: Beneficiary[] = [
 
 const DEMO_DISBURSEMENT_ID = "0000000000000000000000000000000000000000000000000000000000000001";
 const DEMO_PAYOUT_STROOPS = 10_000_000; // 1 XLM
-const DEMO_ISSUER_PUBLIC_KEY = "GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4";
+const DEMO_ISSUER_PUBLIC_KEY = "GD3ZN2NWPHCALNNA24Q2CDCIJAPJNC5EV5KRIVLBWIT3S3Y4JXOBZDEO";
+
+function configuredDemoIssuer(): string {
+  return process.env.ISSUER_PUBLIC_KEY ?? process.env.NEXT_PUBLIC_ISSUER_PUBLIC_KEY ?? DEMO_ISSUER_PUBLIC_KEY;
+}
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -81,7 +85,7 @@ async function main() {
     disbursementIdHex = DEMO_DISBURSEMENT_ID;
     payoutStroops = DEMO_PAYOUT_STROOPS;
     expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
-    issuerPublicKey = DEMO_ISSUER_PUBLIC_KEY;
+    issuerPublicKey = configuredDemoIssuer();
   } else {
     const configPath = "beneficiaries.json";
     if (!existsSync(configPath)) {
@@ -97,7 +101,7 @@ async function main() {
     disbursementIdHex = config.disbursement_id;
     payoutStroops = config.payout_amount_stroops;
     expiresAt = config.expires_at ?? Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
-    issuerPublicKey = config.issuer_public_key ?? DEMO_ISSUER_PUBLIC_KEY;
+    issuerPublicKey = config.issuer_public_key ?? configuredDemoIssuer();
   }
 
   const disbursementId = BigInt("0x" + disbursementIdHex);

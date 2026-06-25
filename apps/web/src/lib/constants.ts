@@ -21,7 +21,7 @@ export const ADMIN_ADDRESS =
 
 export const ISSUER_PUBLIC_KEY =
   process.env.NEXT_PUBLIC_ISSUER_PUBLIC_KEY ||
-  'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4';
+  'GD3ZN2NWPHCALNNA24Q2CDCIJAPJNC5EV5KRIVLBWIT3S3Y4JXOBZDEO';
 
 export const NETWORK_PASSPHRASE =
   process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE ||
@@ -45,7 +45,7 @@ export const DISBURSEMENT_ID =
 
 export const MERKLE_ROOT =
   process.env.NEXT_PUBLIC_MERKLE_ROOT ||
-  '6631aeabd22a5cbca2274005d52490c4ee556c4eb7d97927e3eb9b724a26c2a7';
+  '5a5f381aacee4115a0f033e640b9dbd973f109accdf1affb8daab6e2ae2ae01b';
 
 // SHA-256 of the Groth16 verification key JSON (circuits/aidshield-groth16/build/verification_key.json).
 // Lets judges independently verify the on-chain VK matches the circuit build.

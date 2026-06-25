@@ -64,7 +64,7 @@ The `/protocol` page maps AidShield directly to the Stellar Hacks brief: off-cha
 
 - Disbursement: `CDCT4TCFKSIBOCFV6OATUJB2Y3GOF72KIG7NLOAK7Z4HMGYF4PE3V5NC`
 - Verifier: `CAVU2HNFWXALJG2FNFWZA4Y3WBV7VL5W7LBP4WYMZQFG26XHQNLTSAHQ`
-- Merkle root: `6631aeabd22a5cbca2274005d52490c4ee556c4eb7d97927e3eb9b724a26c2a7`
+- Merkle root: `5a5f381aacee4115a0f033e640b9dbd973f109accdf1affb8daab6e2ae2ae01b`
 - VK hash: `c243d169dcf36311eb4d12d5f0fe3016f8d6da21e7e41ca88474c0b477d4d128`
 
 ## Demo Flow

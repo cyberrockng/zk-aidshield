@@ -7,9 +7,24 @@
  * All tests run in Node.js (vitest); crypto.subtle is available globally in Node 20+.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createHash } from 'crypto';
 import { Keypair } from '@stellar/stellar-sdk';
+
+const { TEST_ISSUER_PUBLIC_KEY, TEST_ISSUER_KEY_ID } = vi.hoisted(() => ({
+  TEST_ISSUER_PUBLIC_KEY: 'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4',
+  TEST_ISSUER_KEY_ID: '00b1f3a14c4a16cc3fc7e80804e3e7581170007147157f62c78386cec0393e5c',
+}));
+
+vi.mock('../lib/constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/constants')>();
+  return {
+    ...actual,
+    ISSUER_PUBLIC_KEY: TEST_ISSUER_PUBLIC_KEY,
+    ISSUER_KEY_ID: TEST_ISSUER_KEY_ID,
+  };
+});
+
 import {
   verifyCredential,
   credentialSigningPayload,
