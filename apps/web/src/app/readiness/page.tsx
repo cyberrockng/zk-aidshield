@@ -97,6 +97,7 @@ export default function ReadinessPage() {
           <Link href="/verification-lab" className="btn-primary text-sm">Open Verification Lab</Link>
           <Link href="/demo-path" className="btn-outline text-sm">Run Judge Demo</Link>
           <Link href="/threats" className="btn-outline text-sm">Threat Board</Link>
+          <a href="https://github.com/cyberrockng/zk-aidshield/blob/main/docs/THIRD_PARTY_AUDIT_PLAYBOOK.md" target="_blank" rel="noopener noreferrer" className="btn-outline text-sm">Audit Playbook</a>
         </div>
       </section>
 

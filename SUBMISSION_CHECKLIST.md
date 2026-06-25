@@ -15,6 +15,7 @@
 11. Retry the same credential to show nullifier replay rejection.
 12. Switch Freighter accounts and show wrong-wallet credential rejection.
 13. Open `/threats`, `/pilot`, `/audit`, and `/judges` to explain what is private, what is public, what attacks fail, and what is production roadmap.
+14. If a reviewer asks about third-party validation, point them to `docs/THIRD_PARTY_AUDIT_PLAYBOOK.md` and `docs/INDEPENDENT_AUDIT_SCOPE.md`.
 
 ## Hosted Deployment Env
 

@@ -2,6 +2,8 @@
 
 This file defines the external review request for ZK AidShield before any production pilot.
 
+For the full phase-by-phase reviewer workflow, see [Third-Party Audit Playbook](THIRD_PARTY_AUDIT_PLAYBOOK.md).
+
 ## Assets In Scope
 
 - Circom circuit and Groth16 public input design.

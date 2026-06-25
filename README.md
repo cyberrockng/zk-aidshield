@@ -54,13 +54,15 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Field pilot readiness:** `/pilot` explains the operator, field officer, beneficiary, vendor, and auditor path plus production gaps
 - **Production path:** documented next steps for issuer limits and optional identity adapters
 
-See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md), [docs/INDEPENDENT_AUDIT_SCOPE.md](docs/INDEPENDENT_AUDIT_SCOPE.md), and [docs/PRIVACY_DISCLOSURE.md](docs/PRIVACY_DISCLOSURE.md).
+See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md), [docs/THIRD_PARTY_AUDIT_PLAYBOOK.md](docs/THIRD_PARTY_AUDIT_PLAYBOOK.md), [docs/INDEPENDENT_AUDIT_SCOPE.md](docs/INDEPENDENT_AUDIT_SCOPE.md), and [docs/PRIVACY_DISCLOSURE.md](docs/PRIVACY_DISCLOSURE.md).
 
 ## Crisis Aid Mission Demo
 
 Open `/demo-path` first for the tight 2-3 minute judge route. It links the donor escrow flow, command center, operator credential issuance, private claim, replay check, transaction-status receipt check, and impact audit in the order the demo should be reviewed. The operator issuance step is admin-gated; use the private demo admin secret in submission notes or follow the no-secret review path shown on `/demo-path`.
 
 Open `/readiness` when a reviewer asks whether this can become real infrastructure. It packages the external audit scope, trusted setup posture, pilot runbook, production issuance backend, incident response, privacy disclosure, and verification lab into one board.
+
+For external reviewers, start with [docs/THIRD_PARTY_AUDIT_PLAYBOOK.md](docs/THIRD_PARTY_AUDIT_PLAYBOOK.md), then use [docs/INDEPENDENT_AUDIT_SCOPE.md](docs/INDEPENDENT_AUDIT_SCOPE.md) as the formal scope summary.
 
 Open `/verification-lab` when a technical judge wants to inspect the proof statement, contract anchors, receipt status path, and replay evidence.
 
