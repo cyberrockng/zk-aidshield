@@ -16,7 +16,7 @@ Operators can deliver credentials as JSON files, copied payloads, or passphrase-
 
 AidShield now supports restricted voucher redemption: admins approve vendors on-chain, beneficiaries choose voucher mode, and the same private eligibility proof pays the approved vendor instead of the claimant wallet. The same nullifier prevents a credential from being used for both cash and voucher redemption.
 
-For operator accountability, the admin dashboard keeps an admin-protected local non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. In production this should be backed by durable storage with retention policy and access controls. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
+For operator accountability, the admin dashboard keeps an admin-protected non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. Production issuance uniqueness is backed by Upstash Redis reservations with fail-closed enforcement. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
 
 ## Crisis Aid Mission Demo
 
@@ -26,9 +26,17 @@ This scenario uses simulated actors and demo labels only. It does not claim a re
 
 The `/evidence` page is the judge-facing proof dossier: it maps each hackathon requirement to concrete evidence, links the deployed contract anchors, summarizes verifiable privacy and replay claims, and gives a red-team demo matrix for failure paths.
 
-The `/protocol` page maps AidShield directly to the Stellar Hacks brief: off-chain Circom proof generation, on-chain Soroban verification, Stellar XLM settlement, load-bearing ZK, and public auditability. The `/judge-mode` page provides a no-wallet explanation path before reviewers run the live Freighter claim. The `/pilot` page shows how the system could move from hackathon demo to field pilot while clearly listing production gaps.
+The `/command-center` page ties the workflow together as AidShield Command Center: local campaign prep, claim pass generation, private claim, proof receipt, impact dashboard, and auditor view. The `/protocol` page maps AidShield directly to the Stellar Hacks brief: off-chain Circom proof generation, on-chain Soroban verification, Stellar XLM settlement, load-bearing ZK, and public auditability. The `/judge-mode` page provides a no-wallet explanation path before reviewers run the live Freighter claim. The `/pilot` page shows how the system could move from hackathon demo to field pilot while clearly listing production gaps.
 
-## What Is New In Phase 7
+## What Is New In Phase 8
+
+- AidShield Command Center at `/command-center`
+- NGO campaign builder at `/campaign-builder`
+- beneficiary claim-pass formatter at `/claim-pass`
+- proof receipt inspector at `/receipt`
+- privacy impact dashboard at `/impact`
+- Upstash Redis durable issuance reservations with fail-closed production mode
+- public external review issue and trusted setup plan
 
 - 6-public-input Groth16 circuit
 - wallet-, expiry-, and issuer-bound Merkle leaves
@@ -69,21 +77,22 @@ The `/protocol` page maps AidShield directly to the Stellar Hacks brief: off-cha
 
 ## Demo Flow
 
-1. Open `/mission` and state clearly that this is a synthetic flood-relief testnet mission, not a real NGO deployment.
-2. Open `/evidence` to show the requirement match, verification anchors, and failure-path matrix.
-3. Open `/protocol` to show off-chain proof generation, on-chain verification, and XLM settlement alignment.
-4. Open `/judge-mode` if the reviewer wants the no-wallet explanation before Freighter.
-5. Open `/judges` to show the short technical brief.
-6. Open `/auditor` to show live 50 XLM escrow, deployed contracts, proof anchors, and privacy boundaries.
-7. Open `/threats` to show that AidShield is not an unrestricted anonymous pool: issuer, vendor, replay, escrow, and governance controls are visible.
-8. Open `/edge` to show the judge proof board, selective disclosure, proof telemetry, no-wallet path, attack simulator, and competitive readiness growth.
+1. Open `/command-center` to show the complete product loop and verifier status.
+2. Open `/campaign-builder` to show local campaign preparation without public PII.
+3. Open `/mission` and state clearly that this is a synthetic flood-relief testnet mission, not a real NGO deployment.
+4. Open `/evidence` to show the requirement match, verification anchors, and failure-path matrix.
+5. Open `/protocol` to show off-chain proof generation, on-chain verification, and XLM settlement alignment.
+6. Open `/judge-mode` if the reviewer wants the no-wallet explanation before Freighter.
+7. Open `/auditor` or `/impact` to show live escrow, deployed contracts, privacy counters, proof anchors, and payout capacity.
+8. Open `/threats` and `/edge` to show replay, issuer, vendor, escrow, pause, governance, and readiness controls.
 9. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
-10. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
-11. Approve in Freighter and show the Stellar Explorer transaction.
-12. Download/copy the local claim receipt.
-13. Retry the same credential to show replay protection.
-14. Switch wallets to show wrong-wallet rejection.
-15. Open `/pilot` and `/audit` to show field readiness, production gaps, trust boundaries, and known limitations.
+10. Open `/claim-pass` to format the issued credential as a private beneficiary pass.
+11. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
+12. Approve in Freighter and show the Stellar Explorer transaction.
+13. Download/copy the local claim receipt and inspect it at `/receipt`.
+14. Retry the same credential to show replay protection.
+15. Switch wallets to show wrong-wallet rejection.
+16. Open `/pilot` and `/audit` to show field readiness, production gaps, trust boundaries, and known limitations.
 
 ## Security Posture
 
@@ -97,7 +106,7 @@ Most ZK demos prove a primitive. ZK AidShield proves a real aid workflow: privat
 
 ## Challenges
 
-The hardest part was aligning the same BLS12-381 Poseidon statement across circom, browser proving, TypeScript Merkle generation, and Soroban verification. Phase 7 keeps that statement stable while adding approved-vendor voucher redemption, threshold governor controls, and a threat-resistance dashboard without weakening replay protection or wallet binding.
+The hardest part was aligning the same BLS12-381 Poseidon statement across circom, browser proving, TypeScript Merkle generation, and Soroban verification. Phase 8 keeps that statement stable while adding AidShield Command Center, durable issuance reservations, proof receipts, impact dashboards, approved-vendor voucher redemption, threshold governor controls, and a threat-resistance dashboard without weakening replay protection or wallet binding.
 
 ## What Is Next
 

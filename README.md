@@ -34,6 +34,11 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Threat-aware controls:** a live policy dashboard shows issuer, vendor, replay, escrow, pause, and governance posture
 - **Competitive edge board:** `/edge` packages the judge proof board, selective disclosure panel, proof telemetry, no-wallet demo path, threat simulator, and readiness growth table
 - **Crisis mission demo:** `/mission` packages the product as a synthetic flood-relief workflow with NGO operator, beneficiary, approved vendor, replay failure, and donor audit view
+- **AidShield Command Center:** `/command-center` ties campaign prep, credential delivery, private claim, receipt, and audit views into one operational product loop
+- **Campaign Builder:** `/campaign-builder` prepares local `beneficiaries.json` input for Merkle campaign generation without publishing PII
+- **Claim Pass:** `/claim-pass` turns an issued credential into a beneficiary QR delivery card
+- **Proof Receipt:** `/receipt` validates downloaded claim receipts without exposing credential witnesses
+- **Impact Dashboard:** `/impact` shows escrow, paid claims, remaining capacity, and privacy counters in one judge-ready view
 - **Evidence dossier:** `/evidence` maps hackathon requirements to deployed contracts, proof claims, threat tests, and a concise video verification path
 - **Protocol fit page:** `/protocol` maps AidShield directly to the Stellar Hacks Real-World ZK brief: off-chain Circom proof, on-chain Soroban verification, and XLM settlement
 - **Judge mode:** `/judge-mode` lets reviewers understand the proof payload and anchors before connecting Freighter
@@ -43,6 +48,8 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), and [docs/COMPETITIVE_ANALYSIS.md](docs/COMPETITIVE_ANALYSIS.md).
 
 ## Crisis Aid Mission Demo
+
+Open `/command-center` first for the upgraded product loop. It gives judges a single hub for the campaign builder, operator console, claim pass, live claim flow, proof receipt, auditor portal, impact dashboard, and threat board.
 
 Open `/mission` for the judge-ready story layer. It uses synthetic testnet data: a simulated flood-relief NGO operator issues an encrypted QR credential, an approved household claims privately, an approved medical vendor can receive voucher payout, replay fails, and donors inspect aggregate settlement without seeing beneficiary PII.
 

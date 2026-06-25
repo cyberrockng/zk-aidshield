@@ -296,8 +296,11 @@ export default function LandingPage() {
           className="flex gap-3 flex-wrap"
           style={{ animation: 'fade-in-up 0.5s ease 0.15s both' }}
         >
+            <Link href="/command-center" className="btn-primary text-base" style={{ padding: '0.75rem 2rem' }}>
+              Open Command Center →
+            </Link>
             <Link href="/claim" className="btn-primary text-base" style={{ padding: '0.75rem 2rem' }}>
-              Try the Demo →
+              Claim Demo
             </Link>
             <Link href="/mission" className="btn-outline text-base" style={{ padding: '0.75rem 2rem' }}>
               Crisis Mission
@@ -325,6 +328,34 @@ export default function LandingPage() {
       {/* ── ZK flow diagram ── */}
       <section className="mb-16">
         <ZkFlowDiagram />
+      </section>
+
+      <section className="mb-16">
+        <div className="section-panel">
+          <div className="flex items-start justify-between gap-6 flex-wrap mb-6">
+            <div style={{ maxWidth: 720 }}>
+              <h2 className="text-2xl font-bold mb-2">AidShield Command Center</h2>
+              <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
+                The submission now has a full operational layer: campaign prep, claim pass delivery,
+                private proof settlement, proof receipts, public impact metrics, and external review readiness.
+              </p>
+            </div>
+            <Link href="/command-center" className="btn-outline text-sm">Open Hub</Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Campaign Builder', body: 'Prepare beneficiary CSV/config locally and generate the private Merkle campaign inputs.' },
+              { label: 'Claim Pass', body: 'Turn an issued credential into a beneficiary QR pass for phone-first delivery.' },
+              { label: 'Proof Receipt', body: 'Inspect transaction hash, nullifier, root, verifier, amount, and public settlement fields.' },
+              { label: 'Impact Dashboard', body: 'Show escrow, claims paid, remaining capacity, and privacy counters in one judge-ready view.' },
+            ].map((signal) => (
+              <div key={signal.label} className="route-card">
+                <div className="font-semibold mb-2">{signal.label}</div>
+                <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>{signal.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="mb-16">

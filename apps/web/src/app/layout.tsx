@@ -89,6 +89,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             <div className="flex items-center gap-1 flex-wrap justify-end">
               <Link
+                href="/command-center"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--green-bright)' }}
+              >
+                Command
+              </Link>
+              <Link
                 href="/judges"
                 className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
                 style={{ color: 'var(--muted)' }}
@@ -101,6 +108,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 style={{ color: 'var(--muted)' }}
               >
                 Auditor
+              </Link>
+              <Link
+                href="/impact"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Impact
               </Link>
               <Link
                 href="/audit"

@@ -4,6 +4,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zk-aidshield.vercel
 
 const ROUTES = [
   '',
+  '/command-center',
+  '/campaign-builder',
+  '/claim-pass',
+  '/receipt',
+  '/impact',
   '/judges',
   '/auditor',
   '/audit',
@@ -25,6 +30,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${siteUrl}${route}`,
     lastModified: now,
     changeFrequency: route === '' ? 'weekly' : 'monthly',
-    priority: route === '' ? 1 : route === '/judges' || route === '/claim' ? 0.9 : 0.7,
+    priority: route === '' ? 1 : route === '/command-center' || route === '/judges' || route === '/claim' ? 0.9 : 0.7,
   }));
 }
