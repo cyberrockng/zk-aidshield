@@ -18,7 +18,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const rateLimitError = requireRateLimit(req, 'issuance-ledger:get', 30);
   if (rateLimitError) return rateLimitError;
 
-  return NextResponse.json(readIssuanceLedger());
+  const ledger = await readIssuanceLedger();
+  return NextResponse.json(ledger);
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -41,8 +42,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unsupported delivery_mode' }, { status: 400 });
   }
 
-  const updated = recordLedgerDelivery(body.credential_hash.toLowerCase(), body.delivery_mode);
+  const updated = await recordLedgerDelivery(body.credential_hash.toLowerCase(), body.delivery_mode);
   if (!updated) return NextResponse.json({ error: 'Ledger entry not found' }, { status: 404 });
 
-  return NextResponse.json({ entry: updated, ledger: readIssuanceLedger() });
+  const ledger = await readIssuanceLedger();
+  return NextResponse.json({ entry: updated, ledger });
 }

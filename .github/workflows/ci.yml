@@ -7,6 +7,25 @@ on:
     branches: [main]
 
 jobs:
+  security:
+    name: Security scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npm run secret:scan
+      - run: npm audit
+      - run: npm --prefix apps/web audit
+      - run: npm --prefix packages/merkle-tools audit
+      - run: npm --prefix circuits/aidshield-groth16 audit
+
   web:
     name: Web app (build + test)
     runs-on: ubuntu-latest
@@ -25,6 +44,10 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
         env:
           NEXT_TELEMETRY_DISABLED: 1
 

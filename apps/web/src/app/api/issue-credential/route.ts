@@ -190,7 +190,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  appendIssuanceLedgerEntry(credential);
+  await appendIssuanceLedgerEntry(credential);
 
   // Mark slot + wallet as issued
   issuedSlots.add(slot.index);

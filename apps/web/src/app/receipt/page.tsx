@@ -20,6 +20,12 @@ const sampleReceipt = {
 
 export default function ReceiptPage() {
   const [raw, setRaw] = useState(JSON.stringify(sampleReceipt, null, 2));
+  const [verifyState, setVerifyState] = useState<
+    | { status: 'idle' }
+    | { status: 'checking' }
+    | { status: 'success'; message: string; explorerUrl: string }
+    | { status: 'error'; message: string }
+  >({ status: 'idle' });
 
   const parsed = useMemo(() => {
     try {
@@ -31,6 +37,7 @@ export default function ReceiptPage() {
 
   const value = parsed.ok ? parsed.value : null;
   const txHash = typeof value?.tx_hash === 'string' ? value.tx_hash : '';
+  const canVerifyTx = /^[a-f0-9]{64}$/i.test(txHash) && !/^0+$/.test(txHash);
   const receiptType = String(value?.type ?? (value?.claim_type ? 'claim_receipt' : 'unknown'));
   const isDonorReceipt = receiptType === 'donor_funding_receipt';
   const summaryRows = value
@@ -56,6 +63,27 @@ export default function ReceiptPage() {
           ['Verifier', shortHex(String(value.verifier_contract ?? ''))],
         ]
     : [];
+
+  async function verifyReceiptTransaction() {
+    if (!canVerifyTx) return;
+    setVerifyState({ status: 'checking' });
+    try {
+      const response = await fetch('/api/verify-receipt', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tx_hash: txHash }),
+      });
+      const data = await response.json() as { error?: string; status?: string; verified?: boolean; explorer_url?: string };
+      if (!response.ok || data.error) throw new Error(data.error ?? `Receipt verification failed with HTTP ${response.status}`);
+      setVerifyState({
+        status: data.verified ? 'success' : 'error',
+        message: data.verified ? `Verified on Stellar testnet: ${data.status}` : `Transaction found but not successful: ${data.status}`,
+        explorerUrl: data.explorer_url ?? `${EXPLORER_BASE}/tx/${txHash}`,
+      });
+    } catch (error) {
+      setVerifyState({ status: 'error', message: error instanceof Error ? error.message : String(error) });
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -111,15 +139,32 @@ export default function ReceiptPage() {
                 </div>
               </div>
 
-              {txHash && !/^0+$/.test(txHash) && (
-                <a
-                  href={`${EXPLORER_BASE}/tx/${txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary mt-4"
-                >
-                  Open transaction
-                </a>
+              {canVerifyTx && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={verifyReceiptTransaction}
+                      disabled={verifyState.status === 'checking'}
+                      className="btn-primary"
+                    >
+                      {verifyState.status === 'checking' ? 'Checking...' : 'Verify on Stellar'}
+                    </button>
+                    <a
+                      href={`${EXPLORER_BASE}/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-outline"
+                    >
+                      Open transaction
+                    </a>
+                  </div>
+                  {verifyState.status !== 'idle' && verifyState.status !== 'checking' && (
+                    <div className={`badge ${verifyState.status === 'success' ? 'badge-green' : 'badge-red'}`}>
+                      {verifyState.message}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

@@ -33,6 +33,7 @@ const controls = [
 ];
 
 const quickLinks = [
+  ['/demo-path', 'Judge Demo Path', 'Run the 2-3 minute evaluation route'],
   ['/campaign-builder', 'Campaign Builder', 'Prepare local campaign input'],
   ['/donor', 'Donor Escrow', 'Fund aid and receive impact receipt'],
   ['/admin', 'Operator Console', 'Issue credentials and QR passes'],

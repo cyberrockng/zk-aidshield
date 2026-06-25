@@ -116,7 +116,25 @@ export function createLedgerEntry(credential: BeneficiaryCredential, deliveryMod
   };
 }
 
-export function appendIssuanceLedgerEntry(credential: BeneficiaryCredential): IssuanceLedgerEntry {
+export async function appendIssuanceLedgerEntry(credential: BeneficiaryCredential): Promise<IssuanceLedgerEntry> {
+  if (storageBackend() === 'upstash_redis') {
+    const entries = await readEntriesFromUpstash();
+    const next = createLedgerEntry(credential);
+    const existingIndex = entries.findIndex((entry) => entry.credential_hash === next.credential_hash);
+
+    if (existingIndex >= 0) {
+      entries[existingIndex] = {
+        ...entries[existingIndex],
+        delivery_modes: Array.from(new Set([...entries[existingIndex].delivery_modes, 'issued'])),
+      };
+    } else {
+      entries.push(next);
+    }
+
+    await writeEntriesToUpstash(entries);
+    return next;
+  }
+
   const entries = readEntries();
   const next = createLedgerEntry(credential);
   const existingIndex = entries.findIndex((entry) => entry.credential_hash === next.credential_hash);
@@ -159,6 +177,25 @@ async function upstashCommand<T = unknown>(command: unknown[]): Promise<T> {
   const json = await res.json() as { result?: T; error?: string };
   if (json.error) throw new Error(`Upstash Redis command failed: ${json.error}`);
   return json.result as T;
+}
+
+function ledgerKey(): string {
+  return 'aidshield:issuance-ledger:entries';
+}
+
+async function readEntriesFromUpstash(): Promise<IssuanceLedgerEntry[]> {
+  const raw = await upstashCommand<string | null>(['GET', ledgerKey()]);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as { entries?: IssuanceLedgerEntry[] };
+    return Array.isArray(parsed.entries) ? parsed.entries : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeEntriesToUpstash(entries: IssuanceLedgerEntry[]): Promise<void> {
+  await upstashCommand<string>(['SET', ledgerKey(), JSON.stringify({ entries })]);
 }
 
 async function reserveWithUpstash(campaignId: string, slotIndex: number, claimantAddressHash: string): Promise<IssuanceReservation> {
@@ -214,7 +251,20 @@ export async function reserveIssuance(campaignId: string, slotIndex: number, cla
   });
 }
 
-export function recordLedgerDelivery(credentialHashValue: string, deliveryMode: DeliveryMode): IssuanceLedgerEntry | null {
+export async function recordLedgerDelivery(credentialHashValue: string, deliveryMode: DeliveryMode): Promise<IssuanceLedgerEntry | null> {
+  if (storageBackend() === 'upstash_redis') {
+    const entries = await readEntriesFromUpstash();
+    const index = entries.findIndex((entry) => entry.credential_hash === credentialHashValue);
+    if (index < 0) return null;
+
+    entries[index] = {
+      ...entries[index],
+      delivery_modes: Array.from(new Set([...entries[index].delivery_modes, deliveryMode])),
+    };
+    await writeEntriesToUpstash(entries);
+    return entries[index];
+  }
+
   const entries = readEntries();
   const index = entries.findIndex((entry) => entry.credential_hash === credentialHashValue);
   if (index < 0) return null;
@@ -243,7 +293,12 @@ function summarize(entries: IssuanceLedgerEntry[]): IssuanceLedgerSummary {
   };
 }
 
-export function readIssuanceLedger(): IssuanceLedgerResponse {
+export async function readIssuanceLedger(): Promise<IssuanceLedgerResponse> {
+  if (storageBackend() === 'upstash_redis') {
+    const entries = (await readEntriesFromUpstash()).sort((a, b) => b.issued_at - a.issued_at);
+    return { entries, summary: summarize(entries) };
+  }
+
   const entries = readEntries().sort((a, b) => b.issued_at - a.issued_at);
   return { entries, summary: summarize(entries) };
 }

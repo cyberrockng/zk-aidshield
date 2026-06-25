@@ -11,7 +11,9 @@
     "setup": "./scripts/setup.sh",
     "test": "npm --prefix apps/web test",
     "rotate:issuer": "node scripts/rotate-issuer-key.mjs",
-    "check:production": "node scripts/check-production-readiness.mjs"
+    "check:production": "node scripts/check-production-readiness.mjs",
+    "secret:scan": "node scripts/secret-scan.mjs",
+    "audit:all": "npm audit && npm --prefix apps/web audit && npm --prefix packages/merkle-tools audit && npm --prefix circuits/aidshield-groth16 audit"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^12.3.0"

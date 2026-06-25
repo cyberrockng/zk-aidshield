@@ -96,6 +96,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 Command
               </Link>
               <Link
+                href="/demo-path"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Demo
+              </Link>
+              <Link
                 href="/judges"
                 className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
                 style={{ color: 'var(--muted)' }}

@@ -4,6 +4,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zk-aidshield.vercel
 
 const ROUTES = [
   '',
+  '/demo-path',
   '/command-center',
   '/campaign-builder',
   '/donor',
