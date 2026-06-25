@@ -10,13 +10,13 @@ Humanitarian aid systems often require beneficiaries to expose names, IDs, and c
 
 ## What It Does
 
-ZK AidShield turns Stellar into a privacy-preserving crisis-aid settlement rail. An aid operator commits an approved beneficiary set as a Poseidon Merkle root. A beneficiary receives a signed credential, generates a Groth16 BLS12-381 proof locally in the browser, and submits it to Soroban. The contract verifies the proof, checks issuer status and expiry, blocks replay with a nullifier, then releases XLM from escrow.
+ZK AidShield turns Stellar into a privacy-preserving crisis-aid settlement rail. A donor funds campaign escrow, an aid operator commits an approved beneficiary set as a Poseidon Merkle root, and a beneficiary receives a signed credential. The beneficiary generates a Groth16 BLS12-381 proof locally in the browser and submits it to Soroban. The contract verifies the proof, checks issuer status and expiry, blocks replay with a nullifier, then releases XLM from escrow.
 
 Operators can deliver credentials as JSON files, copied payloads, or passphrase-protected QR codes for phone-first field use. QR import decrypts locally, then preserves the same signature, wallet-binding, expiry, and nullifier checks.
 
 AidShield now supports restricted voucher redemption: admins approve vendors on-chain, beneficiaries choose voucher mode, and the same private eligibility proof pays the approved vendor instead of the claimant wallet. The same nullifier prevents a credential from being used for both cash and voucher redemption.
 
-For operator accountability, the admin dashboard keeps an admin-protected non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. Production issuance uniqueness is backed by Upstash Redis reservations with fail-closed enforcement. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
+For operator accountability, the admin dashboard keeps an admin-protected non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. Production issuance uniqueness is backed by Upstash Redis reservations with fail-closed enforcement. Donors can export proof-of-impact funding receipts, and beneficiaries can export private claim receipts with transaction hash, nullifier, campaign ID, and amount.
 
 ## Crisis Aid Mission Demo
 
@@ -26,11 +26,12 @@ This scenario uses simulated actors and demo labels only. It does not claim a re
 
 The `/evidence` page is the judge-facing proof dossier: it maps each hackathon requirement to concrete evidence, links the deployed contract anchors, summarizes verifiable privacy and replay claims, and gives a red-team demo matrix for failure paths.
 
-The `/command-center` page ties the workflow together as AidShield Command Center: local campaign prep, claim pass generation, private claim, proof receipt, impact dashboard, and auditor view. The `/protocol` page maps AidShield directly to the Stellar Hacks brief: off-chain Circom proof generation, on-chain Soroban verification, Stellar XLM settlement, load-bearing ZK, and public auditability. The `/judge-mode` page provides a no-wallet explanation path before reviewers run the live Freighter claim. The `/pilot` page shows how the system could move from hackathon demo to field pilot while clearly listing production gaps.
+The `/command-center` page ties the workflow together as AidShield Command Center: donor escrow funding, local campaign prep, claim pass generation, private claim, proof receipt, impact dashboard, and auditor view. The `/protocol` page maps AidShield directly to the Stellar Hacks brief: off-chain Circom proof generation, on-chain Soroban verification, Stellar XLM settlement, load-bearing ZK, and public auditability. The `/judge-mode` page provides a no-wallet explanation path before reviewers run the live Freighter claim. The `/pilot` page shows how the system could move from hackathon demo to field pilot while clearly listing production gaps.
 
 ## What Is New In Phase 8
 
 - AidShield Command Center at `/command-center`
+- donor escrow portal and proof-of-impact receipts at `/donor`
 - NGO campaign builder at `/campaign-builder`
 - beneficiary claim-pass formatter at `/claim-pass`
 - proof receipt inspector at `/receipt`
@@ -78,21 +79,22 @@ The `/command-center` page ties the workflow together as AidShield Command Cente
 ## Demo Flow
 
 1. Open `/command-center` to show the complete product loop and verifier status.
-2. Open `/campaign-builder` to show local campaign preparation without public PII.
-3. Open `/mission` and state clearly that this is a synthetic flood-relief testnet mission, not a real NGO deployment.
-4. Open `/evidence` to show the requirement match, verification anchors, and failure-path matrix.
-5. Open `/protocol` to show off-chain proof generation, on-chain verification, and XLM settlement alignment.
-6. Open `/judge-mode` if the reviewer wants the no-wallet explanation before Freighter.
-7. Open `/auditor` or `/impact` to show live escrow, deployed contracts, privacy counters, proof anchors, and payout capacity.
-8. Open `/threats` and `/edge` to show replay, issuer, vendor, escrow, pause, governance, and readiness controls.
-9. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
-10. Open `/claim-pass` to format the issued credential as a private beneficiary pass.
-11. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
-12. Approve in Freighter and show the Stellar Explorer transaction.
-13. Download/copy the local claim receipt and inspect it at `/receipt`.
-14. Retry the same credential to show replay protection.
-15. Switch wallets to show wrong-wallet rejection.
-16. Open `/pilot` and `/audit` to show field readiness, production gaps, trust boundaries, and known limitations.
+2. Open `/donor` to show public campaign funding and donor proof-of-impact receipts.
+3. Open `/campaign-builder` to show local campaign preparation without public PII.
+4. Open `/mission` and state clearly that this is a synthetic flood-relief testnet mission, not a real NGO deployment.
+5. Open `/evidence` to show the requirement match, verification anchors, and failure-path matrix.
+6. Open `/protocol` to show off-chain proof generation, on-chain verification, and XLM settlement alignment.
+7. Open `/judge-mode` if the reviewer wants the no-wallet explanation before Freighter.
+8. Open `/auditor` or `/impact` to show live escrow, deployed contracts, privacy counters, donor-funded capacity, proof anchors, and payout capacity.
+9. Open `/threats` and `/edge` to show replay, issuer, vendor, escrow, pause, governance, and readiness controls.
+10. Open `/admin`, approve/check a vendor, and issue a beneficiary credential as JSON or encrypted QR.
+11. Open `/claim-pass` to format the issued credential as a private beneficiary pass.
+12. Show the non-PII issuance ledger, then open `/claim`, decrypt/load the credential by file, QR image, or paste, choose cash or voucher, and generate the browser Groth16 proof.
+13. Approve in Freighter and show the Stellar Explorer transaction.
+14. Download/copy the local claim receipt and inspect it at `/receipt`.
+15. Retry the same credential to show replay protection.
+16. Switch wallets to show wrong-wallet rejection.
+17. Open `/pilot` and `/audit` to show field readiness, production gaps, trust boundaries, and known limitations.
 
 ## Security Posture
 
@@ -106,7 +108,7 @@ Most ZK demos prove a primitive. ZK AidShield proves a real aid workflow: privat
 
 ## Challenges
 
-The hardest part was aligning the same BLS12-381 Poseidon statement across circom, browser proving, TypeScript Merkle generation, and Soroban verification. Phase 8 keeps that statement stable while adding AidShield Command Center, durable issuance reservations, proof receipts, impact dashboards, approved-vendor voucher redemption, threshold governor controls, and a threat-resistance dashboard without weakening replay protection or wallet binding.
+The hardest part was aligning the same BLS12-381 Poseidon statement across circom, browser proving, TypeScript Merkle generation, and Soroban verification. Phase 8 keeps that statement stable while adding AidShield Command Center, donor escrow receipts, durable issuance reservations, proof receipts, impact dashboards, approved-vendor voucher redemption, threshold governor controls, and a threat-resistance dashboard without weakening replay protection or wallet binding.
 
 ## What Is Next
 

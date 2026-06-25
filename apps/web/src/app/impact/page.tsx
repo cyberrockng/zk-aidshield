@@ -14,9 +14,16 @@ const privacyCounters = [
 
 export default function ImpactPage() {
   const [stats, setStats] = useState<CampaignStats | null>(null);
+  const [localDonorReceipts, setLocalDonorReceipts] = useState<Array<Record<string, unknown>>>([]);
 
   useEffect(() => {
     fetchStats().then(setStats).catch(() => {});
+    try {
+      const parsed = JSON.parse(localStorage.getItem('aidshield_donor_receipts') ?? '[]') as Array<Record<string, unknown>>;
+      setLocalDonorReceipts(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setLocalDonorReceipts([]);
+    }
   }, []);
 
   const model = useMemo(() => {
@@ -27,6 +34,39 @@ export default function ImpactPage() {
     const utilization = total > 0n ? Number((paid * 10_000n) / total) / 100 : 0;
     return { paid, total, remaining, utilization };
   }, [stats]);
+
+  const localDonorFunded = useMemo(() => localDonorReceipts.reduce((sum, receipt) => {
+    const value = typeof receipt.amount_stroops === 'number' ? receipt.amount_stroops : 0;
+    return sum + value;
+  }, 0), [localDonorReceipts]);
+
+  const feed = useMemo(() => {
+    const items = [
+      {
+        label: 'Campaign escrow currently funded',
+        detail: stats ? `${stroopsToXlm(stats.escrow_balance)} XLM available for private claims` : 'Loading live contract state',
+        source: 'on-chain',
+      },
+      {
+        label: 'Private claims paid',
+        detail: stats ? `${stats.claimed_count} claim${stats.claimed_count === 1 ? '' : 's'} settled with nullifier replay protection` : 'Loading',
+        source: 'on-chain',
+      },
+      {
+        label: 'Identity exposure',
+        detail: '0 names, IDs, credential witnesses, or Merkle paths published',
+        source: 'privacy model',
+      },
+    ];
+    if (localDonorReceipts[0]) {
+      items.unshift({
+        label: 'Local donor receipt',
+        detail: `${String(localDonorReceipts[0].amount ?? 'Funding')} added to campaign escrow`,
+        source: 'this browser',
+      });
+    }
+    return items;
+  }, [localDonorReceipts, stats]);
 
   return (
     <div className="space-y-8">
@@ -72,6 +112,45 @@ export default function ImpactPage() {
               borderRadius: 999,
             }}
           />
+        </div>
+      </section>
+
+      <section className="grid md:grid-cols-2 gap-5">
+        <div className="card">
+          <h2 className="text-xl font-bold mb-4">Donor-Funded Capacity</h2>
+          <div className="space-y-3 text-sm">
+            {[
+              ['Total escrow funded', model ? `${stroopsToXlm(model.total)} XLM` : 'Loading'],
+              ['Private claims paid', model ? `${stroopsToXlm(model.paid)} XLM` : 'Loading'],
+              ['Claims still fundable', model ? model.remaining.toString() : 'Loading'],
+              ['Local donor receipts', String(localDonorReceipts.length)],
+              ['Local donor total', `${localDonorFunded / 10_000_000} XLM`],
+            ].map(([label, value]) => (
+              <div key={label} className="data-row">
+                <span style={{ color: 'var(--muted)' }}>{label}</span>
+                <span className="mono text-right">{value}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-3 mt-5 flex-wrap">
+            <Link href="/donor" className="btn-primary text-sm">Fund campaign</Link>
+            <Link href="/receipt" className="btn-outline text-sm">Inspect receipt</Link>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 className="text-xl font-bold mb-4">Public Activity Feed</h2>
+          <div className="space-y-3">
+            {feed.map((item) => (
+              <div key={`${item.label}-${item.source}`} className="privacy-panel">
+                <div className="flex justify-between gap-3 mb-2">
+                  <div className="font-semibold text-sm">{item.label}</div>
+                  <div className="badge badge-blue" style={{ fontSize: '0.62rem' }}>{item.source}</div>
+                </div>
+                <p className="text-xs leading-6" style={{ color: 'var(--muted)' }}>{item.detail}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

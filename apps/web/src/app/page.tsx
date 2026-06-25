@@ -345,6 +345,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[
               { label: 'Campaign Builder', body: 'Prepare beneficiary CSV/config locally and generate the private Merkle campaign inputs.' },
+              { label: 'Donor Escrow', body: 'Fund the aid escrow with Freighter and receive a proof-of-impact donor receipt.' },
               { label: 'Claim Pass', body: 'Turn an issued credential into a beneficiary QR pass for phone-first delivery.' },
               { label: 'Proof Receipt', body: 'Inspect transaction hash, nullifier, root, verifier, amount, and public settlement fields.' },
               { label: 'Impact Dashboard', body: 'Show escrow, claims paid, remaining capacity, and privacy counters in one judge-ready view.' },

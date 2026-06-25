@@ -6,6 +6,7 @@ const ROUTES = [
   '',
   '/command-center',
   '/campaign-builder',
+  '/donor',
   '/claim-pass',
   '/receipt',
   '/impact',

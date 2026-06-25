@@ -17,10 +17,11 @@ import {
 } from '@/lib/constants';
 
 const workflow = [
-  ['01', 'Build campaign', 'Prepare local beneficiary CSV/config and generate a wallet-bound Merkle root.'],
-  ['02', 'Issue claim pass', 'Operator signs a private credential and delivers it as JSON or encrypted QR.'],
-  ['03', 'Private claim', 'Beneficiary proves eligibility locally and submits a 384-byte Groth16 proof to Soroban.'],
-  ['04', 'Public audit', 'Donors inspect escrow, nullifiers, root, verifier, receipt, and impact without PII.'],
+  ['01', 'Donor funds', 'Public donors add XLM to escrow and receive proof-of-impact receipts.'],
+  ['02', 'Build campaign', 'Prepare local beneficiary CSV/config and generate a wallet-bound Merkle root.'],
+  ['03', 'Issue claim pass', 'Operator signs a private credential and delivers it as JSON or encrypted QR.'],
+  ['04', 'Private claim', 'Beneficiary proves eligibility locally and submits a 384-byte Groth16 proof to Soroban.'],
+  ['05', 'Public audit', 'Donors inspect escrow, nullifiers, root, verifier, receipt, and impact without PII.'],
 ];
 
 const controls = [
@@ -33,6 +34,7 @@ const controls = [
 
 const quickLinks = [
   ['/campaign-builder', 'Campaign Builder', 'Prepare local campaign input'],
+  ['/donor', 'Donor Escrow', 'Fund aid and receive impact receipt'],
   ['/admin', 'Operator Console', 'Issue credentials and QR passes'],
   ['/claim-pass', 'Claim Pass', 'Generate beneficiary delivery card'],
   ['/claim', 'Claim Flow', 'Prove and settle on Stellar'],

@@ -35,6 +35,7 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Competitive edge board:** `/edge` packages the judge proof board, selective disclosure panel, proof telemetry, no-wallet demo path, threat simulator, and readiness growth table
 - **Crisis mission demo:** `/mission` packages the product as a synthetic flood-relief workflow with NGO operator, beneficiary, approved vendor, replay failure, and donor audit view
 - **AidShield Command Center:** `/command-center` ties campaign prep, credential delivery, private claim, receipt, and audit views into one operational product loop
+- **Donor Escrow Portal:** `/donor` lets public donors fund campaign escrow and receive proof-of-impact receipts
 - **Campaign Builder:** `/campaign-builder` prepares local `beneficiaries.json` input for Merkle campaign generation without publishing PII
 - **Claim Pass:** `/claim-pass` turns an issued credential into a beneficiary QR delivery card
 - **Proof Receipt:** `/receipt` validates downloaded claim receipts without exposing credential witnesses
@@ -49,7 +50,7 @@ See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/
 
 ## Crisis Aid Mission Demo
 
-Open `/command-center` first for the upgraded product loop. It gives judges a single hub for the campaign builder, operator console, claim pass, live claim flow, proof receipt, auditor portal, impact dashboard, and threat board.
+Open `/command-center` first for the upgraded product loop. It gives judges a single hub for donor escrow funding, the campaign builder, operator console, claim pass, live claim flow, proof receipt, auditor portal, impact dashboard, and threat board.
 
 Open `/mission` for the judge-ready story layer. It uses synthetic testnet data: a simulated flood-relief NGO operator issues an encrypted QR credential, an approved household claims privately, an approved medical vendor can receive voucher payout, replay fails, and donors inspect aggregate settlement without seeing beneficiary PII.
 

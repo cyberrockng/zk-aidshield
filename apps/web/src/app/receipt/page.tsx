@@ -5,15 +5,17 @@ import { CONTRACT_ID, EXPLORER_BASE, MERKLE_ROOT, VERIFIER_CONTRACT_ID, shortHex
 
 const sampleReceipt = {
   version: '1',
-  claim_type: 'cash',
+  type: 'donor_funding_receipt',
   tx_hash: '0000000000000000000000000000000000000000000000000000000000000000',
-  nullifier: '1111111111111111111111111111111111111111111111111111111111111111',
   amount: '1 XLM',
-  claimed_at: new Date().toISOString(),
-  disbursement_contract: CONTRACT_ID,
+  funded_at: new Date().toISOString(),
+  funder_address: 'G...',
+  contract: CONTRACT_ID,
   verifier_contract: VERIFIER_CONTRACT_ID,
   merkle_root: MERKLE_ROOT,
-  public_settlement_fields: ['transaction hash', 'contract id', 'nullifier', 'amount', 'claim route', 'ledger time'],
+  impact_capacity_added: '1 private claim',
+  privacy_statement: 'Donor funding is public. Beneficiary identities, credentials, and Merkle witnesses remain hidden.',
+  public_settlement_fields: ['donor wallet', 'transaction hash', 'amount', 'contract id', 'ledger time'],
 };
 
 export default function ReceiptPage() {
@@ -29,6 +31,31 @@ export default function ReceiptPage() {
 
   const value = parsed.ok ? parsed.value : null;
   const txHash = typeof value?.tx_hash === 'string' ? value.tx_hash : '';
+  const receiptType = String(value?.type ?? (value?.claim_type ? 'claim_receipt' : 'unknown'));
+  const isDonorReceipt = receiptType === 'donor_funding_receipt';
+  const summaryRows = value
+    ? isDonorReceipt
+      ? [
+          ['Receipt type', 'Donor funding'],
+          ['Transaction', shortHex(String(value.tx_hash ?? ''))],
+          ['Amount', String(value.amount ?? '')],
+          ['Impact added', String(value.impact_capacity_added ?? '')],
+          ['Donor', shortHex(String(value.funder_address ?? ''))],
+          ['Root', shortHex(String(value.merkle_root ?? ''))],
+          ['Contract', shortHex(String(value.contract ?? value.disbursement_contract ?? ''))],
+          ['Funded', value.funded_at ? new Date(String(value.funded_at)).toLocaleString() : ''],
+        ]
+      : [
+          ['Receipt type', 'Private claim'],
+          ['Transaction', shortHex(String(value.tx_hash ?? ''))],
+          ['Nullifier', shortHex(String(value.nullifier ?? ''))],
+          ['Amount', String(value.amount ?? '')],
+          ['Claim type', String(value.claim_type ?? '')],
+          ['Root', shortHex(String(value.merkle_root ?? ''))],
+          ['Contract', shortHex(String(value.disbursement_contract ?? value.contract ?? ''))],
+          ['Verifier', shortHex(String(value.verifier_contract ?? ''))],
+        ]
+    : [];
 
   return (
     <div className="space-y-8">
@@ -36,8 +63,8 @@ export default function ReceiptPage() {
         <div className="badge badge-blue mb-4">Proof Receipt</div>
         <h1 className="text-4xl font-bold mb-3">A public receipt without exposing the aid-list witness.</h1>
         <p className="text-sm leading-7 max-w-3xl" style={{ color: 'var(--muted-2)' }}>
-          Paste the JSON receipt downloaded after a successful claim. The receipt links settlement evidence, nullifier,
-          Merkle root, and contract IDs while keeping the credential secret and Merkle path private.
+          Paste a beneficiary claim receipt or donor funding receipt. Receipts link settlement evidence, campaign anchors,
+          and public impact without exposing credential secrets, Merkle paths, names, or IDs.
         </p>
       </section>
 
@@ -58,15 +85,7 @@ export default function ReceiptPage() {
 
           {value && (
             <div className="space-y-3 text-sm">
-              {[
-                ['Transaction', shortHex(String(value.tx_hash ?? ''))],
-                ['Nullifier', shortHex(String(value.nullifier ?? ''))],
-                ['Amount', String(value.amount ?? '')],
-                ['Claim type', String(value.claim_type ?? '')],
-                ['Root', shortHex(String(value.merkle_root ?? ''))],
-                ['Contract', shortHex(String(value.disbursement_contract ?? ''))],
-                ['Verifier', shortHex(String(value.verifier_contract ?? ''))],
-              ].map(([label, display]) => (
+              {summaryRows.map(([label, display]) => (
                 <div key={label} className="data-row">
                   <span style={{ color: 'var(--muted)' }}>{label}</span>
                   <span className="mono text-right">{display}</span>
@@ -76,11 +95,19 @@ export default function ReceiptPage() {
               <div className="grid sm:grid-cols-2 gap-3 mt-5">
                 <div className="privacy-panel">
                   <div className="metric-label mb-2">Proves</div>
-                  <div className="text-sm leading-6">A claim settled once against the public campaign state.</div>
+                  <div className="text-sm leading-6">
+                    {isDonorReceipt
+                      ? 'Aid escrow was funded through a public Stellar transaction.'
+                      : 'A claim settled once against the public campaign state.'}
+                  </div>
                 </div>
                 <div className="privacy-panel">
                   <div className="metric-label mb-2">Does not reveal</div>
-                  <div className="text-sm leading-6">Credential secret, Merkle path, beneficiary name, or ID.</div>
+                  <div className="text-sm leading-6">
+                    {isDonorReceipt
+                      ? 'Beneficiary names, IDs, claim witnesses, or eligibility-list membership.'
+                      : 'Credential secret, Merkle path, beneficiary name, or ID.'}
+                  </div>
                 </div>
               </div>
 
