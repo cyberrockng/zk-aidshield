@@ -92,6 +92,16 @@ Browser proving means the beneficiary device and served frontend are trusted whi
 
 Stellar settlement is public. AidShield hides aid-list membership and credential witness data, but observers can still see settlement wallet, route, timing, amount, contract ids, Merkle root, verifier key hash, and nullifier.
 
+## Governance Boundary
+
+AidShield is controlled campaign infrastructure. Governance-authorized operators can rotate verifier/root configuration and issuer/vendor status according to the deployed contract controls. This is necessary for emergency response and campaign operations, but it is not the same trust model as immutable, permissionless aid distribution.
+
+## Campaign Scale And Replay Retention
+
+The submitted demo circuit uses depth 8, so each campaign root has 256 slots. Larger field deployments should increase the tree depth and redeploy the corresponding circuit/verifier stack.
+
+Replay protection must persist for the full claim horizon. Real deployments should set nullifier retention longer than the campaign duration plus reconciliation/dispute time.
+
 ## Trusted Setup
 
 The current Groth16 setup is demo-grade. Production should use a public multi-party ceremony or migrate to a proof system whose setup assumptions match the deployment risk.

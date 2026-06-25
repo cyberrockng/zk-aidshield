@@ -23,7 +23,7 @@ const workflow = [
   'Generate or load a beneficiary credential in the claim flow.',
   'Generate the browser Groth16 proof and submit with Freighter.',
   'Copy the generated receipt JSON after settlement.',
-  'Open /receipt and verify the transaction hash against Stellar testnet RPC.',
+  'Open /receipt and check transaction status plus declared AidShield contract against Stellar testnet RPC.',
   'Retry the same credential to show nullifier replay rejection.',
   'Open the disbursement and verifier contracts on Stellar Expert.',
 ];
@@ -36,11 +36,11 @@ export default function VerificationLabPage() {
         <h1 className="text-4xl font-bold mb-3">Inspect the proof path without trusting the pitch.</h1>
         <p className="text-sm leading-7 max-w-3xl" style={{ color: 'var(--muted-2)' }}>
           This page gives judges a compact lab for validating the live proof story: proof system, public inputs,
-          verifier key hash, contract anchors, receipt verification, and nullifier replay evidence.
+          verifier key hash, contract anchors, receipt transaction checks, and nullifier replay evidence.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/claim" className="btn-primary text-sm">Run claim</Link>
-          <Link href="/receipt" className="btn-outline text-sm">Verify receipt</Link>
+          <Link href="/receipt" className="btn-outline text-sm">Check receipt tx</Link>
           <Link href="/auditor" className="btn-outline text-sm">Open auditor</Link>
         </div>
       </section>

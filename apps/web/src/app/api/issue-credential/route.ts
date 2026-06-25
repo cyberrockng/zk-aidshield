@@ -148,6 +148,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
   }
 
+  let issuerKP: Keypair;
+  try {
+    issuerKP = Keypair.fromSecret(issuerSecret());
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 503 });
+  }
+
+  let reservation;
+  try {
+    reservation = await reserveIssuance(campaign.disbursement_id, slot.index, claimant_address);
+  } catch (e) {
+    return NextResponse.json({ error: `Issuance reservation failed: ${String(e)}` }, { status: 503 });
+  }
+  if (!reservation.ok) {
+    return NextResponse.json(
+      { error: `A credential has already been issued for this ${reservation.reason === 'slot_already_issued' ? 'slot' : 'wallet'}` },
+      { status: 409 },
+    );
+  }
+
   // Build credential (without signature)
   const credBase: Omit<BeneficiaryCredential, 'issuer_signature'> = {
     version: '2',
@@ -167,30 +187,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Sign: Ed25519 over SHA-256 of the canonical payload
   const payload = credentialSigningPayload(credBase);
   const msgHash = createHash('sha256').update(payload).digest();
-  let issuerKP: Keypair;
-  try {
-    issuerKP = Keypair.fromSecret(issuerSecret());
-  } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 503 });
-  }
   const sigBytes = issuerKP.sign(msgHash);
   const issuer_signature = Buffer.from(sigBytes).toString('hex');
 
   const credential: BeneficiaryCredential = { ...credBase, issuer_signature };
-  let reservation;
   try {
-    reservation = await reserveIssuance(campaign.disbursement_id, slot.index, claimant_address);
+    await appendIssuanceLedgerEntry(credential);
   } catch (e) {
-    return NextResponse.json({ error: `Issuance reservation failed: ${String(e)}` }, { status: 503 });
-  }
-  if (!reservation.ok) {
     return NextResponse.json(
-      { error: `A credential has already been issued for this ${reservation.reason === 'slot_already_issued' ? 'slot' : 'wallet'}` },
-      { status: 409 },
+      {
+        error:
+          `Credential was reserved but the issuance ledger could not be written: ${String(e)}. ` +
+          'Operator recovery: inspect durable reservation state before retrying this wallet.',
+      },
+      { status: 503 },
     );
   }
-
-  await appendIssuanceLedgerEntry(credential);
 
   // Mark slot + wallet as issued
   issuedSlots.add(slot.index);

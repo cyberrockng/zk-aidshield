@@ -12,6 +12,7 @@
     "test": "npm --prefix apps/web test",
     "rotate:issuer": "node scripts/rotate-issuer-key.mjs",
     "check:production": "node scripts/check-production-readiness.mjs",
+    "verify:proof": "node --import ./packages/merkle-tools/node_modules/tsx/dist/esm/index.mjs scripts/verify-known-proof.mjs",
     "secret:scan": "node scripts/secret-scan.mjs",
     "audit:all": "npm audit && npm --prefix apps/web audit && npm --prefix packages/merkle-tools audit && npm --prefix circuits/aidshield-groth16 audit"
   },

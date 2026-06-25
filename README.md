@@ -6,6 +6,10 @@
 
 ---
 
+**Start here for judging:** open [`/demo-path`](https://zk-aidshield.vercel.app/demo-path). It is the focused 2-3 minute route through the donor escrow, operator credential, private claim, replay block, receipt status check, and public impact audit.
+
+This is a synthetic Stellar testnet crisis-aid demo, not a live NGO deployment. AidShield hides beneficiary names, IDs, credential secrets, Merkle witnesses, and eligibility-list membership; Stellar settlement still publicly shows wallet, amount, timing, contract IDs, root, and nullifier.
+
 ## The Problem
 
 Humanitarian aid systems leak data. Names, ID numbers, and claim records end up in databases that get hacked, sold, or handed to hostile actors. In conflict zones, a paper trail can be lethal.
@@ -33,17 +37,17 @@ ZK AidShield is a complete aid disbursement workflow, not only a ZK primitive de
 - **Threshold governance:** sensitive admin controls can require active governor co-signers
 - **Threat-aware controls:** a live policy dashboard shows issuer, vendor, replay, escrow, pause, and governance posture
 - **Competitive edge board:** `/edge` packages the judge proof board, selective disclosure panel, proof telemetry, no-wallet demo path, threat simulator, and readiness growth table
-- **Judge demo path:** `/demo-path` gives reviewers the exact 2-3 minute click route from donor funding to private claim, replay rejection, receipt verification, and impact audit
+- **Judge demo path:** `/demo-path` gives reviewers the exact 2-3 minute click route from donor funding to private claim, replay rejection, receipt status check, and impact audit
 - **Crisis mission demo:** `/mission` packages the product as a synthetic flood-relief workflow with NGO operator, beneficiary, approved vendor, replay failure, and donor audit view
 - **AidShield Command Center:** `/command-center` ties campaign prep, credential delivery, private claim, receipt, and audit views into one operational product loop
 - **Donor Escrow Portal:** `/donor` lets public donors fund campaign escrow and receive proof-of-impact receipts
 - **Campaign Builder:** `/campaign-builder` prepares local `beneficiaries.json` input for Merkle campaign generation without publishing PII
 - **Claim Pass:** `/claim-pass` turns an issued credential into a beneficiary QR delivery card
 - **Proof Receipt:** `/receipt` validates downloaded claim receipts without exposing credential witnesses
-- **Receipt transaction verification:** `/receipt` can verify a receipt transaction hash against Stellar testnet RPC
+- **Receipt transaction status:** `/receipt` verifies Stellar testnet transaction status and checks any declared receipt contract against the configured AidShield contract
 - **Impact Dashboard:** `/impact` shows escrow, paid claims, remaining capacity, and privacy counters in one judge-ready view
-- **100%+ Readiness Board:** `/readiness` maps independent audit scope, trusted setup, pilot ops, production issuance, threat response, privacy disclosure, and live proof evidence
-- **Verification Lab:** `/verification-lab` gives judges a compact path to inspect proof inputs, verifier anchors, receipt checks, and replay evidence
+- **Readiness Board:** `/readiness` maps independent audit scope, trusted setup, pilot ops, production issuance, threat response, privacy disclosure, and live proof evidence
+- **Verification Lab:** `/verification-lab` gives judges a compact path to inspect proof inputs, verifier anchors, receipt status checks, and replay evidence
 - **Evidence dossier:** `/evidence` maps hackathon requirements to deployed contracts, proof claims, threat tests, and a concise video verification path
 - **Protocol fit page:** `/protocol` maps AidShield directly to the Stellar Hacks Real-World ZK brief: off-chain Circom proof, on-chain Soroban verification, and XLM settlement
 - **Judge mode:** `/judge-mode` lets reviewers understand the proof payload and anchors before connecting Freighter
@@ -54,11 +58,11 @@ See [docs/JUDGING_NOTES.md](docs/JUDGING_NOTES.md), [docs/THREAT_MODEL.md](docs/
 
 ## Crisis Aid Mission Demo
 
-Open `/demo-path` first for the tight 2-3 minute judge route. It links the donor escrow flow, command center, operator credential issuance, private claim, replay check, receipt verification, and impact audit in the order the demo should be reviewed.
+Open `/demo-path` first for the tight 2-3 minute judge route. It links the donor escrow flow, command center, operator credential issuance, private claim, replay check, transaction-status receipt check, and impact audit in the order the demo should be reviewed. The operator issuance step is admin-gated; use the private demo admin secret in submission notes or follow the no-secret review path shown on `/demo-path`.
 
 Open `/readiness` when a reviewer asks whether this can become real infrastructure. It packages the external audit scope, trusted setup posture, pilot runbook, production issuance backend, incident response, privacy disclosure, and verification lab into one board.
 
-Open `/verification-lab` when a technical judge wants to inspect the proof statement, contract anchors, receipt verification path, and replay evidence.
+Open `/verification-lab` when a technical judge wants to inspect the proof statement, contract anchors, receipt status path, and replay evidence.
 
 Open `/command-center` for the upgraded product loop. It gives judges a single hub for donor escrow funding, the campaign builder, operator console, claim pass, live claim flow, proof receipt, auditor portal, impact dashboard, and threat board.
 

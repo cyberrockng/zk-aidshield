@@ -55,7 +55,7 @@ const pillars = [
   {
     title: 'Live proof evidence',
     status: 'Verification lab',
-    body: 'Judges can inspect contract anchors, public proof inputs, verifier key hash, receipt verification, nullifier replay posture, and explorer links.',
+    body: 'Judges can inspect contract anchors, public proof inputs, verifier key hash, receipt transaction checks, nullifier replay posture, and explorer links.',
     route: '/verification-lab',
     artifact: 'docs/VERIFICATION_LAB.md',
   },
@@ -85,7 +85,7 @@ export default function ReadinessPage() {
   return (
     <div className="space-y-8">
       <section className="section-panel">
-        <div className="badge badge-green mb-4">100%+ Readiness Board</div>
+        <div className="badge badge-green mb-4">Readiness Board</div>
         <h1 className="text-4xl font-bold mb-3">From hackathon demo to real-world aid protocol.</h1>
         <p className="text-sm leading-7 max-w-3xl" style={{ color: 'var(--muted-2)' }}>
           This board shows the seven production credibility layers behind AidShield: external review readiness,

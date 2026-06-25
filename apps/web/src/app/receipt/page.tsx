@@ -71,13 +71,28 @@ export default function ReceiptPage() {
       const response = await fetch('/api/verify-receipt', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tx_hash: txHash }),
+        body: JSON.stringify({ tx_hash: txHash, receipt: value }),
       });
-      const data = await response.json() as { error?: string; status?: string; verified?: boolean; explorer_url?: string };
+      const data = await response.json() as {
+        error?: string;
+        status?: string;
+        receipt_status_verified?: boolean;
+        checks?: { contract_match?: boolean | null };
+        limitation?: string;
+        explorer_url?: string;
+      };
       if (!response.ok || data.error) throw new Error(data.error ?? `Receipt verification failed with HTTP ${response.status}`);
+      const contractText =
+        data.checks?.contract_match === true
+          ? ' declared AidShield contract matched'
+          : data.checks?.contract_match === false
+            ? ' declared contract did not match AidShield'
+            : ' no receipt contract was declared';
       setVerifyState({
-        status: data.verified ? 'success' : 'error',
-        message: data.verified ? `Verified on Stellar testnet: ${data.status}` : `Transaction found but not successful: ${data.status}`,
+        status: data.receipt_status_verified ? 'success' : 'error',
+        message: data.receipt_status_verified
+          ? `Transaction succeeded on Stellar testnet;${contractText}. Event/amount/nullifier decoding is not claimed.`
+          : `Transaction found but not successful: ${data.status}`,
         explorerUrl: data.explorer_url ?? `${EXPLORER_BASE}/tx/${txHash}`,
       });
     } catch (error) {
@@ -93,6 +108,10 @@ export default function ReceiptPage() {
         <p className="text-sm leading-7 max-w-3xl" style={{ color: 'var(--muted-2)' }}>
           Paste a beneficiary claim receipt or donor funding receipt. Receipts link settlement evidence, campaign anchors,
           and public impact without exposing credential secrets, Merkle paths, names, or IDs.
+        </p>
+        <p className="text-sm leading-7 max-w-3xl mt-3" style={{ color: 'var(--amber)' }}>
+          Current verifier scope: transaction status and declared contract check. It does not yet independently decode
+          Soroban events, amount, or nullifier from transaction metadata.
         </p>
       </section>
 
@@ -148,7 +167,7 @@ export default function ReceiptPage() {
                       disabled={verifyState.status === 'checking'}
                       className="btn-primary"
                     >
-                      {verifyState.status === 'checking' ? 'Checking...' : 'Verify on Stellar'}
+                      {verifyState.status === 'checking' ? 'Checking...' : 'Verify transaction status'}
                     </button>
                     <a
                       href={`${EXPLORER_BASE}/tx/${txHash}`}

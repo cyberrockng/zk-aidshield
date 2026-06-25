@@ -18,9 +18,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build && npm run start',
+    command: 'env -u NO_COLOR npm run build && env -u NO_COLOR npm run start',
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 240_000,
+    env: {
+      ADMIN_API_SECRET: 'playwright-admin-secret',
+      LEDGER_HMAC_SECRET: 'playwright-ledger-secret',
+      NEXT_TELEMETRY_DISABLED: '1',
+    },
   },
 });

@@ -9,7 +9,7 @@ const routes = [
   ['/claim-pass', 'Beneficiary Claim Pass'],
   ['/receipt', 'Receipt Summary'],
   ['/impact', 'Impact Dashboard'],
-  ['/readiness', '100%+ Readiness Board'],
+  ['/readiness', 'Readiness Board'],
   ['/verification-lab', 'Verification Lab'],
 ] as const;
 

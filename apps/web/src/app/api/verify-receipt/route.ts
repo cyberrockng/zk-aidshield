@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { EXPLORER_BASE, RPC_URL } from '@/lib/constants';
+import { CONTRACT_ID, EXPLORER_BASE, RPC_URL } from '@/lib/constants';
 import { requireRateLimit } from '@/lib/rate-limit';
 
 type RpcTransactionResponse = {
@@ -15,14 +15,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const rateLimitError = requireRateLimit(req, 'verify-receipt', 60);
   if (rateLimitError) return rateLimitError;
 
-  let body: { tx_hash?: string };
+  let body: { tx_hash?: string; receipt?: Record<string, unknown> };
   try {
-    body = await req.json() as { tx_hash?: string };
+    body = await req.json() as { tx_hash?: string; receipt?: Record<string, unknown> };
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const txHash = body.tx_hash?.trim().toLowerCase() ?? '';
+  const receipt = body.receipt ?? {};
+  const txHash = (body.tx_hash ?? (typeof receipt.tx_hash === 'string' ? receipt.tx_hash : ''))?.trim().toLowerCase() ?? '';
   if (!/^[a-f0-9]{64}$/.test(txHash) || /^0+$/.test(txHash)) {
     return NextResponse.json({ error: 'tx_hash must be a non-zero 64-character hex string' }, { status: 400 });
   }
@@ -56,10 +57,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Transaction was not found on Stellar testnet' }, { status: 404 });
   }
 
+  const declaredContract =
+    typeof receipt.contract === 'string'
+      ? receipt.contract
+      : typeof receipt.disbursement_contract === 'string'
+        ? receipt.disbursement_contract
+        : null;
+  const txSuccess = result.status === 'SUCCESS';
+  const contractMatch = declaredContract ? declaredContract === CONTRACT_ID : null;
+
   return NextResponse.json({
     tx_hash: txHash,
     status: result.status,
-    verified: result.status === 'SUCCESS',
+    verified: txSuccess,
+    receipt_status_verified: txSuccess,
+    receipt_verified: false,
+    checks: {
+      tx_success: txSuccess,
+      declared_contract: declaredContract,
+      contract_match: contractMatch,
+      event_match: 'not_inspected',
+      amount_match: 'not_inspected',
+      nullifier_match: 'not_inspected',
+    },
+    limitation:
+      'This endpoint verifies Stellar testnet transaction status and compares any declared receipt contract with the configured AidShield contract. It does not yet decode Soroban events, amount, or nullifier from transaction metadata.',
     ledger: result.latestLedger ?? null,
     created_at: result.createdAt ?? null,
     explorer_url: `${EXPLORER_BASE}/tx/${txHash}`,

@@ -20,8 +20,8 @@ const steps = [
     label: '03',
     title: 'Issue a private claim pass',
     href: '/admin',
-    action: 'Issue a wallet-bound credential, then export JSON or an encrypted QR delivery payload.',
-    proof: 'The operator signs a private credential without publishing beneficiary PII.',
+    action: 'Operator action: requires the demo admin secret supplied in submission notes. Issue a wallet-bound credential, then export JSON or encrypted QR.',
+    proof: 'No-secret review path: inspect /claim-pass, /receipt, /verification-lab, and the replay evidence before running live issuance.',
   },
   {
     label: '04',
@@ -39,10 +39,10 @@ const steps = [
   },
   {
     label: '06',
-    title: 'Verify the public receipt',
+    title: 'Check the public receipt transaction',
     href: '/receipt',
-    action: 'Paste the receipt JSON and verify the transaction hash against Stellar testnet.',
-    proof: 'Connects local receipt evidence to public settlement without exposing the witness.',
+    action: 'Paste the receipt JSON and verify transaction status plus the declared AidShield contract against Stellar testnet.',
+    proof: 'Connects local receipt evidence to public settlement while clearly labeling event/amount/nullifier decoding as future hardening.',
   },
   {
     label: '07',
@@ -63,6 +63,11 @@ export default function DemoPathPage() {
           Use this page as the live submission checklist. It keeps the demo focused on the hackathon requirement:
           off-chain zero-knowledge proof generation, on-chain Stellar verification, real escrow settlement, replay
           protection, and public auditability without beneficiary PII.
+        </p>
+        <p className="text-sm leading-7 max-w-3xl mt-3" style={{ color: 'var(--amber)' }}>
+          Operator issuance is intentionally admin-gated. Judges can use the supplied demo admin secret for the live
+          operator path, or follow the no-secret review path through receipt status checks, replay evidence, and public
+          contract anchors.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <a

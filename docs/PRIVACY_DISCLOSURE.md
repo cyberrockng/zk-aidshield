@@ -30,3 +30,11 @@ A beneficiary can prove membership in an approved aid list without publishing th
 ## Non-Claims
 
 AidShield does not hide wallet activity, payout timing, payout amount, vendor address, or network-level metadata. Production deployments should combine AidShield with safe wallet guidance, phishing protection, and field privacy procedures.
+
+## Demo Scale Boundary
+
+The current demo circuit uses an 8-level Merkle tree, which supports 256 claim slots per campaign. Production deployments can increase tree depth, but doing so requires regenerating the circuit artifacts, verifier key, campaign root, and verifier/disbursement deployment stack.
+
+## Replay Retention Boundary
+
+Nullifier retention must cover the full claim horizon for any real campaign. If a deployment uses TTL-based storage extension, the retention window must be longer than the campaign claim period plus any dispute/reconciliation window.
