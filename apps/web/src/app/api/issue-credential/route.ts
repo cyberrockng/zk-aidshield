@@ -11,7 +11,7 @@
  * Security properties:
  *  - campaign.json is read server-side and the issuer key is never bundled into the client
  *  - The returned credential intentionally contains the secret and Merkle witness for local proving
- *  - Each slot is tracked and can only be issued once per process lifetime in this demo deployment
+ *  - Each slot/wallet is reserved before issuance; production can use Upstash Redis SET NX for durable uniqueness
  *  - The credential binds claimant_address so the signature won't verify for
  *    any other wallet
  */
@@ -23,7 +23,7 @@ import { Keypair, StrKey } from '@stellar/stellar-sdk';
 import type { BeneficiaryCredential } from '@/lib/credential';
 import { credentialSigningPayload } from '@/lib/credential';
 import { ISSUER_KEY_ID, ISSUER_PUBLIC_KEY } from '@/lib/constants';
-import { appendIssuanceLedgerEntry } from '@/lib/issuance-ledger-store';
+import { appendIssuanceLedgerEntry, reserveIssuance } from '@/lib/issuance-ledger-store';
 import { requireAdmin } from '@/lib/admin-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -76,7 +76,7 @@ function loadCampaign(): Campaign {
   throw new Error('CAMPAIGN_JSON env var or campaign.json file is required — run generate-campaign first');
 }
 
-// In-memory issue tracking (resets on restart — acceptable for demo)
+// Extra same-process guard. Durable production uniqueness is handled by reserveIssuance().
 const issuedSlots = new Set<number>();
 const issuedWallets = new Set<string>();
 
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Prevent re-issuing to the same wallet (slot already issued in this session)
+  // Prevent re-issuing to the same wallet (fast same-process guard).
   if (issuedSlots.has(slot.index) || issuedWallets.has(claimant_address)) {
     return NextResponse.json(
       { error: 'A credential has already been issued to this wallet in this session' },
@@ -158,6 +158,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const issuer_signature = Buffer.from(sigBytes).toString('hex');
 
   const credential: BeneficiaryCredential = { ...credBase, issuer_signature };
+  let reservation;
+  try {
+    reservation = await reserveIssuance(campaign.disbursement_id, slot.index, claimant_address);
+  } catch (e) {
+    return NextResponse.json({ error: `Issuance reservation failed: ${String(e)}` }, { status: 503 });
+  }
+  if (!reservation.ok) {
+    return NextResponse.json(
+      { error: `A credential has already been issued for this ${reservation.reason === 'slot_already_issued' ? 'slot' : 'wallet'}` },
+      { status: 409 },
+    );
+  }
+
   appendIssuanceLedgerEntry(credential);
 
   // Mark slot + wallet as issued

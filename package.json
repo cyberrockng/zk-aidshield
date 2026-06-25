@@ -9,6 +9,10 @@
     "contracts:test": "cd contracts/disbursement && cargo test && cd ../verifier-groth16 && cargo test",
     "deploy:testnet": "./scripts/deploy-groth16.sh",
     "setup": "./scripts/setup.sh",
-    "test": "npm --prefix apps/web test"
+    "test": "npm --prefix apps/web test",
+    "rotate:issuer": "node scripts/rotate-issuer-key.mjs"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^12.3.0"
   }
 }

@@ -1182,6 +1182,7 @@ export default function AdminPage() {
                 ['Issued today', issuanceLedger.summary.issued_today],
                 ['Issuer keys', issuanceLedger.summary.active_issuers],
                 ['Expiring soon', issuanceLedger.summary.expiring_within_7_days],
+                ['Storage', issuanceLedger.summary.storage_backend === 'upstash_redis' ? 'Redis' : 'Local'],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-lg p-3" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-dim)' }}>
                   <div className="text-xs mb-1" style={{ color: 'var(--muted)' }}>{label}</div>

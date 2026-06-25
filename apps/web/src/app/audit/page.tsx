@@ -235,6 +235,20 @@ export default function AuditPage() {
             with a single-contributor ceremony (demo only). Production requires a multi-party trusted setup to
             eliminate the toxic waste risk.
           </li>
+          <li>
+            <strong style={{ color: 'var(--text)' }}>Issuance uniqueness:</strong> Production should configure
+            Upstash Redis REST variables so credential issuance reserves campaign slot and wallet keys with SET NX.
+            Without Redis, the app uses a locked local-file fallback for demos.
+          </li>
+          <li>
+            <strong style={{ color: 'var(--text)' }}>Browser proving:</strong> A compromised frontend could read a
+            loaded credential witness. Use the official deployment, keep CSP enabled, rotate credentials after
+            suspected compromise, and prefer short expiries.
+          </li>
+          <li>
+            <strong style={{ color: 'var(--text)' }}>Public settlement:</strong> Stellar settlement remains public:
+            payout wallet or vendor, route, amount, timing, contract ids, root, and nullifier are visible by design.
+          </li>
         </ul>
       </div>
 
