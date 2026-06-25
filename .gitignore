@@ -21,3 +21,4 @@ circuits/aidshield-groth16/build/
 
 # TypeScript incremental build info
 *.tsbuildinfo
+.vercel
