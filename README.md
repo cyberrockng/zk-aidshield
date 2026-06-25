@@ -309,6 +309,8 @@ Public settlement still reveals the payout wallet or approved vendor wallet, rou
 
 The built-in issuance ledger is local/demo-grade operator accountability. Production deployments should back it with durable storage, retention policy, monitoring, and access controls.
 
+Verifier deployment must use the provided scripts so the Groth16 verifier is initialized with the verification key immediately after deployment and before the disbursement contract points at it. The verifier rejects uninitialized `verify()` calls, but initialization itself is intentionally a one-time deployment step.
+
 ## Credential System
 
 The operator's API route (`POST /api/issue-credential`) signs a credential JSON with an Ed25519 key. The signing key lives only on the server — it is never bundled into the frontend.

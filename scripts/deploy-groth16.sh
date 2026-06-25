@@ -23,7 +23,7 @@ set -euo pipefail
 
 NETWORK="testnet"
 RPC="https://soroban-testnet.stellar.org"
-DISBURSEMENT_CONTRACT="CA2VG5CONVXIHLIIGT4LD6WLPU3ZJVL2UMO7NP2WAEL5R7LHKAZYS7R2"
+DISBURSEMENT_CONTRACT="${DISBURSEMENT_CONTRACT:-CDCT4TCFKSIBOCFV6OATUJB2Y3GOF72KIG7NLOAK7Z4HMGYF4PE3V5NC}"
 VK_JSON="circuits/aidshield-groth16/build/verification_key.json"
 WASM="contracts/verifier-groth16/target/wasm32v1-none/release/aidshield_verifier_groth16.wasm"
 
@@ -38,6 +38,7 @@ if [ ! -f "$VK_JSON" ]; then
 fi
 
 echo "=== Step 1: Build Groth16 verifier WASM ==="
+echo "Disbursement contract target: $DISBURSEMENT_CONTRACT"
 (cd contracts/verifier-groth16 && source "$HOME/.cargo/env" && cargo build --target wasm32v1-none --release)
 echo "✓ WASM built"
 

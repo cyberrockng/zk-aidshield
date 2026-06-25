@@ -28,7 +28,7 @@ const ACTORS = [
     role: 'Beneficiary',
     name: 'Approved household wallet',
     action: 'Decrypts credential locally, generates a Groth16 proof, signs with Freighter, and claims once.',
-    privateData: 'Secret, Merkle witness, and aid-list membership never leave the device.',
+    privateData: 'Secret and Merkle witness are used locally during claim; aid-list membership is not sent on-chain or to the verifier.',
   },
   {
     role: 'Approved vendor',
