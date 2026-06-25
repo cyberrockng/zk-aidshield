@@ -311,7 +311,7 @@ The built-in issuance ledger is local/demo-grade operator accountability unless 
 
 Verifier deployment must use the provided scripts so the Groth16 verifier is initialized with the verification key immediately after deployment and before the disbursement contract points at it. The verifier rejects uninitialized `verify()` calls, but initialization itself is intentionally a one-time deployment step.
 
-See [`docs/PRODUCTION_HARDENING.md`](docs/PRODUCTION_HARDENING.md) and [`docs/SECURITY_READINESS.md`](docs/SECURITY_READINESS.md) for issuer rotation, durable issuance uniqueness, safe dry-run testing, browser proving trust boundaries, public settlement boundaries, and trusted setup requirements.
+See [`docs/PRODUCTION_HARDENING.md`](docs/PRODUCTION_HARDENING.md), [`docs/SECURITY_READINESS.md`](docs/SECURITY_READINESS.md), [`docs/TRUSTED_SETUP_PLAN.md`](docs/TRUSTED_SETUP_PLAN.md), and [`docs/EXTERNAL_REVIEW_REQUEST.md`](docs/EXTERNAL_REVIEW_REQUEST.md) for issuer rotation, durable issuance uniqueness, safe dry-run testing, browser proving trust boundaries, public settlement boundaries, trusted setup requirements, and external review scope.
 
 ## Credential System
 

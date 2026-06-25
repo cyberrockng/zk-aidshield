@@ -29,6 +29,32 @@ When configured, `/api/issue-credential` reserves `campaign + slot` and `campaig
 
 Set `REQUIRE_DURABLE_ISSUANCE=true` in production after Redis is configured. With that flag enabled, credential issuance fails closed instead of falling back to local files if Redis env vars are missing.
 
+### Upstash Execution Order
+
+1. Create an Upstash Redis database.
+2. Copy the database REST URL and REST token.
+3. Add the values to Vercel production env:
+
+```bash
+vercel env add UPSTASH_REDIS_REST_URL production
+vercel env add UPSTASH_REDIS_REST_TOKEN production
+vercel env add REQUIRE_DURABLE_ISSUANCE production
+```
+
+Use `true` as the value for `REQUIRE_DURABLE_ISSUANCE`.
+
+4. Redeploy production:
+
+```bash
+vercel --prod --yes
+```
+
+5. Verify without consuming a credential:
+
+```bash
+npm run check:production
+```
+
 Use dry-run issuance for live deployment checks without consuming a slot:
 
 ```bash
