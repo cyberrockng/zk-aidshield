@@ -1,0 +1,10 @@
+**/node_modules
+**/.next
+**/target
+**/test-results
+**/playwright-report
+**/.turbo
+**/.cache
+contracts/**/target
+apps/web/.next
+apps/web/test-results
