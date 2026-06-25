@@ -804,10 +804,10 @@ export default function ClaimPage() {
 
       {/* Privacy note */}
       <div className="mt-5 section-panel text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
-        <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>Your secret never leaves this device.</span>{' '}
-        Groth16 proof generation runs entirely in your browser via WebAssembly. No server sees your
-        claim secret or can link you to a beneficiary. The proof reveals only that you belong to the
-        approved Merkle set. Each nullifier is wallet-bound and single-use, enforced on-chain forever.{' '}
+        <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>During proof generation, your loaded credential witness stays local.</span>{' '}
+        Groth16 proof generation runs in your browser via WebAssembly. The secret and Merkle path are not
+        sent on-chain or to the verifier. Public settlement still reveals the payout wallet, route,
+        amount, timing, and nullifier for accountability.{' '}
         <a href="/audit" className="underline" style={{ color: 'var(--green)' }}>
           Full trust model →
         </a>

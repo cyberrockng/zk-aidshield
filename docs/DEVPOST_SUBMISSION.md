@@ -16,7 +16,7 @@ Operators can deliver credentials as JSON files, copied payloads, or passphrase-
 
 AidShield now supports restricted voucher redemption: admins approve vendors on-chain, beneficiaries choose voucher mode, and the same private eligibility proof pays the approved vendor instead of the claimant wallet. The same nullifier prevents a credential from being used for both cash and voucher redemption.
 
-For operator accountability, the admin dashboard keeps an admin-protected non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
+For operator accountability, the admin dashboard keeps an admin-protected local non-PII issuance ledger with keyed wallet identifiers, credential hashes, issuer key IDs, expiry windows, and delivery modes. In production this should be backed by durable storage with retention policy and access controls. After payout, beneficiaries can export a private claim receipt with transaction hash, nullifier, campaign ID, and amount.
 
 ## Crisis Aid Mission Demo
 
@@ -44,7 +44,7 @@ The `/protocol` page maps AidShield directly to the Stellar Hacks brief: off-cha
 - no-wallet judge mode before the live Freighter path
 - field-pilot readiness page with honest production gaps
 - incident playbook for compromised issuers, vendors, credential leaks, and replay attempts
-- admin-protected non-PII issuance ledger
+- admin-protected local non-PII issuance ledger
 - local beneficiary claim receipts
 - admin-protected credential issuance and beneficiary-slot APIs
 - fresh Stellar testnet deployment with 50 XLM escrow
@@ -87,7 +87,7 @@ The `/protocol` page maps AidShield directly to the Stellar Hacks brief: off-cha
 
 ## Security Posture
 
-AidShield keeps names, IDs, beneficiary-list membership, credential secrets, Merkle witnesses, and issuance records off-chain. Operator APIs are protected by an admin secret, ledger wallet identifiers use keyed HMACs instead of raw addresses, and the threat dashboard makes the issuer, vendor, replay, escrow, pause, and governance posture visible.
+AidShield keeps names, IDs and beneficiary-list membership off-chain. The issuer API delivers the credential secret and Merkle witness inside a signed credential for local browser proving; during claim, those witness values are not sent on-chain or to the verifier. Operator APIs are protected by an admin secret, local ledger wallet identifiers use keyed HMACs instead of raw addresses, and the threat dashboard makes the issuer, vendor, replay, escrow, pause, and governance posture visible.
 
 The Stellar payout itself remains public settlement data: observers can see payout wallet, timing, amount, contract IDs, Merkle root, verifier key hash, and nullifier. That is the accountability layer, not a claim that the final token transfer is anonymous.
 

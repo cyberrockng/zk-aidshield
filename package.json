@@ -1,15 +1,14 @@
 {
   "name": "zk-aidshield",
   "private": true,
-  "packageManager": "pnpm@9.12.0",
   "scripts": {
-    "dev": "pnpm --dir apps/web dev",
-    "build:web": "pnpm --dir apps/web build",
-    "seed": "pnpm --dir packages/merkle-tools seed",
-    "test:merkle": "pnpm --dir packages/merkle-tools test",
+    "dev": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "seed": "npm --prefix packages/merkle-tools run seed",
+    "test:merkle": "npm --prefix packages/merkle-tools test",
     "contracts:test": "cd contracts/disbursement && cargo test && cd ../verifier-groth16 && cargo test",
     "deploy:testnet": "./scripts/deploy-groth16.sh",
     "setup": "./scripts/setup.sh",
-    "test": "pnpm --dir apps/web test"
+    "test": "npm --prefix apps/web test"
   }
 }

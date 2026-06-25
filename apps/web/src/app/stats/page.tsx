@@ -61,7 +61,7 @@ const ZK_FACTS = [
   { label: 'Proof size', value: '384 bytes (G1 + G2 + G1 uncompressed)' },
   { label: 'Public inputs', value: '6 (disburse_id, merkle_root, nullifier, wallet, expires_at, issuer)' },
   { label: 'On-chain verification', value: 'Native BLS12-381 pairing_check on Soroban' },
-  { label: 'Proving location', value: 'Browser WASM (secret never leaves device)' },
+  { label: 'Proving location', value: 'Browser WASM (witness not sent on-chain)' },
   { label: 'Proving time', value: '~15–30 s (single-thread WASM)' },
 ];
 
@@ -74,6 +74,7 @@ const PUBLIC_AUDIT_FIELDS = [
   ['Escrow balance', 'Public', 'Read from the XLM SAC balance held by the disbursement contract.'],
   ['Claims paid', 'Public', 'Stored by the disbursement contract as aggregate claim count.'],
   ['Nullifiers', 'Public', 'Prevent replay without exposing the credential secret or Merkle path.'],
+  ['Direct payout wallet', 'Public settlement', 'Direct cash claims pay the connected claimant wallet on Stellar.'],
   ['Vendor redemptions', 'Public settlement', 'Approved-vendor voucher claims emit settlement events and pay the vendor wallet.'],
   ['Beneficiary list', 'Private', 'Only the Merkle root is public; the eligible wallet set stays off-chain.'],
   ['Credential witness', 'Private', 'Secret, leaf index, and Merkle path stay in the beneficiary credential/browser.'],

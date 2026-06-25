@@ -12,6 +12,7 @@
 
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
+import { StrKey } from "@stellar/stellar-sdk";
 
 const BLS12_381_R =
   52435875175126190479447740508185965837690552500527637822603658699938581184513n;
@@ -149,35 +150,19 @@ export async function computeLeaf(
 
 // ── Stellar address → field element ──────────────────────────────────────────
 
-const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-
-function base32Decode(s: string): Buffer {
-  const bytes: number[] = [];
-  let buf = 0;
-  let bits = 0;
-  for (const ch of s) {
-    const v = BASE32_ALPHABET.indexOf(ch);
-    if (v < 0) throw new Error(`Invalid base32 char: ${ch}`);
-    buf = (buf << 5) | v;
-    bits += 5;
-    if (bits >= 8) {
-      bytes.push((buf >>> (bits - 8)) & 0xff);
-      bits -= 8;
-    }
-  }
-  return Buffer.from(bytes);
-}
-
 /**
  * Converts a Stellar G... address to a 248-bit BLS12-381 field element (bigint).
- * Mirrors stellarAddressToField in apps/web/src/lib/constants.ts without the SDK dep.
+ * Mirrors stellarAddressToField in apps/web/src/lib/constants.ts.
  *
- * StrKey decodes to 35 bytes: version(1) + key(32) + checksum(2)
- * We take key[1..31] (= decoded[2..32]) as 31 bytes → 248-bit field element.
+ * StrKey checksum is validated by stellar-sdk. We use the low 31 bytes of the
+ * Ed25519 public key so the value fits below the BLS12-381 scalar field.
  */
 export function stellarAddressToFieldBigint(address: string): bigint {
-  const decoded = base32Decode(address); // 35 bytes
-  const fieldBytes = decoded.subarray(2, 33); // key bytes [1..31] → 31 bytes
+  if (!StrKey.isValidEd25519PublicKey(address)) {
+    throw new Error("Invalid Stellar Ed25519 public key");
+  }
+  const decoded = StrKey.decodeEd25519PublicKey(address);
+  const fieldBytes = decoded.subarray(1, 32); // low 31 bytes → 248-bit field element
   const hex = Buffer.from(fieldBytes).toString('hex');
   return BigInt('0x' + hex.padStart(64, '0'));
 }

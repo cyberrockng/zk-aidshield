@@ -64,7 +64,7 @@ Open `/protocol` to show why AidShield fits the hackathon thesis: proofs are gen
 4. Click **Issue Credential**
 5. A signed credential appears — enter a QR passphrase, then click **Download**, **Copy JSON**, or **Download QR**
 
-> _What happened:_ The server signed a credential binding the Merkle witness (secret + path) to that specific wallet using Ed25519. The secret never left the server. The browser received a signed token.
+> _What happened:_ The issuer server signed a credential binding the Merkle witness (secret + path) to that specific wallet using Ed25519. The credential intentionally contains the secret and witness so the beneficiary can generate the proof locally.
 
 ### Step 2 — Beneficiary: Load and Verify (~5 seconds)
 
@@ -176,7 +176,7 @@ XLM released to beneficiary via Stellar Asset Contract
 | Claim secret | ❌ Never |
 | Merkle root (commitment to approved list) | ✅ Yes |
 | Nullifier (one-time claim token, post-claim) | ✅ Yes |
-| Claim event (nullifier + amount, no identity) | ✅ Yes |
+| Claim event (nullifier + amount + claimant wallet) | ✅ Yes |
 
 ## ZK Proof Details
 
@@ -191,7 +191,7 @@ XLM released to beneficiary via Stellar Asset Contract
 | Public inputs | 6 × 32 bytes = 192 bytes |
 | Circuit constraints | 2,576 non-linear constraints |
 | On-chain verification | Native `bls.pairing_check` host function on Soroban |
-| Proving location | Browser WASM (secret never leaves device) |
+| Proving location | Browser WASM (loaded secret/witness are not sent on-chain or to verifier) |
 | Proving time | ~15–30 s (single-thread WASM) |
 
 ## Tech Stack
@@ -300,6 +300,14 @@ cp apps/web/.env.example apps/web/.env.local
 The app ships with testnet fallback values in `constants.ts`, so it works without `.env.local` for the deployed demo campaign.
 
 Protected operator APIs do not ship with server-side fallbacks. Set `ISSUER_SECRET_KEY`, `ADMIN_API_SECRET`, and `LEDGER_HMAC_SECRET` in `apps/web/.env.local` before using `/admin` to issue credentials or inspect the local issuance ledger.
+
+### Trust Boundary
+
+The issuer API reads the selected campaign secret and Merkle witness server-side, then delivers them inside a signed credential to the beneficiary browser. During claim, the browser uses those witness values to generate the Groth16 proof locally; the secret and Merkle path are not sent on-chain or to the verifier.
+
+Public settlement still reveals the payout wallet or approved vendor wallet, route, timing, amount, contract IDs, Merkle root, verifier key hash, and nullifier. AidShield protects aid-list membership and witness data; it does not claim the final Stellar transfer is anonymous.
+
+The built-in issuance ledger is local/demo-grade operator accountability. Production deployments should back it with durable storage, retention policy, monitoring, and access controls.
 
 ## Credential System
 

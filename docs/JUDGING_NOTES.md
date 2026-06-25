@@ -17,7 +17,7 @@ The demo shows:
 - replay protection with persistent nullifiers
 - encrypted mobile QR credential export/import for field delivery
 - approved-vendor voucher redemption for restricted aid budgets
-- durable non-PII issuance ledger for operator accountability
+- admin-protected local non-PII issuance ledger for operator accountability
 - local beneficiary claim receipts after payout
 - live threat-resistance dashboard showing issuer, vendor, replay, escrow, pause, and governance posture
 - competitive edge board showing proof outcomes, selective disclosure, telemetry, no-wallet judge path, attack simulator, and readiness growth
@@ -36,7 +36,7 @@ The demo shows:
 | ZK depth | Circom circuit proves Merkle membership and nullifier correctness while hiding the secret |
 | Stellar fit | Low-cost, fast settlement with native SAC payout and Soroban BLS12-381 host functions |
 | Security thinking | Wallet-bound leaves, on-chain replay blocking, issuer/vendor controls, pause switch, trust model, threat dashboard, and incident playbook |
-| Demo completeness | Mission, Evidence, Admin, encrypted QR delivery, approved-vendor vouchers, non-PII issuance ledger, claim receipt, stats, audit, threats, edge board, deployed testnet contracts, and automated tests |
+| Demo completeness | Mission, Evidence, Admin, encrypted QR delivery, approved-vendor vouchers, local non-PII issuance ledger, claim receipt, stats, audit, threats, edge board, deployed testnet contracts, and automated tests |
 | Expansion path | Issuer governance, optional identity adapters, multi-vendor operations, and public trusted setup |
 
 ## Strongest Demo Path

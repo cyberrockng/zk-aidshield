@@ -1,7 +1,8 @@
 'use client';
 
 // Client-side Groth16 proof generation (BLS12-381).
-// The secret NEVER leaves this device — all computation runs in the browser via WASM.
+// During proof generation, the loaded credential secret and witness stay in this
+// browser context and are not sent on-chain or to the verifier.
 //
 // Circuit artifacts expected in /public/:
 //   /circuit.wasm          — compiled AidShield circom circuit
@@ -123,6 +124,9 @@ function bigintToBytes32(n: bigint): Uint8Array {
 }
 
 function hexToFieldElement(hex: string): bigint {
+  if (!/^[0-9a-fA-F]{1,64}$/.test(hex)) {
+    throw new Error('Expected a 1-32 byte hex field element');
+  }
   return BigInt('0x' + hex.padStart(64, '0'));
 }
 
@@ -136,6 +140,7 @@ function serializeProof(proof: {
   pi_b: string[][];
   pi_c: string[];
 }): Uint8Array {
+  validateProofShape(proof);
   const out = new Uint8Array(384);
 
   // G1: X(48) || Y(48)
@@ -161,6 +166,30 @@ function serializeProof(proof: {
   out.set(g2Bytes(proof.pi_b), 96);
   out.set(g1Bytes(proof.pi_c), 288);
   return out;
+}
+
+function validateProofShape(proof: { pi_a: string[]; pi_b: string[][]; pi_c: string[] }): void {
+  const isDecimal = (v: unknown) => typeof v === 'string' && /^[0-9]+$/.test(v);
+  if (!Array.isArray(proof.pi_a) || proof.pi_a.length < 2 || !isDecimal(proof.pi_a[0]) || !isDecimal(proof.pi_a[1])) {
+    throw new Error('Unexpected Groth16 pi_a shape');
+  }
+  if (!Array.isArray(proof.pi_c) || proof.pi_c.length < 2 || !isDecimal(proof.pi_c[0]) || !isDecimal(proof.pi_c[1])) {
+    throw new Error('Unexpected Groth16 pi_c shape');
+  }
+  if (
+    !Array.isArray(proof.pi_b) ||
+    proof.pi_b.length < 2 ||
+    !Array.isArray(proof.pi_b[0]) ||
+    !Array.isArray(proof.pi_b[1]) ||
+    proof.pi_b[0].length < 2 ||
+    proof.pi_b[1].length < 2 ||
+    !isDecimal(proof.pi_b[0][0]) ||
+    !isDecimal(proof.pi_b[0][1]) ||
+    !isDecimal(proof.pi_b[1][0]) ||
+    !isDecimal(proof.pi_b[1][1])
+  ) {
+    throw new Error('Unexpected Groth16 pi_b shape');
+  }
 }
 
 // ── Main prover ─────────────────────────────────────────────────────────────
@@ -212,6 +241,12 @@ export async function generateProof(
 
   log('Serialising proof to Soroban wire format…');
   const proofBytes = serializeProof(proof);
+  if (publicSignals.length !== 6) {
+    throw new Error(`Unexpected public signal count: expected 6, got ${publicSignals.length}`);
+  }
+  for (const signal of publicSignals) {
+    if (!/^[0-9]+$/.test(signal)) throw new Error('Unexpected public signal format');
+  }
 
   // Public inputs: disbursement_id | merkle_root | nullifier | claimant_address | expires_at | issuer_key_id
   // publicSignals order follows the circuit declaration.

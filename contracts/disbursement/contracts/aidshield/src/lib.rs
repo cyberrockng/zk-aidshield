@@ -490,6 +490,10 @@ impl AidShieldContract {
         }
 
         // ── Payout via XLM SAC ────────────────────────────────────────────
+        //
+        // Soroban contract calls are atomic: if the transfer below traps, the
+        // later nullifier/count/event writes do not commit. Replay protection is
+        // written immediately after the transfer succeeds.
         let payout: i128 = env
             .storage()
             .instance()

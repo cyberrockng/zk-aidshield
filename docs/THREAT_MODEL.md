@@ -16,8 +16,9 @@ AidShield protects beneficiary privacy while preserving disbursement accountabil
 
 | Asset | Protection |
 | --- | --- |
-| Beneficiary identity | Never included in on-chain state or events |
-| Claim secret | Private circuit input; used only inside local proof generation |
+| Beneficiary records | Names, IDs, aid-list membership, credential secret, and Merkle witness stay off-chain |
+| Claimant wallet | Public settlement data in claim/voucher events |
+| Claim secret | Delivered in the signed credential; used inside local proof generation and not sent on-chain |
 | Eligibility list | Committed as a Merkle root, not published |
 | Payout funds | Held in Soroban escrow and released only after proof verification |
 | Replay protection | Nullifier is persisted on-chain after first claim |
@@ -28,8 +29,8 @@ AidShield protects beneficiary privacy while preserving disbursement accountabil
 | Boundary | Current guarantee | Production hardening |
 | --- | --- | --- |
 | Aid operator eligibility vetting | Off-chain trust | Multi-issuer governance and audit trails |
-| Credential issuance API | Server signs credentials and keeps campaign secrets server-side | HSM/secret manager, rate limits, durable issuance ledger |
-| Beneficiary device | Secret stays in browser during proof generation | Mobile wallet support, encrypted backup, recovery flow |
+| Credential issuance API | Server signs credentials and delivers the selected secret/witness inside the credential | HSM/secret manager, rate limits, durable issuance ledger |
+| Beneficiary device | Loaded credential witness stays local during proof generation and is not sent on-chain/to verifier | Mobile wallet support, encrypted backup, recovery flow |
 | Stellar contract | Verifies proof, root, nullifier, signer, payout | On-chain issuer registry and expiry checks |
 | ZK setup | Demo proving key | Public multi-party ceremony or setup-minimized proof system |
 
@@ -42,7 +43,7 @@ AidShield protects beneficiary privacy while preserving disbursement accountabil
 | Wrong campaign/root | Blocked on-chain | Public inputs must match stored disbursement ID and Merkle root |
 | Claim with stolen proof from another wallet | Blocked on-chain | Proof public input must match transaction signer |
 | Claim with stolen credential from another wallet | Blocked by circuit design | Leaf and nullifier include `claimant_address` |
-| PII leakage through chain | Avoided by design | Only root, nullifier, amount, and contract events are public |
+| PII leakage through chain | Avoided for names/IDs/list membership | Root, nullifier, amount, claimant wallet, route, and contract events are public |
 
 ## Known Residual Risks
 

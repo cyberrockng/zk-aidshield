@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const STEPS = [
   ['1', 'Read the mission', 'Synthetic flood-relief actors explain who issues, who claims, who redeems, and who audits.'],
   ['2', 'Inspect evidence', 'Contract IDs, verifier, Merkle root, VK hash, and attack matrix are visible without a wallet.'],
-  ['3', 'Understand the proof', 'The browser proof hides secret and Merkle witness while publishing root, nullifier, wallet field, expiry, and issuer.'],
+  ['3', 'Understand the proof', 'The browser proof hides secret and Merkle witness while publishing root, nullifier, wallet field, expiry, and issuer. Settlement wallet, route, amount, and timing remain public.'],
   ['4', 'Run live mode', 'Connect Freighter only when ready to generate the real proof and submit the Soroban transaction.'],
 ];
 

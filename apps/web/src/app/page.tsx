@@ -157,8 +157,8 @@ function ZkFlowDiagram() {
         className="mt-5 pt-4 text-xs"
         style={{ borderTop: '1px solid var(--border-dim)', color: 'var(--muted)', lineHeight: 1.7 }}
       >
-        <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>Secret stays in the browser.</span>
-        {' '}The ZK proof leaves. The contract verifies a BLS12-381 pairing equation — never sees the secret.
+        <span style={{ color: 'var(--green-bright)', fontWeight: 600 }}>Witness stays local during claim.</span>
+        {' '}The ZK proof leaves. The contract verifies a BLS12-381 pairing equation and never receives the secret or Merkle path.
         {' '}Nullifier is written on-chain to prevent replay.
       </div>
     </div>
@@ -178,7 +178,7 @@ const STEPS = [
     n: '02',
     title: 'Beneficiary proves',
     icon: '⚡',
-    body: 'Beneficiary loads their private claim file. A Groth16 BLS12-381 circuit runs in their browser via WASM — proving Merkle membership and computing a wallet-bound nullifier. Secret never leaves the device.',
+    body: 'Beneficiary loads their private claim file. A Groth16 BLS12-381 circuit runs in their browser via WASM — proving Merkle membership and computing a wallet-bound nullifier without sending the witness on-chain.',
   },
   {
     n: '03',
@@ -382,7 +382,7 @@ export default function LandingPage() {
             <ul className="space-y-3">
               {[
                 'Zero PII on-chain — no names, IDs, or biometrics ever stored',
-                'Cryptographic proof of eligibility with no identity disclosure',
+                'Cryptographic proof of eligibility without disclosing aid-list membership',
                 'One-time nullifier prevents any duplicate claim, on-chain forever',
                 'Wallet-bound proof: only the intended recipient can claim',
               ].map((s) => (

@@ -5,8 +5,9 @@
  * witness to a specific claimant wallet. The signature is Ed25519 via the
  * Stellar SDK (same curve as Stellar accounts).
  *
- * The secret inside the credential NEVER leaves the beneficiary's device — the
- * Groth16 proof is generated in-browser from the credential fields.
+ * The issuer delivers a signed credential containing the secret and Merkle
+ * witness. During claim, Groth16 proof generation runs in the beneficiary
+ * browser, and the secret/witness are not sent on-chain or to the verifier.
  */
 
 export interface BeneficiaryCredential {
@@ -74,7 +75,17 @@ export async function verifyCredential(
     return 'merkle_path and path_indices must each have 8 elements';
   }
 
-  // 6. On-chain issuer key id
+  // 6. Hex field shape checks
+  if (!isHex32(cred.campaign_id)) return 'campaign_id must be a 32-byte hex field element';
+  if (!isHex32(cred.secret)) return 'secret must be a 32-byte hex field element';
+  if (!cred.merkle_path.every(isHex32)) return 'merkle_path entries must be 32-byte hex field elements';
+  if (!cred.path_indices.every((v) => typeof v === 'boolean')) return 'path_indices entries must be booleans';
+  if (!Number.isInteger(cred.slot_index) || cred.slot_index < 0) return 'slot_index must be a non-negative integer';
+  if (!Number.isInteger(cred.leaf_index) || cred.leaf_index < 0) return 'leaf_index must be a non-negative integer';
+  if (!Number.isInteger(cred.issued_at) || !Number.isInteger(cred.expires_at)) return 'issued_at and expires_at must be integer unix timestamps';
+  if (!/^[0-9a-fA-F]{128}$/.test(cred.issuer_signature)) return 'issuer_signature must be a 64-byte hex Ed25519 signature';
+
+  // 7. On-chain issuer key id
   if (!/^[0-9a-fA-F]{64}$/.test(cred.issuer_key_id)) {
     return 'issuer_key_id must be a 32-byte hex field element';
   }
@@ -82,7 +93,7 @@ export async function verifyCredential(
     return 'Credential issuer key id does not match the configured issuer';
   }
 
-  // 7. Signature verification using Stellar SDK Keypair (Ed25519)
+  // 8. Signature verification using Stellar SDK Keypair (Ed25519)
   try {
     const { Keypair } = await import('@stellar/stellar-sdk');
     const { issuer_signature, ...rest } = cred;
@@ -108,4 +119,8 @@ function hexToBytes(hex: string): Uint8Array {
     arr[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   }
   return arr;
+}
+
+function isHex32(value: unknown): value is string {
+  return typeof value === 'string' && /^[0-9a-fA-F]{64}$/.test(value);
 }

@@ -9,8 +9,9 @@
  * Returns: BeneficiaryCredential JSON
  *
  * Security properties:
- *  - campaign.json is read server-side — secrets never reach the browser
- *  - Each slot is tracked and can only be issued once per process lifetime
+ *  - campaign.json is read server-side and the issuer key is never bundled into the client
+ *  - The returned credential intentionally contains the secret and Merkle witness for local proving
+ *  - Each slot is tracked and can only be issued once per process lifetime in this demo deployment
  *  - The credential binds claimant_address so the signature won't verify for
  *    any other wallet
  */
@@ -18,7 +19,7 @@
 import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { Keypair } from '@stellar/stellar-sdk';
+import { Keypair, StrKey } from '@stellar/stellar-sdk';
 import type { BeneficiaryCredential } from '@/lib/credential';
 import { credentialSigningPayload } from '@/lib/credential';
 import { ISSUER_KEY_ID, ISSUER_PUBLIC_KEY } from '@/lib/constants';
@@ -95,8 +96,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'claimant_address is required' }, { status: 400 });
   }
 
-  // Basic Stellar address format check (56-char StrKey starting with G)
-  if (!/^G[A-Z0-9]{55}$/.test(claimant_address)) {
+  if (!StrKey.isValidEd25519PublicKey(claimant_address)) {
     return NextResponse.json({ error: 'Invalid Stellar address format' }, { status: 400 });
   }
 

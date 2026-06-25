@@ -22,7 +22,7 @@ Target length: 2-3 minutes.
 7. Show `/admin`: approve/check a vendor address in Vendor / Voucher Mode.
 8. Show `/admin`: open the non-PII issuance ledger and point out keyed wallet identifiers, credential hashes, issuer key, expiry, and delivery mode.
 9. Show `/claim`: enter the passphrase, import the credential by QR image, file, or paste, verify it, and choose cash or vendor voucher.
-10. Generate proof: "The secret stays in-browser; the proof is 384 bytes."
+10. Generate proof: "The credential witness is used locally in the browser; only the 384-byte proof and public inputs go to Soroban."
 11. Approve Freighter transaction.
 12. Show success, Explorer transaction, and download/copy claim receipt.
 13. Return to `/auditor`: claimed count and escrow changed.
@@ -41,5 +41,5 @@ Target length: 2-3 minutes.
 - "The nullifier makes double claims impossible."
 - "Voucher mode lets an approved vendor receive payment while the beneficiary still proves eligibility privately."
 - "Auditors can verify funds and claim counts without seeing the private eligibility list."
-- "The payout wallet and timing are public settlement data; the sensitive aid-list membership and credential witness stay private."
+- "The payout wallet, route, amount, and timing are public settlement data; the sensitive aid-list membership and credential witness stay private."
 - "This is not an unrestricted privacy pool: issuer, vendor, escrow, replay, pause, and governance controls are visible and enforceable."

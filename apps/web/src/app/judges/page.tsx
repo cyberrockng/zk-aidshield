@@ -51,8 +51,14 @@ const ARCHITECTURE_FLOW = [
 ];
 
 const PRIVACY_BOUNDARY = [
-  ['Private / off-chain', ['names and IDs', 'beneficiary list', 'credential secret', 'Merkle path', 'local issuance records']],
-  ['Public / on-chain', ['Merkle root', 'nullifier', 'contract IDs', 'payout transaction', 'claim count']],
+  ['Private / off-chain', ['names and IDs', 'beneficiary list membership', 'credential secret', 'Merkle path', 'local issuance records']],
+  ['Public / on-chain', ['Merkle root', 'nullifier', 'contract IDs', 'payout wallet', 'route', 'amount', 'timing', 'claim count']],
+];
+
+const TRUST_BOUNDARY = [
+  ['Credential delivery', 'The issuer API reads the selected secret and Merkle witness server-side, then delivers them inside a signed credential to the beneficiary browser.'],
+  ['Local proving', 'During claim, the browser uses the credential to generate the proof; the secret and Merkle witness are not sent on-chain or to the verifier.'],
+  ['Public settlement', 'Stellar settlement remains visible: claimant wallet or approved vendor wallet, route, amount, timing, contract IDs, root, verifier key hash, and nullifier.'],
 ];
 
 const PAYOUT_ROUTES = [
@@ -68,7 +74,7 @@ const BUILT_NOW = [
   'Encrypted QR credential delivery',
   'Approved-vendor voucher redemption',
   'Threshold governor controls for sensitive admin operations',
-  'Admin-protected non-PII issuance ledger and export',
+  'Admin-protected local non-PII issuance ledger and export',
   'Local beneficiary claim receipt',
   'Admin-protected credential issuance and beneficiary-slot APIs',
   'Admin, claim, stats, audit, and judge pages',
@@ -263,6 +269,26 @@ export default function JudgesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {PAYOUT_ROUTES.map(([title, body]) => (
             <div key={title} className="route-card">
+              <div className="font-semibold mb-2">{title}</div>
+              <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-panel mb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+          <div>
+            <h2 className="font-bold text-lg mb-1">Trust Boundary</h2>
+            <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
+              The implementation separates credential delivery, local proof generation, and public settlement.
+            </p>
+          </div>
+          <span className="badge badge-blue">No overclaiming</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {TRUST_BOUNDARY.map(([title, body]) => (
+            <div key={title} className="rounded-lg p-4" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-dim)' }}>
               <div className="font-semibold mb-2">{title}</div>
               <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.6 }}>{body}</p>
             </div>

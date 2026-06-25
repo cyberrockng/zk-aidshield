@@ -1022,7 +1022,7 @@ export default function AdminPage() {
             <div className="px-4 py-3 text-xs" style={{ background: '#0a1f14', color: 'var(--muted)' }}>
               Share privately with the beneficiary by file, JSON, or QR. They load it in{' '}
               <a href="/claim" className="underline" style={{ color: 'var(--green)' }}>Claim</a>{' '}
-              — the secret never leaves their device.
+              — during claim, the loaded secret and witness are not sent on-chain or to the verifier.
             </div>
           </div>
         )}
@@ -1165,7 +1165,7 @@ export default function AdminPage() {
           </span>
         </div>
         <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
-          Durable local issuance records for operator accountability. Wallets are stored as keyed HMAC identifiers, not raw beneficiary data.
+          Local demo issuance records for operator accountability. Wallets are stored as keyed HMAC identifiers, not raw beneficiary data.
         </p>
 
         {issuanceLedgerError ? (

@@ -95,6 +95,9 @@ impl Groth16Verifier {
     ///
     /// Returns true iff the multi-pairing check passes.
     pub fn verify(env: Env, proof: Bytes, public_inputs: Bytes) -> bool {
+        if !env.storage().instance().has(&DataKey::Initialized) {
+            return false;
+        }
         if proof.len() != PROOF_SIZE || public_inputs.len() != PI_SIZE {
             return false;
         }
@@ -200,6 +203,16 @@ mod test {
         let client = Groth16VerifierClient::new(&env, &contract_id);
         let proof = Bytes::new(&env);
         let pi = Bytes::new(&env);
+        assert!(!client.verify(&proof, &pi));
+    }
+
+    #[test]
+    fn test_verify_rejects_uninitialized_with_correct_lengths() {
+        let env = Env::default();
+        let contract_id = env.register(Groth16Verifier, ());
+        let client = Groth16VerifierClient::new(&env, &contract_id);
+        let proof = Bytes::from_array(&env, &[0u8; PROOF_SIZE as usize]);
+        let pi = Bytes::from_array(&env, &[0u8; PI_SIZE as usize]);
         assert!(!client.verify(&proof, &pi));
     }
 }

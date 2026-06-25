@@ -110,10 +110,11 @@ export async function poseidonBLS12381(inputs) {
 }
 
 /**
- * Compute leaf commitment: Poseidon(secret, disbursement_id)
+ * Compute the current AidShield leaf commitment:
+ * Poseidon(secret, disbursement_id, claimant_address, expires_at, issuer_key_id)
  */
-export async function computeLeafBLS(secret, disbursementId) {
-  return poseidonBLS12381([secret, disbursementId]);
+export async function computeLeafBLS(secret, disbursementId, claimantAddress, expiresAt, issuerKeyId) {
+  return poseidonBLS12381([secret, disbursementId, claimantAddress, expiresAt, issuerKeyId]);
 }
 
 /**

@@ -17,7 +17,7 @@ const TRUST_TABLE: TrustRow[] = [
   {
     property: 'Claim secret',
     status: 'private',
-    detail: 'Never leaves the beneficiary\'s device. Generated offline, shared privately via operator credential. Not stored on any server.',
+    detail: 'Delivered inside the signed credential so the beneficiary can prove locally. During claim it is not sent on-chain or to the verifier.',
   },
   {
     property: 'Merkle root',
@@ -67,7 +67,12 @@ const TRUST_TABLE: TrustRow[] = [
   {
     property: 'Beneficiary identity',
     status: 'private',
-    detail: 'Never on-chain. The Merkle tree commits to Poseidon(secret, disbursement_id, wallet, expires_at, issuer_key_id) — no names or IDs. The wallet address is a pre-committed field element (248 bits), not a personal identifier. The operator knows the mapping but it is never published.',
+    detail: 'Names, IDs, aid-list membership, and Merkle witness stay off-chain. The claimant wallet is public settlement data and can be linked like any Stellar address.',
+  },
+  {
+    property: 'Claim event',
+    status: 'on-chain',
+    detail: 'Includes nullifier, amount, and claimant wallet. Voucher events also include vendor wallet. These are public accountability data, not anonymous payout data.',
   },
 ];
 
@@ -281,7 +286,7 @@ export default function AuditPage() {
             ['Public inputs', 'disbursement_id, merkle_root, nullifier, claimant_address, expires_at, issuer_key_id'],
             ['Proof size', '384 bytes (G1 + G2 + G1 uncompressed)'],
             ['On-chain check', 'Native bls.pairing_check on Soroban'],
-            ['Proving location', 'Browser WASM (secret never leaves device)'],
+            ['Proving location', 'Browser WASM (witness not sent on-chain)'],
             ['Trusted setup', 'Groth16 (requires ceremony for production)'],
             ['VK hash (SHA-256)', shortHex(VK_HASH)],
           ].map(([k, v]) => (

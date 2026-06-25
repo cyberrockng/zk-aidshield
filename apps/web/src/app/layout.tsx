@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'ZK AidShield — Privacy-Preserving Aid Distribution',
   description:
-    'Groth16 BLS12-381 zero-knowledge proof system for anonymous humanitarian aid disbursement on Stellar Soroban.',
+    'Groth16 BLS12-381 zero-knowledge proof system for private humanitarian aid eligibility with public Stellar settlement accountability.',
   applicationName: 'ZK AidShield',
   keywords: [
     'Stellar',

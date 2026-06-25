@@ -1,3 +1,5 @@
+import { StrKey } from '@stellar/stellar-sdk';
+
 // All values read from NEXT_PUBLIC_* env vars first; hard-coded testnet values are
 // fallbacks so the app works without a .env.local during development.
 
@@ -66,35 +68,20 @@ export function shortHex(hex: string): string {
   return `${hex.slice(0, 6)}…${hex.slice(-6)}`;
 }
 
-const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-
-function base32Decode(s: string): Uint8Array {
-  const bytes: number[] = [];
-  let buf = 0;
-  let bits = 0;
-  for (const ch of s) {
-    const v = BASE32_ALPHABET.indexOf(ch);
-    if (v < 0) throw new Error(`Invalid base32 char: ${ch}`);
-    buf = (buf << 5) | v;
-    bits += 5;
-    if (bits >= 8) {
-      bytes.push((buf >>> (bits - 8)) & 0xff);
-      bits -= 8;
-    }
-  }
-  return Uint8Array.from(bytes);
-}
-
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Encodes a Stellar G... public key as a zero-padded 32-byte field element.
-// StrKey decodes to version(1) + key(32) + checksum(2). We use key[1..31].
+// StrKey checksum is validated by stellar-sdk. We intentionally use the low
+// 31 bytes of the Ed25519 public key so the value fits in the BLS12-381 scalar field.
 // 31 bytes (248 bits) always fits below the BLS12-381 scalar field prime (255 bits).
 export function stellarAddressToField(address: string): string {
-  const decoded = base32Decode(address);
-  const fieldBytes = decoded.subarray(2, 33);
+  if (!StrKey.isValidEd25519PublicKey(address)) {
+    throw new Error('Invalid Stellar Ed25519 public key');
+  }
+  const decoded = StrKey.decodeEd25519PublicKey(address);
+  const fieldBytes = decoded.subarray(1, 32);
   return bytesToHex(fieldBytes).padStart(64, '0');
 }
 
