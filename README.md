@@ -299,7 +299,7 @@ cp apps/web/.env.example apps/web/.env.local
 
 The app ships with testnet fallback values in `constants.ts`, so it works without `.env.local` for the deployed demo campaign.
 
-Protected operator APIs do not ship with server-side fallbacks. Set `ISSUER_SECRET_KEY`, `ADMIN_API_SECRET`, and `LEDGER_HMAC_SECRET` in `apps/web/.env.local` before using `/admin` to issue credentials or inspect the local issuance ledger.
+Protected operator APIs do not ship with server-side fallbacks. Set `ISSUER_SECRET_KEY`, `ADMIN_API_SECRET`, and `LEDGER_HMAC_SECRET` in `apps/web/.env.local` before using `/admin` to issue credentials or inspect the local issuance ledger. Use `npm run check:production` to verify required server-side controls are configured without printing secret values.
 
 ### Trust Boundary
 
@@ -307,11 +307,11 @@ The issuer API reads the selected campaign secret and Merkle witness server-side
 
 Public settlement still reveals the payout wallet or approved vendor wallet, route, timing, amount, contract IDs, Merkle root, verifier key hash, and nullifier. AidShield protects aid-list membership and witness data; it does not claim the final Stellar transfer is anonymous.
 
-The built-in issuance ledger is local/demo-grade operator accountability. Production deployments should back it with durable storage, retention policy, monitoring, and access controls.
+The built-in issuance ledger is local/demo-grade operator accountability unless Upstash Redis is configured. Production deployments should set `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, and `REQUIRE_DURABLE_ISSUANCE=true` so credential issuance fails closed instead of falling back to local files.
 
 Verifier deployment must use the provided scripts so the Groth16 verifier is initialized with the verification key immediately after deployment and before the disbursement contract points at it. The verifier rejects uninitialized `verify()` calls, but initialization itself is intentionally a one-time deployment step.
 
-See [`docs/PRODUCTION_HARDENING.md`](docs/PRODUCTION_HARDENING.md) for issuer rotation, durable issuance uniqueness, browser proving trust boundaries, public settlement boundaries, and trusted setup requirements.
+See [`docs/PRODUCTION_HARDENING.md`](docs/PRODUCTION_HARDENING.md) and [`docs/SECURITY_READINESS.md`](docs/SECURITY_READINESS.md) for issuer rotation, durable issuance uniqueness, safe dry-run testing, browser proving trust boundaries, public settlement boundaries, and trusted setup requirements.
 
 ## Credential System
 

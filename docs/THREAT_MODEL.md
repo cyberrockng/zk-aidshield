@@ -29,10 +29,10 @@ AidShield protects beneficiary privacy while preserving disbursement accountabil
 | Boundary | Current guarantee | Production hardening |
 | --- | --- | --- |
 | Aid operator eligibility vetting | Off-chain trust | Multi-issuer governance and audit trails |
-| Credential issuance API | Server signs credentials and delivers the selected secret/witness inside the credential | HSM/secret manager, rate limits, durable issuance ledger |
+| Credential issuance API | Server signs credentials and delivers the selected secret/witness inside the credential; admin APIs are rate-limited; dry-run checks do not sign or reserve credentials | HSM/secret manager, durable edge/Redis rate limits, production monitoring |
 | Beneficiary device | Loaded credential witness stays local during proof generation and is not sent on-chain/to verifier | Mobile wallet support, encrypted backup, recovery flow |
 | Stellar contract | Verifies proof, root, nullifier, signer, payout | On-chain issuer registry and expiry checks |
-| ZK setup | Demo proving key | Public multi-party ceremony or setup-minimized proof system |
+| ZK setup | Demo proving key with documented setup boundary | Public multi-party ceremony or setup-minimized proof system |
 
 ## Attacks Covered Today
 
@@ -49,12 +49,13 @@ AidShield protects beneficiary privacy while preserving disbursement accountabil
 
 | Risk | Why it matters | Planned mitigation |
 | --- | --- | --- |
-| Issuer operational compromise | Compromise lets an attacker issue credentials for pre-committed campaign slots while the key remains active | Revoke issuer on-chain; add threshold admin and per-issuer limits |
+| Issuer operational compromise | Compromise lets an attacker issue credentials for pre-committed campaign slots while the key remains active | Rotate issuer, revoke old issuer on-chain, use threshold admin and per-issuer limits |
 | Operator knows wallet-to-person mapping | The chain is private, but the operator can still identify recipients | Separate enrollment from payout operations; minimize retained PII |
 | Lost credential | A beneficiary can lose access before claiming | Encrypted backup and controlled reissue workflow |
 | Coercion or forced claims | A hostile actor may pressure a beneficiary to claim in front of them | Mobile privacy UX, delayed claim windows, approved-vendor voucher mode, field-officer training |
 | 256-slot demo tree | Current depth is hackathon-sized | Configurable tree depth and campaign epochs |
 | Single-contributor trusted setup | Demo setup is not production-grade | Public ceremony before mainnet deployment |
+| Serverless instance rotation | In-process rate limits reset when a serverless instance rotates | Move rate limiting to Redis or edge middleware for high-traffic production |
 
 ## Production Readiness Bar
 

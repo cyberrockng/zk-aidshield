@@ -11,6 +11,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { requireAdmin } from '@/lib/admin-auth';
+import { requireRateLimit } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface CampaignClaim {
@@ -46,6 +47,8 @@ function loadCampaign(): Campaign {
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = requireAdmin(req);
   if (authError) return authError;
+  const rateLimitError = requireRateLimit(req, 'beneficiaries', 30);
+  if (rateLimitError) return rateLimitError;
 
   try {
     const campaign = loadCampaign();

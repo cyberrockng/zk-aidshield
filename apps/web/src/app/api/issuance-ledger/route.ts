@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { DeliveryMode } from '@/lib/issuance-ledger';
 import { readIssuanceLedger, recordLedgerDelivery } from '@/lib/issuance-ledger-store';
 import { requireAdmin } from '@/lib/admin-auth';
+import { requireRateLimit } from '@/lib/rate-limit';
 
 const DELIVERY_MODES = new Set<DeliveryMode>([
   'issued',
@@ -14,6 +15,8 @@ const DELIVERY_MODES = new Set<DeliveryMode>([
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = requireAdmin(req);
   if (authError) return authError;
+  const rateLimitError = requireRateLimit(req, 'issuance-ledger:get', 30);
+  if (rateLimitError) return rateLimitError;
 
   return NextResponse.json(readIssuanceLedger());
 }
@@ -21,6 +24,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const authError = requireAdmin(req);
   if (authError) return authError;
+  const rateLimitError = requireRateLimit(req, 'issuance-ledger:post', 30);
+  if (rateLimitError) return rateLimitError;
 
   let body: { credential_hash?: string; delivery_mode?: DeliveryMode };
   try {

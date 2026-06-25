@@ -25,6 +25,7 @@ import { credentialSigningPayload } from '@/lib/credential';
 import { ISSUER_KEY_ID, ISSUER_PUBLIC_KEY } from '@/lib/constants';
 import { appendIssuanceLedgerEntry, reserveIssuance } from '@/lib/issuance-ledger-store';
 import { requireAdmin } from '@/lib/admin-auth';
+import { requireRateLimit } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from 'next/server';
 
 // ── Issuer keypair (server-side only; never expose in client bundle) ───────
@@ -83,10 +84,12 @@ const issuedWallets = new Set<string>();
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const authError = requireAdmin(req);
   if (authError) return authError;
+  const rateLimitError = requireRateLimit(req, 'issue-credential', 12);
+  if (rateLimitError) return rateLimitError;
 
-  let body: { claimant_address?: string };
+  let body: { claimant_address?: string; dry_run?: boolean };
   try {
-    body = await req.json() as { claimant_address?: string };
+    body = await req.json() as { claimant_address?: string; dry_run?: boolean };
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
@@ -126,10 +129,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Build credential (without signature)
   const now = Math.floor(Date.now() / 1000);
   const expires_at = slot.expires_at ?? campaign.expires_at ?? now + 30 * 24 * 3600;
   const issuer_key_id = slot.issuer_key_id ?? campaign.issuer_key_id ?? ISSUER_KEY_ID;
+
+  if (body.dry_run === true) {
+    return NextResponse.json({
+      ok: true,
+      dry_run: true,
+      message: 'Credential issuance is configured and this wallet has an available campaign slot. No credential was signed or reserved.',
+      campaign_id: campaign.disbursement_id,
+      merkle_root: campaign.merkle_root,
+      slot_index: slot.index,
+      claimant_address,
+      expires_at,
+      issuer_key_id,
+      issuer_public_key: ISSUER_PUBLIC,
+    });
+  }
+
+  // Build credential (without signature)
   const credBase: Omit<BeneficiaryCredential, 'issuer_signature'> = {
     version: '2',
     campaign_id: campaign.disbursement_id,

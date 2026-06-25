@@ -29,6 +29,29 @@ When configured, `/api/issue-credential` reserves `campaign + slot` and `campaig
 
 Set `REQUIRE_DURABLE_ISSUANCE=true` in production after Redis is configured. With that flag enabled, credential issuance fails closed instead of falling back to local files if Redis env vars are missing.
 
+Use dry-run issuance for live deployment checks without consuming a slot:
+
+```bash
+curl -X POST https://zk-aidshield.vercel.app/api/issue-credential \
+  -H "content-type: application/json" \
+  -H "x-admin-secret: <admin-secret>" \
+  --data '{"claimant_address":"<registered-wallet>","dry_run":true}'
+```
+
+The dry-run response intentionally omits credential secrets, Merkle paths, and issuer signatures.
+
+## Admin API Rate Limits
+
+Admin APIs are rate-limited in process:
+
+```bash
+ADMIN_RATE_LIMIT_MAX=30
+ADMIN_RATE_LIMIT_WINDOW_MS=60000
+DISABLE_ADMIN_RATE_LIMIT=false
+```
+
+For high-traffic production deployments, move rate limiting to a durable edge or Redis-backed limiter so limits survive serverless instance rotation.
+
 ## Browser Proving Trust Boundary
 
 Browser proving means the beneficiary device and served frontend are trusted while the credential is loaded. A compromised frontend could exfiltrate the credential witness before proof generation. Mitigations:

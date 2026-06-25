@@ -9,6 +9,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createHash } from 'crypto';
 import { Keypair } from '@stellar/stellar-sdk';
+import { NextRequest } from 'next/server';
 
 const { TEST_ISSUER_PUBLIC_KEY, TEST_ISSUER_KEY_ID } = vi.hoisted(() => ({
   TEST_ISSUER_PUBLIC_KEY: 'GARLD45BJRFBNTB7Y7UAQBHD45MBC4AAOFDRK73CY6BYNTWAHE7FZAY4',
@@ -115,6 +116,7 @@ describe('issue-credential logic', () => {
   beforeEach(() => {
     issuedSlots = new Set();
     issuedWallets = new Set();
+    vi.unstubAllEnvs();
   });
 
   it('issues a valid signed credential for a registered wallet', () => {
@@ -167,5 +169,33 @@ describe('issue-credential logic', () => {
     // wallet cannot generate a valid proof for this leaf even with the same secret.
     expect(credA.claimant_address).toBe(WALLET_A);
     expect(credA.claimant_address).not.toBe(WALLET_B);
+  });
+
+  it('supports a dry-run live smoke test without signing or reserving a credential', async () => {
+    vi.stubEnv('ADMIN_API_SECRET', 'demo-secret');
+    vi.stubEnv('LEDGER_HMAC_SECRET', 'ledger-secret');
+    vi.stubEnv('ISSUER_SECRET_KEY', '');
+    const { POST } = await import('../app/api/issue-credential/route');
+
+    const req = new NextRequest('http://localhost/api/issue-credential', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-admin-secret': 'demo-secret',
+      },
+      body: JSON.stringify({ claimant_address: WALLET_A, dry_run: true }),
+    });
+
+    const res = await POST(req);
+    const data = await res.json() as Record<string, unknown>;
+
+    expect(res.status).toBe(200);
+    expect(data.ok).toBe(true);
+    expect(data.dry_run).toBe(true);
+    expect(data.slot_index).toBe(0);
+    expect(data.claimant_address).toBe(WALLET_A);
+    expect(data.secret).toBeUndefined();
+    expect(data.merkle_path).toBeUndefined();
+    expect(data.issuer_signature).toBeUndefined();
   });
 });

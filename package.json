@@ -10,7 +10,8 @@
     "deploy:testnet": "./scripts/deploy-groth16.sh",
     "setup": "./scripts/setup.sh",
     "test": "npm --prefix apps/web test",
-    "rotate:issuer": "node scripts/rotate-issuer-key.mjs"
+    "rotate:issuer": "node scripts/rotate-issuer-key.mjs",
+    "check:production": "node scripts/check-production-readiness.mjs"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^12.3.0"

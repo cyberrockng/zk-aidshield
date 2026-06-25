@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { requireAdmin } from '../lib/admin-auth';
+import { requireRateLimit } from '../lib/rate-limit';
 import { createLedgerEntry, reserveIssuance } from '../lib/issuance-ledger-store';
 import type { BeneficiaryCredential } from '../lib/credential';
 
@@ -75,5 +76,16 @@ describe('admin API hardening', () => {
     await expect(reserveIssuance(credential.campaign_id, credential.slot_index, credential.claimant_address))
       .rejects
       .toThrow(/Durable issuance storage is required/);
+  });
+
+  it('rate-limits repeated admin API calls for the same client and secret', () => {
+    vi.stubEnv('ADMIN_RATE_LIMIT_MAX', '1');
+    vi.stubEnv('ADMIN_RATE_LIMIT_WINDOW_MS', '60000');
+
+    const first = requireRateLimit(request('demo-secret'), 'test-scope');
+    const second = requireRateLimit(request('demo-secret'), 'test-scope');
+
+    expect(first).toBeNull();
+    expect(second?.status).toBe(429);
   });
 });
