@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 const routes = [
-  ['/', 'Claim Aid, Not Your Identity'],
+  ['/', 'Private aid eligibility'],
   ['/demo-path', 'Judge Demo Path'],
   ['/command-center', 'AidShield Command Center'],
   ['/donor', 'Donor Escrow Portal'],
