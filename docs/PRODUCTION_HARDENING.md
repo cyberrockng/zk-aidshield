@@ -22,9 +22,12 @@ Set these server-side variables in production:
 UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
 LEDGER_HMAC_SECRET=...
+REQUIRE_DURABLE_ISSUANCE=true
 ```
 
 When configured, `/api/issue-credential` reserves `campaign + slot` and `campaign + wallet_hash` keys with Redis `SET NX` before signing a credential. Without Redis, the app uses a locked local file fallback intended only for demos.
+
+Set `REQUIRE_DURABLE_ISSUANCE=true` in production after Redis is configured. With that flag enabled, credential issuance fails closed instead of falling back to local files if Redis env vars are missing.
 
 ## Browser Proving Trust Boundary
 

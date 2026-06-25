@@ -37,6 +37,10 @@ function storageBackend(): IssuanceStorageBackend {
     : 'local_file';
 }
 
+function durableIssuanceRequired(): boolean {
+  return process.env.REQUIRE_DURABLE_ISSUANCE === 'true';
+}
+
 async function withLocalLock<T>(fn: () => T | Promise<T>): Promise<T> {
   ensureLedgerDir();
   const started = Date.now();
@@ -179,8 +183,12 @@ async function reserveWithUpstash(campaignId: string, slotIndex: number, claiman
 
 export async function reserveIssuance(campaignId: string, slotIndex: number, claimantAddress: string): Promise<IssuanceReservation> {
   const claimantAddressHash = ledgerHmacHex(claimantAddress);
-  if (storageBackend() === 'upstash_redis') {
+  const backend = storageBackend();
+  if (backend === 'upstash_redis') {
     return reserveWithUpstash(campaignId, slotIndex, claimantAddressHash);
+  }
+  if (durableIssuanceRequired()) {
+    throw new Error('Durable issuance storage is required but Upstash Redis is not configured');
   }
 
   return withLocalLock(() => {

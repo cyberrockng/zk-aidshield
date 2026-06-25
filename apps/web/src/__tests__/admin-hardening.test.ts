@@ -1,8 +1,8 @@
 import { createHash } from 'crypto';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { requireAdmin } from '../lib/admin-auth';
-import { createLedgerEntry } from '../lib/issuance-ledger-store';
+import { createLedgerEntry, reserveIssuance } from '../lib/issuance-ledger-store';
 import type { BeneficiaryCredential } from '../lib/credential';
 
 function request(secret?: string): NextRequest {
@@ -28,6 +28,10 @@ const credential: BeneficiaryCredential = {
 };
 
 describe('admin API hardening', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('rejects protected route access when ADMIN_API_SECRET is missing', () => {
     vi.stubEnv('ADMIN_API_SECRET', '');
 
@@ -60,5 +64,16 @@ describe('admin API hardening', () => {
 
     expect(entry.claimant_address_hash).toHaveLength(64);
     expect(entry.claimant_address_hash).not.toBe(plainHash);
+  });
+
+  it('fails closed when durable issuance storage is required but Redis is missing', async () => {
+    vi.stubEnv('LEDGER_HMAC_SECRET', 'ledger-secret');
+    vi.stubEnv('REQUIRE_DURABLE_ISSUANCE', 'true');
+    vi.stubEnv('UPSTASH_REDIS_REST_URL', '');
+    vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', '');
+
+    await expect(reserveIssuance(credential.campaign_id, credential.slot_index, credential.claimant_address))
+      .rejects
+      .toThrow(/Durable issuance storage is required/);
   });
 });
