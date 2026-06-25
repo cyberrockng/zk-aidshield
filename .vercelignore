@@ -1,6 +1,14 @@
 **/node_modules
+node_modules
+apps/web/node_modules
+packages/merkle-tools/node_modules
+circuits/aidshield-groth16/node_modules
 **/.next
 **/target
+target
+contracts/disbursement/target
+contracts/verifier/target
+contracts/verifier-groth16/target
 **/test-results
 **/playwright-report
 **/.turbo
@@ -8,3 +16,7 @@
 contracts/**/target
 apps/web/.next
 apps/web/test-results
+circuits/aidshield-groth16/*.ptau
+circuits/aidshield-groth16/build/*.zkey
+circuits/aidshield-groth16/build/*.wasm
+circuits/aidshield-groth16/build/*.r1cs
