@@ -41,8 +41,9 @@ const BLS12_381_R =
 
 // ── Poseidon BLS12-381 ──────────────────────────────────────────────────────
 // Optimised Poseidon sponge matching circomlib poseidon.circom compiled for
-// BLS12-381. Constants (C, S, M, P) come from poseidon_constants_opt.js; all
-// arithmetic is performed mod the BLS12-381 scalar-field prime.
+// BLS12-381. Constants (C, S, M, P) are vendored from circomlibjs
+// poseidon_constants_opt.js; all arithmetic is performed mod the BLS12-381
+// scalar-field prime.
 
 const fmod = (x: bigint) => ((x % BLS12_381_R) + BLS12_381_R) % BLS12_381_R;
 const fadd = (a: bigint, b: bigint) => fmod(a + b);
@@ -58,8 +59,8 @@ const _constCache = new Map<number, PoseidonConsts>();
 async function getPoseidonConsts(t: number): Promise<PoseidonConsts> {
   if (_constCache.has(t)) return _constCache.get(t)!;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore — internal path, not in package exports; resolved at runtime by webpack
-  const mod = await import('circomlibjs/src/poseidon_constants_opt.js');
+  // @ts-ignore — vendored JS constants file has no TypeScript declarations.
+  const mod = await import('./poseidon_constants_opt.js');
   const raw = (mod.default ?? mod) as Record<string, unknown[][]>;
   const idx = t - 2;
   const toBI = (x: unknown) => BigInt(x as string);

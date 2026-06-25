@@ -5,14 +5,14 @@
  * which reads from poseidon_constants_opt.circom.  This file implements the same
  * optimised sponge with BigInt arithmetic mod the BLS12-381 prime.
  *
- * Round constants (C, S, M, P) come from circomlibjs poseidon_constants_opt.js.
- * The constants are reduced under the BLS12-381 scalar-field modulus used by
- * the compiled circuit.
+ * Round constants (C, S, M, P) are vendored from circomlibjs
+ * poseidon_constants_opt.js. The constants are reduced under the BLS12-381
+ * scalar-field modulus used by the compiled circuit.
  */
 
-import { pathToFileURL } from "node:url";
-import { resolve } from "node:path";
 import { StrKey } from "@stellar/stellar-sdk";
+// @ts-expect-error Vendored JS constants file has no TypeScript declarations.
+import rawPoseidonConstants from "./poseidon_constants_opt.js";
 
 const BLS12_381_R =
   52435875175126190479447740508185965837690552500527637822603658699938581184513n;
@@ -47,11 +47,7 @@ const _cache = new Map<number, PoseidonConsts>();
 
 async function loadRaw(): Promise<RawConsts> {
   if (_raw) return _raw;
-  // Use pathToFileURL to bypass circomlibjs package exports restriction
-  const abs = resolve("node_modules/circomlibjs/src/poseidon_constants_opt.js");
-  const url = pathToFileURL(abs).href;
-  const mod = await import(url);
-  _raw = (mod.default ?? mod) as RawConsts;
+  _raw = rawPoseidonConstants as RawConsts;
   return _raw;
 }
 
