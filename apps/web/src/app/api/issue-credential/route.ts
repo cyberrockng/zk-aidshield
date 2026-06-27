@@ -39,7 +39,8 @@ function issuerSecret(): string {
 
 // ── Campaign data (server-side only) ──────────────────────────────────────
 interface CampaignClaim {
-  index: number;
+  index?: number;
+  leaf_index?: number;
   claimant_address: string; // wallet pre-committed in this slot's leaf
   secret: string;
   leaf: string;
@@ -75,6 +76,12 @@ function loadCampaign(): Campaign {
     }
   }
   throw new Error('CAMPAIGN_JSON env var or campaign.json file is required — run generate-campaign first');
+}
+
+function claimIndex(claim: CampaignClaim): number {
+  const index = claim.index ?? claim.leaf_index;
+  if (typeof index !== 'number') throw new Error('Campaign claim is missing index/leaf_index');
+  return index;
 }
 
 // Extra same-process guard. Durable production uniqueness is handled by reserveIssuance().
@@ -120,9 +127,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 404 },
     );
   }
+  let slotIndex: number;
+  try {
+    slotIndex = claimIndex(slot);
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
 
   // Prevent re-issuing to the same wallet (fast same-process guard).
-  if (issuedSlots.has(slot.index) || issuedWallets.has(claimant_address)) {
+  if (issuedSlots.has(slotIndex) || issuedWallets.has(claimant_address)) {
     return NextResponse.json(
       { error: 'A credential has already been issued to this wallet in this session' },
       { status: 409 },
@@ -140,7 +153,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       message: 'Credential issuance is configured and this wallet has an available campaign slot. No credential was signed or reserved.',
       campaign_id: campaign.disbursement_id,
       merkle_root: campaign.merkle_root,
-      slot_index: slot.index,
+      slot_index: slotIndex,
       claimant_address,
       expires_at,
       issuer_key_id,
@@ -157,7 +170,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let reservation;
   try {
-    reservation = await reserveIssuance(campaign.disbursement_id, slot.index, claimant_address);
+    reservation = await reserveIssuance(campaign.disbursement_id, slotIndex, claimant_address);
   } catch (e) {
     return NextResponse.json({ error: `Issuance reservation failed: ${String(e)}` }, { status: 503 });
   }
@@ -173,9 +186,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     version: '2',
     campaign_id: campaign.disbursement_id,
     claimant_address,
-    slot_index: slot.index,
+    slot_index: slotIndex,
     secret: slot.secret,
-    leaf_index: slot.index,
+    leaf_index: slotIndex,
     merkle_path: slot.merkle_path,
     path_indices: slot.path_indices,
     issued_at: now,
@@ -205,7 +218,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // Mark slot + wallet as issued
-  issuedSlots.add(slot.index);
+  issuedSlots.add(slotIndex);
   issuedWallets.add(claimant_address);
 
   return NextResponse.json(credential, { status: 200 });

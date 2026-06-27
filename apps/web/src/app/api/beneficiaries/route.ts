@@ -15,7 +15,8 @@ import { requireRateLimit } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface CampaignClaim {
-  index: number;
+  index?: number;
+  leaf_index?: number;
   claimant_address: string;
 }
 
@@ -44,6 +45,12 @@ function loadCampaign(): Campaign {
   throw new Error('CAMPAIGN_JSON env var or campaign.json file is required');
 }
 
+function claimIndex(claim: CampaignClaim): number {
+  const index = claim.index ?? claim.leaf_index;
+  if (typeof index !== 'number') throw new Error('Campaign claim is missing index/leaf_index');
+  return index;
+}
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const authError = requireAdmin(req);
   if (authError) return authError;
@@ -57,7 +64,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       merkle_root: campaign.merkle_root,
       total_slots: campaign.claims.length,
       slots: campaign.claims.map((c) => ({
-        index: c.index,
+        index: claimIndex(c),
         claimant_address: c.claimant_address,
       })),
     });
