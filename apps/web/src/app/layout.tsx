@@ -89,32 +89,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             <div className="flex items-center gap-1 flex-wrap justify-end">
               <Link
-                href="/command-center"
+                href="/judge-console"
                 className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
                 style={{ color: 'var(--green-bright)' }}
               >
-                Command
-              </Link>
-              <Link
-                href="/demo-path"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Demo
-              </Link>
-              <Link
-                href="/judges"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Judges
-              </Link>
-              <Link
-                href="/auditor"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Auditor
+                Judge Console
               </Link>
               <Link
                 href="/donor"
@@ -122,62 +101,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 style={{ color: 'var(--muted)' }}
               >
                 Donor
-              </Link>
-              <Link
-                href="/impact"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Impact
-              </Link>
-              <Link
-                href="/readiness"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Ready
-              </Link>
-              <Link
-                href="/audit"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Audit
-              </Link>
-              <Link
-                href="/threats"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Threats
-              </Link>
-              <Link
-                href="/edge"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Edge
-              </Link>
-              <Link
-                href="/mission"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Mission
-              </Link>
-              <Link
-                href="/evidence"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Evidence
-              </Link>
-              <Link
-                href="/protocol"
-                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
-                style={{ color: 'var(--muted)' }}
-              >
-                Protocol
               </Link>
               <Link
                 href="/admin"
@@ -188,10 +111,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Link>
               <Link
                 href="/claim"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Claim
+              </Link>
+              <Link
+                href="/protocol"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Protocol
+              </Link>
+              <Link
+                href="/evidence"
+                className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Evidence
+              </Link>
+              <Link
+                href="/judge-console"
                 className="btn-primary text-sm ml-3"
                 style={{ padding: '6px 18px', borderRadius: 8 }}
               >
-                Claim Aid
+                Start Demo
               </Link>
             </div>
           </div>

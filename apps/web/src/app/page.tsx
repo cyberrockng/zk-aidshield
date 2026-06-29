@@ -228,7 +228,7 @@ const TECH = [
   },
   {
     heading: 'Settlement Layer',
-    sub: 'Stellar Soroban · Protocol 22',
+    sub: 'Stellar Soroban · Protocol 26',
     items: [
       'Native BLS12-381 pairing_check — no off-chain verifier',
       'Persistent nullifier registry — replay attacks impossible',
@@ -296,17 +296,14 @@ export default function LandingPage() {
           className="flex gap-3 flex-wrap"
           style={{ animation: 'fade-in-up 0.5s ease 0.15s both' }}
         >
-            <Link href="/command-center" className="btn-primary text-base" style={{ padding: '0.75rem 2rem' }}>
-              Open Command Center →
+            <Link href="/judge-console" className="btn-primary text-base" style={{ padding: '0.75rem 2rem' }}>
+              Open Judge Console →
             </Link>
             <Link href="/claim" className="btn-primary text-base" style={{ padding: '0.75rem 2rem' }}>
               Claim Demo
             </Link>
-            <Link href="/mission" className="btn-outline text-base" style={{ padding: '0.75rem 2rem' }}>
-              Crisis Mission
-            </Link>
             <Link href="/evidence" className="btn-outline text-base" style={{ padding: '0.75rem 2rem' }}>
-              Evidence Dossier
+              Evidence
             </Link>
             <Link href="/protocol" className="btn-outline text-base" style={{ padding: '0.75rem 2rem' }}>
               Stellar ZK Fit
@@ -334,21 +331,20 @@ export default function LandingPage() {
         <div className="section-panel">
           <div className="flex items-start justify-between gap-6 flex-wrap mb-6">
             <div style={{ maxWidth: 720 }}>
-              <h2 className="text-2xl font-bold mb-2">AidShield Command Center</h2>
+              <h2 className="text-2xl font-bold mb-2">Judge Demo Console</h2>
               <p className="text-sm" style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
-                The submission now has a full operational layer: campaign prep, claim pass delivery,
-                private proof settlement, proof receipts, public impact metrics, and external review readiness.
+                The main review path is now one clean lifecycle: fund escrow, issue a wallet-bound credential,
+                claim privately with a Groth16 proof, show the receipt, then prove credential reuse fails.
               </p>
             </div>
-            <Link href="/command-center" className="btn-outline text-sm">Open Hub</Link>
+            <Link href="/judge-console" className="btn-outline text-sm">Open Console</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[
-              { label: 'Campaign Builder', body: 'Prepare beneficiary CSV/config locally and generate the private Merkle campaign inputs.' },
-              { label: 'Donor Escrow', body: 'Fund the aid escrow with Freighter and receive a proof-of-impact donor receipt.' },
-              { label: 'Claim Pass', body: 'Turn an issued credential into a beneficiary QR pass for phone-first delivery.' },
-              { label: 'Proof Receipt', body: 'Inspect transaction hash, nullifier, root, verifier, amount, and public settlement fields.' },
-              { label: 'Impact Dashboard', body: 'Show escrow, claims paid, remaining capacity, and privacy counters in one judge-ready view.' },
+              { label: 'Fund escrow', body: 'Show real Stellar testnet XLM available before the beneficiary claim.' },
+              { label: 'Issue credential', body: 'Bind a private eligibility witness to the beneficiary wallet.' },
+              { label: 'Claim privately', body: 'Generate the ZK proof locally and release XLM from escrow.' },
+              { label: 'Block reuse', body: 'Retry the credential and show nullifier replay protection.' },
             ].map((signal) => (
               <div key={signal.label} className="route-card">
                 <div className="font-semibold mb-2">{signal.label}</div>
@@ -516,16 +512,16 @@ export default function LandingPage() {
           See a Groth16 proof land on Stellar
         </h2>
         <p className="text-sm max-w-lg mx-auto mb-8" style={{ color: 'var(--muted)' }}>
-          Connect a Freighter wallet on testnet, load the demo claim, and watch a BLS12-381 proof
-          generate in your browser in ~15 seconds. Then try claiming twice — the second attempt will
-          be blocked on-chain by the nullifier.
+          Run the judge console from escrow funding to credential issuance, private proof claim,
+          public receipt, and replay rejection. The advanced pages stay available as evidence,
+          but the live review path is intentionally focused.
         </p>
-        <Link href="/claim" className="btn-primary text-base" style={{ padding: '0.875rem 2.5rem', fontSize: '1rem' }}>
-          Open Claim Demo →
+        <Link href="/judge-console" className="btn-primary text-base" style={{ padding: '0.875rem 2.5rem', fontSize: '1rem' }}>
+          Open Judge Console →
         </Link>
         <div className="flex justify-center gap-3 flex-wrap mt-4">
-          <Link href="/judge-mode" className="btn-outline text-sm">Judge Mode</Link>
-          <Link href="/pilot" className="btn-outline text-sm">Field Pilot Plan</Link>
+          <Link href="/claim" className="btn-outline text-sm">Claim Flow</Link>
+          <Link href="/evidence" className="btn-outline text-sm">Evidence</Link>
         </div>
       </section>
 

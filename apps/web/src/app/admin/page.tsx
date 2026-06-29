@@ -253,7 +253,7 @@ export default function AdminPage() {
       const res = await fetch('/api/issue-credential', {
         method: 'POST',
         headers: adminHeaders(true),
-        body: JSON.stringify({ claimant_address: slot.claimant_address }),
+        body: JSON.stringify({ claimant_address: slot.claimant_address, slot_index: slot.index }),
       });
       const data = await res.json() as { error?: string; slot_index?: number };
       if (!res.ok) throw new Error(data.error ?? 'Issue failed');

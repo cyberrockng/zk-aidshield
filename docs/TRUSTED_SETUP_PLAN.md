@@ -42,7 +42,7 @@ Create a publicly reproducible proving/verifier key pair for the AidShield circu
 - Anyone can rebuild the circuit and reproduce the verifier key hash.
 - Anyone can verify every ceremony contribution transcript.
 - At least three independent contributors participate.
-- Final verifier key hash is shown in the app, README, and Devpost submission.
+- Final verifier key hash is shown in the app, README, and DoraHacks submission notes.
 - Old demo verifier is clearly labeled as deprecated.
 
 ## Current Hackathon Position

@@ -220,7 +220,7 @@ export default function StatsPage() {
                 { label: 'Disbursement ID', value: DISBURSEMENT_ID },
                 { label: 'Merkle root', value: MERKLE_ROOT },
                 { label: 'Verifier key hash', value: VK_HASH },
-                { label: 'Network', value: 'Stellar Testnet · Protocol 22' },
+                { label: 'Network', value: 'Stellar Testnet · Protocol 26' },
               ].map((r) => (
                 <div key={r.label} className="data-row">
                   <span style={{ color: 'var(--muted)', flexShrink: 0 }}>{r.label}</span>

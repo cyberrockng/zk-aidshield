@@ -13,7 +13,7 @@ export type IssuanceStorageBackend = 'upstash_redis' | 'local_file';
 
 export interface IssuanceReservation {
   ok: boolean;
-  reason?: 'slot_already_issued' | 'wallet_already_issued';
+  reason?: 'slot_already_issued';
   backend: IssuanceStorageBackend;
 }
 
@@ -156,10 +156,6 @@ function slotAlreadyIssued(entries: IssuanceLedgerEntry[], campaignId: string, s
   return entries.some((entry) => (entry.campaign_id ?? campaignId) === campaignId && entry.slot_index === slotIndex);
 }
 
-function walletAlreadyIssued(entries: IssuanceLedgerEntry[], campaignId: string, claimantAddressHash: string): boolean {
-  return entries.some((entry) => (entry.campaign_id ?? campaignId) === campaignId && entry.claimant_address_hash === claimantAddressHash);
-}
-
 async function upstashCommand<T = unknown>(command: unknown[]): Promise<T> {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -201,18 +197,16 @@ async function writeEntriesToUpstash(entries: IssuanceLedgerEntry[]): Promise<vo
 async function reserveWithUpstash(campaignId: string, slotIndex: number, claimantAddressHash: string): Promise<IssuanceReservation> {
   const prefix = `aidshield:issuance:${campaignId}`;
   const slotKey = `${prefix}:slot:${slotIndex}`;
-  const walletKey = `${prefix}:wallet:${claimantAddressHash}`;
-  const value = JSON.stringify({ campaign_id: campaignId, slot_index: slotIndex, issued_at: Math.floor(Date.now() / 1000) });
+  const value = JSON.stringify({
+    campaign_id: campaignId,
+    slot_index: slotIndex,
+    claimant_address_hash: claimantAddressHash,
+    issued_at: Math.floor(Date.now() / 1000),
+  });
 
   const slotResult = await upstashCommand<string | null>(['SET', slotKey, value, 'NX']);
   if (slotResult !== 'OK') {
     return { ok: false, reason: 'slot_already_issued', backend: 'upstash_redis' };
-  }
-
-  const walletResult = await upstashCommand<string | null>(['SET', walletKey, value, 'NX']);
-  if (walletResult !== 'OK') {
-    await upstashCommand<number>(['DEL', slotKey]);
-    return { ok: false, reason: 'wallet_already_issued', backend: 'upstash_redis' };
   }
 
   return { ok: true, backend: 'upstash_redis' };
@@ -231,21 +225,14 @@ export async function reserveIssuance(campaignId: string, slotIndex: number, cla
   return withLocalLock(() => {
     const entries = readEntries();
     const reservations = readReservations();
-    const { slotKey, walletKey } = reservationKeys(campaignId, slotIndex, claimantAddressHash);
+    const { slotKey } = reservationKeys(campaignId, slotIndex, claimantAddressHash);
     if (slotAlreadyIssued(entries, campaignId, slotIndex)) {
       return { ok: false, reason: 'slot_already_issued', backend: 'local_file' };
-    }
-    if (walletAlreadyIssued(entries, campaignId, claimantAddressHash)) {
-      return { ok: false, reason: 'wallet_already_issued', backend: 'local_file' };
     }
     if (reservations.has(slotKey)) {
       return { ok: false, reason: 'slot_already_issued', backend: 'local_file' };
     }
-    if (reservations.has(walletKey)) {
-      return { ok: false, reason: 'wallet_already_issued', backend: 'local_file' };
-    }
     reservations.add(slotKey);
-    reservations.add(walletKey);
     writeReservations(reservations);
     return { ok: true, backend: 'local_file' };
   });
@@ -275,6 +262,59 @@ export async function recordLedgerDelivery(credentialHashValue: string, delivery
   };
   writeEntries(entries);
   return entries[index];
+}
+
+export async function resetIssuanceForCampaign(
+  campaignId: string,
+  slots: Array<{ slot_index: number; claimant_address: string }>,
+): Promise<{ removed_entries: number; removed_reservation_keys: number; backend: IssuanceStorageBackend }> {
+  const slotIndexes = new Set(slots.map((slot) => slot.slot_index));
+  const claimantAddressHashes = new Set(slots.map((slot) => ledgerHmacHex(slot.claimant_address)));
+
+  if (storageBackend() === 'upstash_redis') {
+    const entries = await readEntriesFromUpstash();
+    const nextEntries = entries.filter((entry) => {
+      if (entry.campaign_id !== campaignId) return true;
+      return !slotIndexes.has(entry.slot_index) && !claimantAddressHashes.has(entry.claimant_address_hash);
+    });
+    await writeEntriesToUpstash(nextEntries);
+
+    const keys = slots.flatMap((slot) => {
+      const { slotKey, walletKey } = reservationKeys(campaignId, slot.slot_index, ledgerHmacHex(slot.claimant_address));
+      return [`aidshield:issuance:${slotKey}`, `aidshield:issuance:${walletKey}`];
+    });
+    const removedKeys = keys.length > 0 ? await upstashCommand<number>(['DEL', ...keys]) : 0;
+
+    return {
+      removed_entries: entries.length - nextEntries.length,
+      removed_reservation_keys: removedKeys,
+      backend: 'upstash_redis',
+    };
+  }
+
+  return withLocalLock(() => {
+    const entries = readEntries();
+    const nextEntries = entries.filter((entry) => {
+      if (entry.campaign_id !== campaignId) return true;
+      return !slotIndexes.has(entry.slot_index) && !claimantAddressHashes.has(entry.claimant_address_hash);
+    });
+    writeEntries(nextEntries);
+
+    const reservations = readReservations();
+    let removedKeys = 0;
+    for (const slot of slots) {
+      const { slotKey, walletKey } = reservationKeys(campaignId, slot.slot_index, ledgerHmacHex(slot.claimant_address));
+      if (reservations.delete(slotKey)) removedKeys += 1;
+      if (reservations.delete(walletKey)) removedKeys += 1;
+    }
+    writeReservations(reservations);
+
+    return {
+      removed_entries: entries.length - nextEntries.length,
+      removed_reservation_keys: removedKeys,
+      backend: 'local_file',
+    };
+  });
 }
 
 function summarize(entries: IssuanceLedgerEntry[]): IssuanceLedgerSummary {

@@ -1,6 +1,6 @@
 # Community Review Post
 
-Use this message in Stellar Dev Discord `#zk-chat`, Dorahacks discussion, Telegram, or GitHub.
+Use this message in Stellar Dev Discord `#zk-chat`, DoraHacks discussion, Telegram, or GitHub.
 
 ```text
 Hi everyone, I’m submitting ZK AidShield for Stellar Hacks: Real-World ZK and would appreciate a focused security/design review.

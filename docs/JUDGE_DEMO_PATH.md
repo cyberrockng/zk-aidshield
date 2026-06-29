@@ -1,16 +1,16 @@
 # Judge Demo Path
 
-Use `/demo-path` as the live walkthrough route for the submission video and judge review.
+Use `/judge-console` as the live walkthrough route for the submission video and judge review.
 
 ## 2-3 Minute Sequence
 
-1. Open `/command-center` and show the product loop, verifier status, proof system, contract anchors, and live escrow state.
+1. Open `/judge-console` and show the ordered review path, verifier status, proof system, contract anchors, and live escrow state.
 2. Open `/donor`, connect Freighter, fund escrow, and copy/download the donor proof-of-impact receipt.
-3. Open `/admin`, enter the demo admin secret supplied in submission notes, issue a wallet-bound beneficiary credential, and export JSON or an encrypted QR payload.
+3. Open `/admin`, enter the demo admin secret supplied in submission notes, issue a wallet-bound beneficiary credential, and export JSON.
 4. Open `/claim`, load the credential, generate the Groth16 BLS12-381 proof in-browser, approve Freighter, and settle on Stellar testnet.
-5. Try the same claim again and show the nullifier replay rejection.
-6. Open `/receipt`, paste the receipt JSON, and verify transaction status plus the declared AidShield contract against Stellar testnet.
-7. Finish on `/impact` or `/auditor` to show public impact, remaining capacity, nullifier accountability, and zero beneficiary PII exposure.
+5. Open `/receipt`, paste the receipt JSON, and verify transaction status plus the declared AidShield contract against Stellar testnet.
+6. Try the same claim again and show the nullifier replay rejection.
+7. Use `/impact`, `/protocol`, `/evidence`, or `/audit` only if the reviewer asks for deeper proof.
 
 ## Judge Message
 
@@ -30,7 +30,6 @@ The demo uses synthetic/testnet crisis-aid data and does not claim a live NGO de
 
 If the reviewer does not have the demo admin secret, skip live issuance and inspect:
 
-- `/claim-pass` for credential delivery format.
 - `/verification-lab` for proof inputs, verifier anchors, and replay evidence.
 - `/receipt` for transaction-status checks and receipt privacy boundaries.
 - `/impact` and `/auditor` for public campaign state.

@@ -5,13 +5,13 @@
  * claimant wallet address. The signing key lives only here (server-side);
  * it is never bundled into the client.
  *
- * Body: { claimant_address: string }
+ * Body: { claimant_address: string, slot_index?: number }
  * Returns: BeneficiaryCredential JSON
  *
  * Security properties:
  *  - campaign.json is read server-side and the issuer key is never bundled into the client
  *  - The returned credential intentionally contains the secret and Merkle witness for local proving
- *  - Each slot/wallet is reserved before issuance; production can use Upstash Redis SET NX for durable uniqueness
+ *  - Each campaign slot is reserved before issuance; production can use Upstash Redis SET NX for durable uniqueness
  *  - The credential binds claimant_address so the signature won't verify for
  *    any other wallet
  */
@@ -84,19 +84,15 @@ function claimIndex(claim: CampaignClaim): number {
   return index;
 }
 
-// Extra same-process guard. Durable production uniqueness is handled by reserveIssuance().
-const issuedSlots = new Set<number>();
-const issuedWallets = new Set<string>();
-
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const authError = requireAdmin(req);
   if (authError) return authError;
   const rateLimitError = requireRateLimit(req, 'issue-credential', 12);
   if (rateLimitError) return rateLimitError;
 
-  let body: { claimant_address?: string; dry_run?: boolean };
+  let body: { claimant_address?: string; slot_index?: number; dry_run?: boolean };
   try {
-    body = await req.json() as { claimant_address?: string; dry_run?: boolean };
+    body = await req.json() as { claimant_address?: string; slot_index?: number; dry_run?: boolean };
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
@@ -118,13 +114,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 
-  // Phase 4: the leaf is wallet-, expiry-, and issuer-bound — find the slot
-  // pre-committed to this exact address.
-  const slot = campaign.claims.find((c) => c.claimant_address === claimant_address);
+  if (
+    body.slot_index !== undefined &&
+    (!Number.isInteger(body.slot_index) || body.slot_index < 0)
+  ) {
+    return NextResponse.json({ error: 'slot_index must be a non-negative integer' }, { status: 400 });
+  }
+
+  // The leaf is wallet-, expiry-, and issuer-bound. Admin slot issuance can
+  // specify slot_index so duplicate demo wallets remain distinct slots.
+  const slot = body.slot_index === undefined
+    ? campaign.claims.find((c) => c.claimant_address === claimant_address)
+    : campaign.claims.find((c) => claimIndex(c) === body.slot_index);
   if (!slot) {
     return NextResponse.json(
-      { error: 'This wallet is not registered in the campaign. Only pre-approved wallets can receive credentials.' },
+      {
+        error: body.slot_index === undefined
+          ? 'This wallet is not registered in the campaign. Only pre-approved wallets can receive credentials.'
+          : `Campaign slot ${body.slot_index} was not found.`,
+      },
       { status: 404 },
+    );
+  }
+  if (slot.claimant_address !== claimant_address) {
+    return NextResponse.json(
+      { error: `Campaign slot ${body.slot_index} is bound to a different wallet.` },
+      { status: 409 },
     );
   }
   let slotIndex: number;
@@ -132,14 +147,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     slotIndex = claimIndex(slot);
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
-  }
-
-  // Prevent re-issuing to the same wallet (fast same-process guard).
-  if (issuedSlots.has(slotIndex) || issuedWallets.has(claimant_address)) {
-    return NextResponse.json(
-      { error: 'A credential has already been issued to this wallet in this session' },
-      { status: 409 },
-    );
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -176,7 +183,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   if (!reservation.ok) {
     return NextResponse.json(
-      { error: `A credential has already been issued for this ${reservation.reason === 'slot_already_issued' ? 'slot' : 'wallet'}` },
+      { error: 'A credential has already been issued for this slot' },
       { status: 409 },
     );
   }
@@ -216,10 +223,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 503 },
     );
   }
-
-  // Mark slot + wallet as issued
-  issuedSlots.add(slotIndex);
-  issuedWallets.add(claimant_address);
 
   return NextResponse.json(credential, { status: 200 });
 }
